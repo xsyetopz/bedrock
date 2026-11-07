@@ -1,0 +1,54 @@
+name: Release
+
+# Each check workflow's completion triggers this; the last one to pass on a commit tags it.
+on:
+  workflow_run:
+    workflows: [Base, Bun, Rust, Swift]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Tag each bedrock version that has no release
+        run: |
+          passed=$(gh run list --commit "$SHA" --event push --json workflowName,conclusion \
+            --jq '[.[] | select(.conclusion == "success") | .workflowName] | unique | join(" ")')
+          if [[ "$passed" != "Base Bun Rust Swift" ]]; then
+            echo "Only [$passed] passed on $SHA so far; the last check to pass tags it."
+            exit 0
+          fi
+          release() {
+            if [[ -z "$2" ]]; then
+              echo "No version found for $1" >&2
+              exit 1
+            fi
+            if gh release view "$1-v$2" >/dev/null 2>&1; then
+              echo "$1-v$2 is already released"
+            else
+              gh release create "$1-v$2" --target "$SHA" --title "$1 v$2" --generate-notes --latest=false
+            fi
+          }
+          release bun-bedrock "$(jq -r '.version // empty' packages/bun-bedrock/package.json)"
+          release rust-bedrock "$(sed -n 's/^version = "\(.*\)"$/\1/p' packages/rust-bedrock/Cargo.toml | head -n 1)"
+          release swift-bedrock "$(sed -n 's/^let version = "\(.*\)"$/\1/p' packages/swift-bedrock/Sources/SwiftBedrock/Files.swift)"

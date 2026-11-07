@@ -39,6 +39,10 @@ docs: explain legacy migration
 
 Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
 
+## Releases
+
+Bump a bedrock's version in `packages/bun-bedrock/package.json`, `packages/rust-bedrock/Cargo.toml`, or `packages/swift-bedrock/Sources/SwiftBedrock/Files.swift`. Once every check passes on `main`, the Release workflow tags that commit `<bedrock>-v<version>` and creates its GitHub release. Adopted repos pin those tags.
+
 ## Agents
 
 AI agents follow `AGENTS.md`.
