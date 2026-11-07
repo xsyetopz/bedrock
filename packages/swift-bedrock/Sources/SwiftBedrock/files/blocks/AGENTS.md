@@ -1,0 +1,5 @@
+- Write tests with Swift Testing: `import Testing`, `@Test`, `#expect`, and `#require`. XCTest is only for `*UITests` targets, which need `XCUIApplication`; `just lint-fix` converts other XCTest files.
+- Keep the `// >>> swift-bedrock` block at the end of `Package.swift`. It turns on Swift 6 mode, the upcoming features, strict memory safety, and warnings as errors for each target.
+- Mark an unsafe expression with `unsafe`, and spell an existential `any P`.
+- Build an app in Xcode against `Config/Bedrock.xcconfig`, which sets the same flags as the package.
+- Document each `public` or `open` declaration other modules can reach. Internal and private code needs no docs, and SwiftLint reports a `public` member of an internal type instead.

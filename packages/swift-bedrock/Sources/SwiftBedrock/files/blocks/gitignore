@@ -1,0 +1,18 @@
+# Adapted from github/gitignore@41862c8 (CC0-1.0): Swift, Global/Xcode.
+.build/
+xcuserdata/
+DerivedData/
+*.xcscmblueprint
+*.xccheckout
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+timeline.xctimeline
+playground.xcworkspace
+Carthage/Build/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+iOSInjectionProject/

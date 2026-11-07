@@ -1,0 +1,4 @@
+{
+	// adopt splices these fragments into AGENTS.md, under its heading.
+	"config": { "first-line-heading": false },
+}

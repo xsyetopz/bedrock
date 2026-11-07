@@ -1,0 +1,78 @@
+import Testing
+
+@testable import Legacy
+
+final class StackTests {
+  var stack = Stack<Int>()
+
+  init() {
+    stack = Stack<Int>()
+    stack.push(1)
+  }
+
+  deinit {
+    stack = Stack<Int>()
+  }
+
+  @Test
+  func pushIncreasesCount() {
+    stack.push(2)
+    #expect(stack.count == 2, "count after push")
+    #expect(!stack.isEmpty)
+    #expect((stack.count + 1) > 2)
+  }
+
+  @Test
+  func popReturnsLast() throws {
+    let value = try #require(stack.pop())
+    #expect(value == 1)
+    #expect(stack.pop() == nil)
+    #expect(stack.isEmpty, "should be empty")
+  }
+
+  @Test
+  func topLooksLikeCode() {
+    let text = "XCTAssertEqual(a, b)"
+    #expect(text.count == 20)
+    #expect(stack.top != nil)
+  }
+
+  @Test
+  func count() {
+    #expect(stack.count == 1, "multi-line, with a comma: \(stack.count), \([1, 2].map { $0 + 1 })")
+  }
+}
+
+final class CalculatorTests {
+  let calculator = Calculator()
+
+  init() async throws {
+    calculator.add(10)
+    try calculator.divide(1)
+    _ = await calculator.fetchTotal()
+  }
+
+  @Test
+  func divideByZeroThrows() {
+    #expect(throws: (any Error).self) { try calculator.divide(0) }
+    #expect(throws: Never.self) { try calculator.divide(2) }
+    #expect(abs(calculator.total - 5.0) <= 0.001)
+  }
+
+  @Test
+  func fetchTotal() async {
+    let total = await calculator.fetchTotal()
+    #expect(total == 10)
+    #expect(total != 11)
+    #expect(min(total, 20) <= 10)
+    if total > 100 { Issue.record("too big") }
+  }
+
+  @Test
+  func testCalculator() {
+    let alias = calculator
+    #expect(calculator === alias)
+    #expect(calculator !== Calculator())
+    #expect(abs((calculator.total - 1) - (9 + 0)) <= 0.5)
+  }
+}

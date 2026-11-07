@@ -1,0 +1,7 @@
+// swiftlint:disable force_cast
+let a = 1
+// swiftlint:disable:next force_try
+// swiftlint:disable line_length
+// swiftlint:enable line_length
+// swift-format-ignore-file
+let message = "swiftlint:disable without a matching enable"
