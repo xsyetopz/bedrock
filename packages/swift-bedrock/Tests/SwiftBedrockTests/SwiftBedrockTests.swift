@@ -128,6 +128,14 @@ struct Steps {
       )
     }
     #expect(try configs() == ["Tests/.swiftlint.yml", "Config/Bedrock.xcconfig"])
+    let cxxConfig = try plan(root, source: .release, cxx: true).first {
+      $0.path == "Config/Bedrock.xcconfig"
+    }
+    guard case .write(_, let xcconfig, _) = try #require(cxxConfig) else {
+      Issue.record("the xcconfig is not a write")
+      return
+    }
+    #expect(xcconfig.contains("COMPILATION_CACHE_ENABLE_CACHING = NO\n"))
     try FileManager.default.removeItem(atPath: root)
   }
 }

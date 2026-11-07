@@ -14,6 +14,18 @@ CLANG_CXX_LANGUAGE_STANDARD = c++20
 BEDROCK_SWIFT_FLAGS = -enable-upcoming-feature ExistentialAny -enable-upcoming-feature InternalImportsByDefault -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-upcoming-feature ImmutableWeakCaptures -strict-memory-safety
 OTHER_SWIFT_FLAGS = $(inherited) $(BEDROCK_SWIFT_FLAGS) $(BEDROCK_CXX_FLAGS)
 
+// Xcode caches each compilation, size-capped, in one cache every checkout on the Mac
+// shares; the prefix maps let a checkout at another path reuse it. An Xcode without
+// compilation caching ignores these. swift-bedrock turns caching off once the
+// repository has C or C++ code: with C++ interop, the compiler warns about its own
+// module map once caching is on, and warnings fail the build.
+COMPILATION_CACHE_ENABLE_CACHING = YES
+COMPILATION_CACHE_CAS_PATH = $(HOME)/Library/Caches/swift-bedrock/xcode
+SWIFT_ENABLE_PREFIX_MAPPING = YES
+SWIFT_ENABLE_PROJECT_PREFIX_MAPPING = YES
+CLANG_ENABLE_PREFIX_MAPPING = YES
+CLANG_ENABLE_PROJECT_PREFIX_MAPPING = YES
+
 // swift-bedrock sets BEDROCK_CXX_FLAGS to $(BEDROCK_CXX_INTEROP) once the repository
 // has C or C++ code; Swift needs both flags to import a C++20 target.
 BEDROCK_CXX_INTEROP = -cxx-interoperability-mode=default -Xcc -std=c++20

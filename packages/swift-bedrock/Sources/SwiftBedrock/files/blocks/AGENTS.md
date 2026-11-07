@@ -2,4 +2,5 @@
 - Keep the `// >>> swift-bedrock` block at the end of `Package.swift`. It turns on Swift 6 mode, the upcoming features, strict memory safety, and warnings as errors for each target.
 - Mark an unsafe expression with `unsafe`, and spell an existential `any P`.
 - Build an app in Xcode against `Config/Bedrock.xcconfig`, which sets the same flags as the package.
+- Build Swift through `just`, which turns on the compile cache every checkout shares, in a repository without C or C++. When worktrees fill the disk, `just swift::clean-worktrees` deletes each `.build` folder no process is using.
 - Document each `public` or `open` declaration other modules can reach. Internal and private code needs no docs, and SwiftLint reports a `public` member of an internal type instead.

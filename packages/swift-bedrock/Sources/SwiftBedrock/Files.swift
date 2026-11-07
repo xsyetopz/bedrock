@@ -68,6 +68,10 @@ enum Files {
               of: "BEDROCK_CXX_FLAGS =\n",
               with: "BEDROCK_CXX_FLAGS = $(BEDROCK_CXX_INTEROP)\n"
             )
+            .replacingOccurrences(
+              of: "COMPILATION_CACHE_ENABLE_CACHING = YES\n",
+              with: "COMPILATION_CACHE_ENABLE_CACHING = NO\n"
+            )
             : xcconfig
         )
       )
