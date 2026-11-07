@@ -1,9 +1,9 @@
 name: Release
 
-# Each check workflow's completion triggers this; the last one to pass on a commit tags it.
+# Each check workflow's completion triggers this; the last one to pass on a commit releases it.
 on:
   workflow_run:
-    workflows: [Base, Bun, Rust, Swift]
+    workflows: [Base, Rust, Swift, TypeScript]
     types: [completed]
     branches: [main]
 
@@ -26,18 +26,36 @@ jobs:
       GH_REPO: ${{ github.repository }}
       SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-          persist-credentials: false
-      - name: Tag each bedrock version that has no release
+      - name: Wait for every check on the commit
+        id: checks
         run: |
           passed=$(gh run list --commit "$SHA" --event push --json workflowName,conclusion \
             --jq '[.[] | select(.conclusion == "success") | .workflowName] | unique | join(" ")')
-          if [[ "$passed" != "Base Bun Rust Swift" ]]; then
-            echo "Only [$passed] passed on $SHA so far; the last check to pass tags it."
-            exit 0
+          if [[ "$passed" == "Base Rust Swift TypeScript" ]]; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only [$passed] passed on $SHA so far; the last check to pass releases it."
           fi
+      - if: steps.checks.outputs.passed == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - if: steps.checks.outputs.passed == 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+      # Adopted TypeScript repos install typescript-bedrock from npm, so it publishes
+      # before any tag. A rerun skips a version npm already has.
+      - name: Publish typescript-bedrock to npm
+        if: steps.checks.outputs.passed == 'true'
+        working-directory: packages/typescript-bedrock
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: bun publish --tolerate-republish
+      - name: Tag each bedrock version that has no release
+        if: steps.checks.outputs.passed == 'true'
+        run: |
           release() {
             if [[ -z "$2" ]]; then
               echo "No version found for $1" >&2
@@ -49,6 +67,6 @@ jobs:
               gh release create "$1-v$2" --target "$SHA" --title "$1 v$2" --generate-notes --latest=false
             fi
           }
-          release bun-bedrock "$(jq -r '.version // empty' packages/bun-bedrock/package.json)"
+          release typescript-bedrock "$(jq -r '.version // empty' packages/typescript-bedrock/package.json)"
           release rust-bedrock "$(sed -n 's/^version = "\(.*\)"$/\1/p' packages/rust-bedrock/Cargo.toml | head -n 1)"
           release swift-bedrock "$(sed -n 's/^let version = "\(.*\)"$/\1/p' packages/swift-bedrock/Sources/SwiftBedrock/Files.swift)"
