@@ -1,0 +1,6 @@
+{
+	"$schema": "../../../../node_modules/oxlint/configuration_schema.json",
+	// rust-bedrock new replaces the placeholders, which start with underscores.
+	"extends": ["../../../../.oxlintrc.json"],
+	"rules": { "no-underscore-dangle": "off" }
+}

@@ -1,0 +1,6 @@
+- Keep Rust unit tests inline, as `#[cfg(test)] mod tests { … }` at the end of the file. `cargo bedrock guard` rejects a `mod tests;` whose body sits in another file, and `just lint-fix` moves it inline.
+- Silence a lint only with `#[expect(lint, reason = "…")]`. Clippy rejects `#[allow]`, and an `#[expect]` that no longer fires.
+- Start each integration test in `tests/` with `#![cfg(test)]`, and give its helpers `pub(crate)`.
+- Name module files `foo.rs` beside `foo/`, not `foo/mod.rs`.
+- Document each item the crate exports, with a `# Panics` section where it can panic and `# Errors` where it returns `Result`. `pub(crate)` and private items need no docs; `just lint` runs `cargo doc`, which rejects public docs that link to private items.
+- Cargo compiles through kache, the build cache `just setup` installs and turns on. When a build is slower than it should be, `kache stats --last-build` and `kache explain` show which crates missed the cache and why.

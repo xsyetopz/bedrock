@@ -1,0 +1,12 @@
+{
+	"default": true,
+	// Lines wrap where the writer breaks them; prose is not reflowed.
+	"line-length": false,
+	"table-column-style": {
+		"style": "compact",
+	},
+	// Applies where markdownlint-rule-title-case-style is installed (repos with Bun).
+	"title-case-style": {
+		"case": "title",
+	},
+}

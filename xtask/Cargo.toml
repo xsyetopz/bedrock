@@ -1,0 +1,12 @@
+[package]
+name = "xtask"
+version = "0.0.0"
+description = "Runs repository tasks: cargo bedrock guard."
+edition = "2024"
+publish = false
+
+[dependencies]
+rust-bedrock = { path = "../packages/rust-bedrock" }
+
+[lints]
+workspace = true
