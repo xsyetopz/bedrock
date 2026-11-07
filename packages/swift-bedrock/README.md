@@ -22,7 +22,7 @@ Shared tooling for strict Swift 6.4 repos that support macOS 12, with optional C
 - `.swift-format` and `.swiftlint.yml`. SwiftLint requires docs on `public` and `open` declarations only.
 - Swift Testing for every test. XCTest is only for `*UITests` targets, which need `XCUIApplication`.
 - With C++: `.clang-format`, `.clang-tidy`, and `.just/cpp.just`, for C++20 built through SwiftPM's C++ interop or xmake. clang-tidy checks each file the compile database lists, with that file's flags, and `just setup` installs xmake when a tracked `xmake.lua` needs it.
-- `.just/swift.just`, `.github/workflows/swift.yml`, which keeps the BuildTools build and the LLVM download in the GitHub Actions cache, and its blocks in the files every bedrock shares (`files/base`, a copy of `base/`).
+- `.just/swift.just`, `.github/workflows/swift.yml`, which keeps the BuildTools build in the GitHub Actions cache, and its blocks in the files every bedrock shares (`files/base`, a copy of `base/`).
 
 [docs/adopting.md](../../docs/adopting.md#swift-and-c) lists what `adopt` changes in an existing repo.
 
