@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"extends": ["./node_modules/bun-bedrock/oxlintrc.json"],
+	"extends": ["./node_modules/typescript-bedrock/oxlintrc.json"],
 	"ignorePatterns": [
 		"**/coverage/**",
 		"**/dist/**",

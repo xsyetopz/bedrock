@@ -1,16 +1,16 @@
 import type { BashCall, Engine, Hook, On } from "./engine.ts";
 
-export type Language = "bun" | "rust" | "swift";
+export type Language = "typescript" | "rust" | "swift";
 
 /** The bedrocks in the order their blocks sit in shared files. */
-const LANGUAGES: readonly Language[] = ["bun", "rust", "swift"];
+const LANGUAGES: readonly Language[] = ["typescript", "rust", "swift"];
 const ALIASES = new Map<string, Language>([
-	["bun", "bun"],
-	["javascript", "bun"],
-	["js", "bun"],
-	["node", "bun"],
-	["ts", "bun"],
-	["typescript", "bun"],
+	["bun", "typescript"],
+	["javascript", "typescript"],
+	["js", "typescript"],
+	["node", "typescript"],
+	["ts", "typescript"],
+	["typescript", "typescript"],
 	["rs", "rust"],
 	["rust", "rust"],
 	["swift", "swift"],
@@ -19,7 +19,7 @@ const ALIASES = new Map<string, Language>([
 const CXX_ALIASES = new Set(["c", "c++", "cpp", "cxx", "objc", "objective-c"]);
 /** The files that show a repo already uses a language. */
 const MARKERS: Readonly<Record<Language, string>> = {
-	bun: "package.json",
+	typescript: "package.json",
 	rust: "Cargo.toml",
 	swift: "Package.swift",
 };
@@ -33,7 +33,7 @@ const TOOLS: Readonly<Record<string, string>> = {
 	swift: "Xcode, or a toolchain from https://www.swift.org/install",
 };
 const NEEDS: Readonly<Record<Language, string>> = {
-	bun: "bun",
+	typescript: "bun",
 	rust: "cargo",
 	swift: "swift",
 };
@@ -101,8 +101,8 @@ export const adoptCommand = (
 	request: Request,
 ): string[] => {
 	const mode = request.apply ? "--yes" : "--dry-run";
-	if (language === "bun") {
-		const bedrock = `${source}/packages/bun-bedrock`;
+	if (language === "typescript") {
+		const bedrock = `${source}/packages/typescript-bedrock`;
 		return [
 			"bun",
 			`${bedrock}/src/cli.ts`,
@@ -146,7 +146,9 @@ export const adoptCommand = (
  */
 const findSource = async ($: Engine): Promise<string> => {
 	const checkout = $.plugin.root.replace(/\/plugins\/[^/]+\/?$/u, "");
-	if (await $.fs.exists(`${checkout}/packages/bun-bedrock/package.json`)) {
+	if (
+		await $.fs.exists(`${checkout}/packages/typescript-bedrock/package.json`)
+	) {
 		return checkout;
 	}
 	const clone = `${$.plugin.root}/.bedrock`;

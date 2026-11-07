@@ -42,7 +42,7 @@ enum Files {
     managed("base", ".github/workflows/base.yml"),
   ]
 
-  /// bun-bedrock writes its own Markdown config, with the custom rules it installs.
+  /// typescript-bedrock writes its own Markdown config, with the custom rules it installs.
   static let markdown = managed("base", ".markdownlint-cli2.jsonc")
 
   static func swift(cxx: Bool) -> [Step] {

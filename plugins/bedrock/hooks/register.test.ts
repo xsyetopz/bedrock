@@ -26,7 +26,7 @@ interface Fake {
 
 const engine = ({
 	results = [OK],
-	files = [`${SOURCE}/packages/bun-bedrock/package.json`],
+	files = [`${SOURCE}/packages/typescript-bedrock/package.json`],
 	calls = [],
 	root = ROOT,
 	missing = [],
@@ -63,7 +63,7 @@ const OK: ProcessResult = { exitCode: 0, stdout: "plan\n", stderr: "" };
 describe("parseArgs", () => {
 	test("reads languages case-insensitively, in bedrock order", () => {
 		expect(parseArgs("Swift TS rust app --yes")).toEqual({
-			languages: ["bun", "rust", "swift"],
+			languages: ["typescript", "rust", "swift"],
 			target: "app",
 			cxx: false,
 			apply: true,
@@ -96,13 +96,13 @@ describe("adoptCommand", () => {
 	}
 
 	test("runs each bedrock from the checkout", () => {
-		expect(adoptCommand(SOURCE, "bun", request)).toEqual([
+		expect(adoptCommand(SOURCE, "typescript", request)).toEqual([
 			"bun",
-			`${SOURCE}/packages/bun-bedrock/src/cli.ts`,
+			`${SOURCE}/packages/typescript-bedrock/src/cli.ts`,
 			"adopt",
 			"/work/app",
 			"--package",
-			`file:${SOURCE}/packages/bun-bedrock`,
+			`file:${SOURCE}/packages/typescript-bedrock`,
 			"--dry-run",
 		]);
 		expect(adoptCommand(SOURCE, "rust", request)).toEqual([
@@ -157,7 +157,7 @@ describe("runAdopt", () => {
 	test("detects the languages and says how to apply the plan", async () => {
 		const calls: string[][] = [];
 		const files = [
-			`${SOURCE}/packages/bun-bedrock/package.json`,
+			`${SOURCE}/packages/typescript-bedrock/package.json`,
 			"/work/app/Package.swift",
 			"/work/app/package.json",
 		];
@@ -168,7 +168,7 @@ describe("runAdopt", () => {
 			true,
 		]);
 		expect(result.text).toBe(
-			"bun-bedrock:\nplan\n\nswift-bedrock:\nplan\n\nTo apply this plan, run /adopt bun swift app --yes",
+			"typescript-bedrock:\nplan\n\nswift-bedrock:\nplan\n\nTo apply this plan, run /adopt typescript swift app --yes",
 		);
 	});
 
@@ -207,7 +207,7 @@ describe("runAdopt", () => {
 		);
 		expect(calls.map(([tool]) => tool)).toEqual(["bun", "cargo"]);
 		expect(result.text).toBe(
-			"bun-bedrock:\nplan\n\nrust-bedrock (exited 1):\nno Cargo.toml",
+			"typescript-bedrock:\nplan\n\nrust-bedrock (exited 1):\nno Cargo.toml",
 		);
 	});
 

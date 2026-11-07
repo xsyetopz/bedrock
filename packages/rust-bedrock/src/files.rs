@@ -30,7 +30,7 @@ pub(crate) const BASE: &[Managed] = &[
     managed!("base", ".github/workflows/base.yml"),
 ];
 
-/// bun-bedrock writes its own Markdown config, with the custom rules it installs.
+/// typescript-bedrock writes its own Markdown config, with the custom rules it installs.
 pub(crate) const MARKDOWN: Managed = managed!("base", ".markdownlint-cli2.jsonc");
 
 pub(crate) const RUST: &[Managed] = &[

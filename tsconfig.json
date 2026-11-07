@@ -1,6 +1,6 @@
 {
 	"$schema": "https://json.schemastore.org/tsconfig.json",
-	"extends": "bun-bedrock/tsconfig.base.json",
+	"extends": "typescript-bedrock/tsconfig.base.json",
 	"compilerOptions": {
 		"rootDir": "."
 	},

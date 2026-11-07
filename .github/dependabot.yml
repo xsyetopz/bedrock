@@ -21,7 +21,7 @@ updates:
         patterns: ["*"]
 # <<< rust-bedrock
 
-# >>> bun-bedrock
+# >>> typescript-bedrock
   - package-ecosystem: bun
     directory: /
     schedule:
@@ -29,7 +29,7 @@ updates:
     groups:
       bun-dependencies:
         patterns: ["*"]
-# <<< bun-bedrock
+# <<< typescript-bedrock
 
 # >>> swift-bedrock
   - package-ecosystem: swift

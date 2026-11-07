@@ -6,7 +6,7 @@
 - Fix the cause of each lint or type error in the code, and keep the lint and `tsconfig` settings as they are.
 - Pin each dependency version once, in `workspaces.catalog`, and reference it as `catalog:`.
 - Use Bun APIs where Bun has one, such as `Bun.file`, `Bun.$`, and `Bun.spawn`.
-- Change shared lint, type, and Markdown rules in `bun-bedrock`, which the repo configs extend.
+- Change shared lint, type, and Markdown rules in `typescript-bedrock`, which the repo configs extend.
 
 <!-- bedrock -->
 - Run each task through `just`. `just` lists the recipes. Check each change with the narrowest one, such as `just rust::test` or `just lint`, and run `just verify` once before you finish a change that alters behavior.
@@ -25,15 +25,15 @@
 - Cargo compiles through kache, the build cache `just setup` installs and turns on. When a build is slower than it should be, `kache stats --last-build` and `kache explain` show which crates missed the cache and why.
 <!-- /rust-bedrock -->
 
-<!-- bun-bedrock -->
+<!-- typescript-bedrock -->
 - Install with `bun install`, and run one-off tools with `bunx`.
 - Check each change with the narrowest command: `bun test <file>`, `bun check`, `bun run lint`, or `bun fmt`.
 - Fix the cause of each lint or type error in the code, and keep the lint and `tsconfig` settings as they are.
 - Pin each dependency version once, in `workspaces.catalog`, and reference it as `catalog:`.
 - Give a JSDoc comment to each declaration a package exports from its `exports`, `main`, or `module` entry; internal code needs none.
 - Use Bun APIs where Bun has one, such as `Bun.file`, `Bun.$`, and `Bun.spawn`.
-- Change shared lint, type, and Markdown rules in `bun-bedrock`, which the repo configs extend.
-<!-- /bun-bedrock -->
+- Change shared lint, type, and Markdown rules in `typescript-bedrock`, which the repo configs extend.
+<!-- /typescript-bedrock -->
 
 <!-- swift-bedrock -->
 - Write tests with Swift Testing: `import Testing`, `@Test`, `#expect`, and `#require`. XCTest is only for `*UITests` targets, which need `XCUIApplication`; `just lint-fix` converts other XCTest files.

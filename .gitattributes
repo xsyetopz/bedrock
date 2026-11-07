@@ -29,10 +29,10 @@
 Cargo.lock text linguist-generated
 # <<< rust-bedrock
 
-# >>> bun-bedrock
+# >>> typescript-bedrock
 bun.lock text linguist-generated
 *.lockb binary
-# <<< bun-bedrock
+# <<< typescript-bedrock
 
 # >>> swift-bedrock
 *.pbxproj text linguist-generated

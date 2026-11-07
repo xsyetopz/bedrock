@@ -30,7 +30,7 @@ enum Syntax {
 /// Every bedrock's block, in the order a file lists them, so a file comes out the
 /// same whichever bedrock adopts first.
 private let order = [
-  "bedrock", "bun-bedrock", "rust-bedrock", "swift-bedrock", "swift-bedrock-cxx",
+  "bedrock", "typescript-bedrock", "rust-bedrock", "swift-bedrock", "swift-bedrock-cxx",
 ]
 
 /// Returns `current` with each block replaced or, when missing, added in bedrock order.

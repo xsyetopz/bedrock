@@ -22,7 +22,7 @@ impl Syntax {
 /// same whichever bedrock adopts first.
 const ORDER: [&str; 5] = [
     "bedrock",
-    "bun-bedrock",
+    "typescript-bedrock",
     "rust-bedrock",
     "swift-bedrock",
     "swift-bedrock-cxx",
@@ -117,11 +117,11 @@ mod tests {
 
     #[test]
     fn replaces_its_blocks_and_keeps_the_rest() {
-        let current = "own\n# >>> bun-bedrock\nnode_modules/\n# <<< bun-bedrock\n# >>> rust-bedrock\nold\n# <<< rust-bedrock\ntail\n";
+        let current = "own\n# >>> typescript-bedrock\nnode_modules/\n# <<< typescript-bedrock\n# >>> rust-bedrock\nold\n# <<< rust-bedrock\ntail\n";
         let updated = upsert(Some(current), "", Syntax::Hash, &BLOCKS[1..]);
         assert_eq!(
             updated,
-            "own\n# >>> bun-bedrock\nnode_modules/\n# <<< bun-bedrock\n# >>> rust-bedrock\n- rust\n# <<< rust-bedrock\ntail\n"
+            "own\n# >>> typescript-bedrock\nnode_modules/\n# <<< typescript-bedrock\n# >>> rust-bedrock\n- rust\n# <<< rust-bedrock\ntail\n"
         );
         assert_eq!(
             upsert(Some(&updated), "", Syntax::Hash, &BLOCKS[1..]),

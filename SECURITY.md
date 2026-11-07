@@ -10,7 +10,7 @@ Include the affected file or command, the steps to reproduce, and the impact.
 
 ## Scope
 
-This repo is a template. It ships configuration, git hooks, and the `bun-bedrock` package, whose `adopt` command rewrites files in a target repo. Reports about these are in scope:
+This repo is a template. It ships configuration, git hooks, and the `typescript-bedrock` package, whose `adopt` command rewrites files in a target repo. Reports about these are in scope:
 
 - The CLI writing or deleting files outside the target repo.
 - A hook or script running code you did not expect.

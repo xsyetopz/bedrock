@@ -1,10 +1,10 @@
 # Bedrock
 
-Strict, shared setups for Bun, Rust, and Swift (with optional C++20) repositories. Each language has a bedrock: a tool that starts a repo or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run them the same way.
+Strict, shared setups for TypeScript (on Bun), Rust, and Swift (with optional C++20) repositories. Each language has a bedrock: a tool that starts a repo or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run them the same way.
 
 | Bedrock | For | Tooling |
 | --- | --- | --- |
-| [`bun-bedrock`](packages/bun-bedrock) | TypeScript and JavaScript | Bun 1.4.4, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
+| [`typescript-bedrock`](packages/typescript-bedrock) | TypeScript and JavaScript | Bun 1.4.4, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
 | [`rust-bedrock`](packages/rust-bedrock) | Rust | Rust 1.99.1, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, inline unit tests |
 | [`swift-bedrock`](packages/swift-bedrock) | Swift, and C++20 with `--cxx` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config; clang-format and clang-tidy for C++ |
 
@@ -42,7 +42,7 @@ Language names are case-insensitive: `typescript`, `ts`, `js`, or `bun`; `rust` 
 By hand, from a checkout of this repo:
 
 ```bash
-bun packages/bun-bedrock/src/cli.ts adopt <dir> --package file:$PWD/packages/bun-bedrock --dry-run
+bun packages/typescript-bedrock/src/cli.ts adopt <dir> --package file:$PWD/packages/typescript-bedrock --dry-run
 cargo run --manifest-path packages/rust-bedrock/Cargo.toml -- adopt <dir> --dry-run
 swift run swift-bedrock adopt <dir> [--cxx] --dry-run
 ```
@@ -54,7 +54,7 @@ Drop `--dry-run` to apply, or add `--yes` to apply without asking. Then run `jus
 ```bash
 cargo run --manifest-path packages/rust-bedrock/Cargo.toml -- new <dir> --kind lib   # or bin, no-std, ffi, wasm
 swift run swift-bedrock new <dir> --kind library                                   # or executable, app; add --cxx
-bun packages/bun-bedrock/src/cli.ts adopt <empty dir> --package file:$PWD/packages/bun-bedrock
+bun packages/typescript-bedrock/src/cli.ts adopt <empty dir> --package file:$PWD/packages/typescript-bedrock
 ```
 
 ## Guards
@@ -83,7 +83,7 @@ Installed from the marketplace, the plugin clones this repo on its first `/adopt
 | Path | Content |
 | --- | --- |
 | `base/` | The files every bedrock writes. Each bedrock embeds a copy, which the tests keep in sync. |
-| `packages/bun-bedrock` | The Bun bedrock, a workspace package |
+| `packages/typescript-bedrock` | The TypeScript bedrock, a workspace package published to npm |
 | `packages/rust-bedrock` | The Rust bedrock, a Cargo package with its starter files |
 | `packages/swift-bedrock` | The Swift and C++ bedrock, built by the root `Package.swift` |
 | `plugins/bedrock` | The Claude Code plugin |

@@ -8,14 +8,14 @@ The bedrocks aren't published yet, so run them from a clone of this repo:
 
 ```bash
 git clone --depth 1 https://github.com/xsyetopz/bedrock ~/bedrock
-bun ~/bedrock/packages/bun-bedrock/src/cli.ts adopt <target> --package file:$HOME/bedrock/packages/bun-bedrock --dry-run
+bun ~/bedrock/packages/typescript-bedrock/src/cli.ts adopt <target> --package file:$HOME/bedrock/packages/typescript-bedrock --dry-run
 cargo run --manifest-path ~/bedrock/packages/rust-bedrock/Cargo.toml -- adopt <target> --dry-run
 swift run --package-path ~/bedrock swift-bedrock adopt <target> [--cxx] --dry-run
 ```
 
 `--dry-run` prints the plan and stops. Without it, adopt prints the plan and asks `Apply these changes? [y/N]`. An agent or CI job, which has no terminal to answer in, passes `--yes`.
 
-Keep the clone afterwards. The adopted repo installs `bun-bedrock` from that folder until the package is published.
+Keep the clone afterwards. The adopted repo installs `typescript-bedrock` from that folder until the package is published.
 
 When it finishes, run `just setup`, then `just verify`, in the target. Each file adopt changed or removed is saved next to it as `<file>.bak`. Compare each backup with its replacement, move what a removed Makefile or hook manager did into `project.just`, and delete the backups; `.gitignore` already ignores them.
 
@@ -27,16 +27,16 @@ When it finishes, run `just setup`, then `just verify`, in the target. Each file
 
 ## Bun
 
-`bun-bedrock adopt` edits `package.json` and the config files, and leaves your source code as it is.
+`typescript-bedrock adopt` edits `package.json` and the config files, and leaves your source code as it is.
 
 | Flag | Effect |
 | --- | --- |
-| `--package <spec>` | Install `bun-bedrock` from `<spec>`, such as `file:<path>`. A version or range goes in the catalog; any other spec goes straight into `devDependencies`. |
+| `--package <spec>` | Install `typescript-bedrock` from `<spec>`, such as `file:<path>`. A version or range goes in the catalog; any other spec goes straight into `devDependencies`. |
 | `--dry-run` | Print the plan and stop. |
 | `--yes` | Apply the plan without asking. |
 | `--no-install` | Skip `bun install` and the steps that run after it. |
 
-Without `--package`, adopt keeps the repo's current `bun-bedrock` spec, or pins the version it ships with. The target is the repo to change; adopt stops with an error when you point it at the `bun-bedrock` folder.
+Without `--package`, adopt keeps the repo's current `typescript-bedrock` spec, or pins the version it ships with. The target is the repo to change; adopt stops with an error when you point it at the `typescript-bedrock` folder.
 
 ### Package Manager
 
@@ -64,13 +64,13 @@ Scripts named `check` or `fmt` become `check:project` and `fmt:project`, so `bun
 
 ### Dependencies
 
-Adopt removes the packages that Bun and `bun-bedrock` replace: Biome, ESLint and its plugins, typescript-eslint, husky, Jest, Vitest, lefthook, lint-staged, simple-git-hooks, cross-env, esno, npm-run-all, rimraf, ts-node, and tsx. It also removes their config files and their `package.json` fields, plus `.eslintignore`, `jest.config.*`, `vitest.config.*`, `.yarnrc*`, and `pnpm-workspace.yaml`.
+Adopt removes the packages that Bun and `typescript-bedrock` replace: Biome, ESLint and its plugins, typescript-eslint, husky, Jest, Vitest, lefthook, lint-staged, simple-git-hooks, cross-env, esno, npm-run-all, rimraf, ts-node, and tsx. It also removes their config files and their `package.json` fields, plus `.eslintignore`, `jest.config.*`, `vitest.config.*`, `.yarnrc*`, and `pnpm-workspace.yaml`.
 
-It adds `bun-bedrock` and the tools it configures: oxlint, oxlint-tsgolint, markdownlint-cli2 with its title case rule, TypeScript, `@types/bun`, and `@types/node`. Their versions go in `workspaces.catalog`, merged with yours and sorted by name. Where both pin a package, the template version wins. A `pnpm-workspace.yaml` has its `packages`, `catalog`, and `catalogs` moved into `workspaces`, and its `onlyBuiltDependencies` into `trustedDependencies`.
+It adds `typescript-bedrock` and the tools it configures: oxlint, oxlint-tsgolint, markdownlint-cli2 with its title case rule, TypeScript, `@types/bun`, and `@types/node`. Their versions go in `workspaces.catalog`, merged with yours and sorted by name. Where both pin a package, the template version wins. A `pnpm-workspace.yaml` has its `packages`, `catalog`, and `catalogs` moved into `workspaces`, and its `onlyBuiltDependencies` into `trustedDependencies`.
 
 ### TypeScript
 
-`tsconfig.json` extends `bun-bedrock/tsconfig.base.json`, after any `extends` you already had. Adopt then:
+`tsconfig.json` extends `typescript-bedrock/tsconfig.base.json`, after any `extends` you already had. Adopt then:
 
 - removes the options TypeScript 7 rejects or always turns on, such as `esModuleInterop`, `downlevelIteration`, `alwaysStrict`, and `outFile`;
 - turns `baseUrl` into `paths`;
@@ -80,7 +80,7 @@ It adds `bun-bedrock` and the tools it configures: oxlint, oxlint-tsgolint, mark
 
 ### Lint, Format, and Hooks
 
-`.oxlintrc.json` and `.markdownlint-cli2.jsonc` extend the configs in `bun-bedrock`. Adopt replaces these thin files whenever they differ from the template, along with `.bun-version`, `.just/bun.just`, and `.github/workflows/bun.yml`. It removes a `.github/workflows/ci.yml` that runs npm, pnpm, or yarn, or the old `bun run verify`.
+`.oxlintrc.json` and `.markdownlint-cli2.jsonc` extend the configs in `typescript-bedrock`. Adopt replaces these thin files whenever they differ from the template, along with `.bun-version`, `.just/typescript.just`, and `.github/workflows/typescript.yml`. It removes a `.github/workflows/ci.yml` that runs npm, pnpm, or yarn, or the old `bun run verify`.
 
 `bunfig.toml` cannot extend another file, so adopt writes a full copy, with the template's `[fmt]` style. Every adopted repo uses that style: adopt removes Prettier and oxfmt configs and the `prettier` field of `package.json`, and after install it runs `bun fmt` over the repo, so `just format-check` passes from the start. Expect that first commit to touch most files. Adopt also runs `bun fmt --doctor` and removes the formatter packages it lists.
 

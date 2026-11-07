@@ -53,7 +53,7 @@ target/
 rustc-ice-*.txt
 # <<< rust-bedrock
 
-# >>> bun-bedrock
+# >>> typescript-bedrock
 # Adapted from github/gitignore@41862c8 (CC0-1.0): Node.
 node_modules/
 dist/
@@ -70,7 +70,7 @@ coverage/
 .node_repl_history
 .tern-port
 .vscode-test/
-# <<< bun-bedrock
+# <<< typescript-bedrock
 
 # >>> swift-bedrock
 # Adapted from github/gitignore@41862c8 (CC0-1.0): Swift, Global/Xcode.

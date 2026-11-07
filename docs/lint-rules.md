@@ -7,7 +7,7 @@ bun run lint        # report problems
 bun run lint:fix    # fix what can be fixed, then report the rest
 ```
 
-The rules live in `bun-bedrock`, in `oxlintrc.json` and `markdownlint.jsonc`. A repo's `.oxlintrc.json` and `.markdownlint-cli2.jsonc` extend those files, so a new `bun-bedrock` version updates the rules everywhere. To add or change a rule, edit `packages/bun-bedrock/oxlintrc.json`, set it to `"error"`, and fix what it reports.
+The rules live in `typescript-bedrock`, in `oxlintrc.json` and `markdownlint.jsonc`. A repo's `.oxlintrc.json` and `.markdownlint-cli2.jsonc` extend those files, so a new `typescript-bedrock` version updates the rules everywhere. To add or change a rule, edit `packages/typescript-bedrock/oxlintrc.json`, set it to `"error"`, and fix what it reports.
 
 ## How `oxlint` Is Set Up
 
@@ -81,7 +81,7 @@ TypeScript covers some Biome rules itself: `erasableSyntaxOnly` rejects enums, m
 
 ## Markdown
 
-`bun fmt` pads Markdown tables and has no setting to stop it, so `bunfig.toml` leaves `*.md` out and markdownlint-cli2 checks Markdown in its place. `bun-bedrock/markdownlint.jsonc` turns on every default rule except `line-length`, and adds two:
+`bun fmt` pads Markdown tables and has no setting to stop it, so `bunfig.toml` leaves `*.md` out and markdownlint-cli2 checks Markdown in its place. `typescript-bedrock/markdownlint.jsonc` turns on every default rule except `line-length`, and adds two:
 
 - `table-column-style` set to `compact`: one space around each cell, and `| --- |` separators;
 - `title-case-style` from [`markdownlint-rule-title-case-style`](https://github.com/greyscaled/markdownlint-rule-title-case-style), set to `title`. Put identifiers in a heading in backticks, and the rule skips them.

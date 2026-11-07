@@ -1,6 +1,6 @@
 # TypeScript Config
 
-Every compiler option lives in `bun-bedrock/tsconfig.base.json`. A repo's `tsconfig.json` extends it and adds only `rootDir` and `exclude`. `bun check` reads `tsconfig.json`, type checks with the TypeScript 7 built into Bun, and never writes files. `bun check --help` lists its flags.
+Every compiler option lives in `typescript-bedrock/tsconfig.base.json`. A repo's `tsconfig.json` extends it and adds only `rootDir` and `exclude`. `bun check` reads `tsconfig.json`, type checks with the TypeScript 7 built into Bun, and never writes files. `bun check --help` lists its flags.
 
 ## Runtime and Modules
 
