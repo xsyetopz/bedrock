@@ -1,0 +1,6 @@
+{
+	"name": "xsyetopz",
+	"description": "Claude Code plugins for repos set up with the bedrocks.",
+	"owner": { "name": "xsyetopz" },
+	"plugins": [{ "name": "bedrock", "source": "./plugins/bedrock" }]
+}
