@@ -1,0 +1,11 @@
+{
+	"default": true,
+	// Lines wrap where the writer breaks them; prose is not reflowed.
+	"line-length": false,
+	"table-column-style": {
+		"style": "compact",
+	},
+	"title-case-style": {
+		"case": "title",
+	},
+}

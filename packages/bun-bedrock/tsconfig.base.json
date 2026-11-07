@@ -1,0 +1,43 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig.json",
+	"display": "Strictest Bun + TypeScript 7",
+	"compilerOptions": {
+		// Runtime: Bun runs ESNext directly, so nothing is downleveled.
+		"target": "ESNext",
+		"lib": ["ESNext"],
+		"types": ["bun"],
+		"module": "Preserve",
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
+		"jsx": "preserve",
+		// Imports: what Bun accepts at runtime, nothing more.
+		"allowArbitraryExtensions": true,
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"erasableSyntaxOnly": true,
+		"forceConsistentCasingInFileNames": true,
+		"noUncheckedSideEffectImports": true,
+		"libReplacement": false,
+		// JavaScript is type checked too.
+		"allowJs": true,
+		"checkJs": true,
+		// Bun type checks with `bun check`; it never emits.
+		"noEmit": true,
+		"skipLibCheck": true,
+		// Strictness: everything TypeScript 7 offers.
+		"strict": true,
+		"exactOptionalPropertyTypes": true,
+		"noUncheckedIndexedAccess": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+		"useDefineForClassFields": true
+	}
+}

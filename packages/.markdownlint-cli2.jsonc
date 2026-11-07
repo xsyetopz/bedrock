@@ -1,0 +1,4 @@
+{
+	// rust-bedrock new fills in the placeholder title.
+	"ignores": ["rust-bedrock/files/new/README.md"],
+}
