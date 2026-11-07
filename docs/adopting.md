@@ -133,7 +133,7 @@ To fix the errors, run `just lint-fix`, which moves test modules from `tests.rs`
 
 `swift-bedrock adopt` needs a `Package.swift` or an `.xcodeproj`; for a new repo, run `swift-bedrock new <dir> --kind library` (or `executable`, `app`). It turns on the C++ setup when you pass `--cxx` or the repo has C, C++, or Objective-C++ files. Adopt:
 
-- writes `.swift-version`, `.swift-format`, `.swiftlint.yml`, and `Config/Bedrock.xcconfig`, and removes `.swiftformat`, `.swiftlint.yaml`, and `Mintfile`;
+- writes `.swift-version`, `.swift-format`, and `.swiftlint.yml`, `Tests/.swiftlint.yml` when `Tests` exists, and `Config/Bedrock.xcconfig` when the repo has an Xcode project, and removes `.swiftformat`, `.swiftlint.yaml`, and `Mintfile`;
 - raises `Package.swift` to tools version 6.4, raises a macOS platform below 12 to `.macOS(.v12)`, and adds the `// >>> swift-bedrock` block, which turns on Swift 6 mode, the upcoming features, strict memory safety, and warnings as errors for each target;
 - runs `swift package migrate` for the upcoming features it can rewrite code for. InternalImportsByDefault and ImmutableWeakCaptures need a person;
 - sets `Config/Bedrock.xcconfig` as the base configuration of each Xcode project's build configurations;

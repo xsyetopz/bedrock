@@ -16,7 +16,7 @@ Shared tooling for strict Swift 6.4 repos that support macOS 12, with optional C
 ## What It Sets Up
 
 - The `// >>> swift-bedrock` block at the end of `Package.swift`: Swift 6 mode, the upcoming features, strict memory safety, and warnings as errors for each target.
-- `Config/Bedrock.xcconfig`, which gives Xcode targets the same settings.
+- `Config/Bedrock.xcconfig`, beside an Xcode project, which gives Xcode targets the same settings.
 - `.swift-format` and `.swiftlint.yml`. SwiftLint requires docs on `public` and `open` declarations only.
 - Swift Testing for every test. XCTest is only for `*UITests` targets, which need `XCUIApplication`.
 - With C++: `.clang-format`, `.clang-tidy`, and `.just/cpp.just`, for C++20 built through SwiftPM's C++ interop or xmake. clang-tidy checks each file the compile database lists, with that file's flags, and `just setup` installs xmake when a tracked `xmake.lua` needs it.

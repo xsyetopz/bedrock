@@ -96,7 +96,14 @@ private func shared(_ root: String, cxx: Bool) -> [Step] {
 
 /// Every change adopt makes in `root`, including ones already in place.
 func plan(_ root: String, source: Source, cxx: Bool) throws -> [Step] {
-  var steps = Files.base + Files.swift(cxx: cxx)
+  let projects = Xcode.projects(in: root)
+  var steps =
+    Files.base
+    + Files.swift(
+      cxx: cxx,
+      tests: exists(root + "/Tests"),
+      xcode: !projects.isEmpty
+    )
   if !exists(root + "/package.json") {
     steps.append(Files.markdown)
   }
@@ -112,7 +119,6 @@ func plan(_ root: String, source: Source, cxx: Bool) throws -> [Step] {
   }
   steps += replaced.filter { exists(root + "/" + $0) }.map { .remove(path: $0) }
   steps += shared(root, cxx: cxx)
-  let projects = Xcode.projects(in: root)
   if let manifest = read(root, "Package.swift") {
     steps.append(.write("Package.swift", Manifest.adopted(manifest, cxx: cxx)))
   } else if projects.isEmpty {

@@ -106,6 +106,30 @@ struct Steps {
     #expect(try buildTools(.path("../bedrock")).count == 1)
     try FileManager.default.removeItem(atPath: root)
   }
+
+  @Test
+  func writesTestAndXcodeConfigsOnlyWhereTheyApply() throws {
+    try FileManager.default.createDirectory(atPath: root, withIntermediateDirectories: true)
+    try "import PackageDescription\n".write(
+      toFile: root + "/Package.swift",
+      atomically: true,
+      encoding: .utf8
+    )
+    let configs = {
+      try plan(root, source: .release, cxx: false).map(\.path).filter {
+        ["Tests/.swiftlint.yml", "Config/Bedrock.xcconfig"].contains($0)
+      }
+    }
+    #expect(try configs().isEmpty)
+    for folder in ["Tests", "App.xcodeproj"] {
+      try FileManager.default.createDirectory(
+        atPath: root + "/" + folder,
+        withIntermediateDirectories: true
+      )
+    }
+    #expect(try configs() == ["Tests/.swiftlint.yml", "Config/Bedrock.xcconfig"])
+    try FileManager.default.removeItem(atPath: root)
+  }
 }
 
 @Suite

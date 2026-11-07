@@ -45,25 +45,34 @@ enum Files {
   /// typescript-bedrock writes its own Markdown config, with the custom rules it installs.
   static let markdown = managed("base", ".markdownlint-cli2.jsonc")
 
-  static func swift(cxx: Bool) -> [Step] {
-    let xcconfig = read("swift/Config/Bedrock.xcconfig")
-    return [
+  /// The Swift files, with the test config only where `Tests` exists and the xcconfig
+  /// only beside an Xcode project.
+  static func swift(cxx: Bool, tests: Bool, xcode: Bool) -> [Step] {
+    var steps = [
       managed("swift", ".just/swift.just"),
       managed("swift", ".github/workflows/swift.yml"),
       managed("swift", ".swiftlint.yml"),
-      managed("swift", "Tests/.swiftlint.yml"),
       managed("swift", ".swift-format"),
       managed("swift", ".swift-version"),
-      .write(
-        "Config/Bedrock.xcconfig",
-        cxx
-          ? xcconfig.replacingOccurrences(
-            of: "BEDROCK_CXX_FLAGS =\n",
-            with: "BEDROCK_CXX_FLAGS = $(BEDROCK_CXX_INTEROP)\n"
-          )
-          : xcconfig
-      ),
     ]
+    if tests {
+      steps.append(managed("swift", "Tests/.swiftlint.yml"))
+    }
+    if xcode {
+      let xcconfig = read("swift/Config/Bedrock.xcconfig")
+      steps.append(
+        .write(
+          "Config/Bedrock.xcconfig",
+          cxx
+            ? xcconfig.replacingOccurrences(
+              of: "BEDROCK_CXX_FLAGS =\n",
+              with: "BEDROCK_CXX_FLAGS = $(BEDROCK_CXX_INTEROP)\n"
+            )
+            : xcconfig
+        )
+      )
+    }
+    return steps
   }
 
   static let cpp: [Step] = [
