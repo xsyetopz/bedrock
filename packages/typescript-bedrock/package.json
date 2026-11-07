@@ -4,6 +4,11 @@
 	"description": "Strictest Bun + TypeScript 7 tooling: shared configs, git hooks, a guard, and an adopt command.",
 	"license": "MIT",
 	"author": "xsyetopz",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/xsyetopz/bedrock.git",
+		"directory": "packages/typescript-bedrock"
+	},
 	"bin": {
 		"typescript-bedrock": "./src/cli.ts"
 	},

@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -46,13 +47,19 @@ jobs:
         with:
           bun-version-file: .bun-version
       # Adopted TypeScript repos install typescript-bedrock from npm, so it publishes
-      # before any tag. A rerun skips a version npm already has.
+      # before any tag. npm trusts this workflow, so it needs no token; bun publish has no
+      # trusted publishing, so Bun packs it, which resolves catalog: versions, and npm
+      # publishes the tarball. A rerun skips a version npm already has.
       - name: Publish typescript-bedrock to npm
         if: steps.checks.outputs.passed == 'true'
         working-directory: packages/typescript-bedrock
-        env:
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: bun publish --tolerate-republish
+        run: |
+          version=$(jq -r .version package.json)
+          if [[ "$(bunx npm@11.20.0 view "typescript-bedrock@$version" version 2>/dev/null)" == "$version" ]]; then
+            echo "typescript-bedrock@$version is already on npm"
+          else
+            bunx npm@11.20.0 publish "$(bun pm pack --quiet --destination "$RUNNER_TEMP")"
+          fi
       - name: Tag each bedrock version that has no release
         if: steps.checks.outputs.passed == 'true'
         run: |
