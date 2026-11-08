@@ -5,7 +5,7 @@ name: Release
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: [Base, Rust, Swift, TypeScript]
+    workflows: [Base, JVM, Rust, Swift, TypeScript]
     types: [completed]
     branches: [main]
 
@@ -34,7 +34,7 @@ jobs:
         run: |
           passed=$(gh run list --commit "$SHA" --event push --json workflowName,conclusion \
             --jq '[.[] | select(.conclusion == "success") | .workflowName] | unique | join(" ")')
-          if [[ "$passed" == "Base Rust Swift TypeScript" ]]; then
+          if [[ "$passed" == "Base JVM Rust Swift TypeScript" ]]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
           else
             echo "Only [$passed] passed on $SHA so far; the last check to pass releases it."
@@ -78,4 +78,5 @@ jobs:
           }
           release typescript-bedrock "$(jq -r '.version // empty' packages/typescript-bedrock/package.json)"
           release rust-bedrock "$(sed -n 's/^version = "\(.*\)"$/\1/p' packages/rust-bedrock/Cargo.toml | head -n 1)"
+          release jvm-bedrock "$(sed -n 's/^version = "\(.*\)"$/\1/p' packages/jvm-bedrock/build.gradle.kts)"
           release swift-bedrock "$(sed -n 's/^let version = "\(.*\)"$/\1/p' packages/swift-bedrock/Sources/SwiftBedrock/Files.swift)"
