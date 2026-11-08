@@ -111,3 +111,18 @@ compile_commands.json
 # xmake keeps its configuration in .xmake/.
 .xmake/
 # <<< swift-bedrock-cxx
+
+# >>> jvm-bedrock
+# Adapted from github/gitignore@41862c8 (CC0-1.0): Gradle, Kotlin, and Android.
+.gradle/
+.kotlin/
+build/
+local.properties
+*.class
+*.hprof
+hs_err_pid*
+replay_pid*
+captures/
+.externalNativeBuild/
+.cxx/
+# <<< jvm-bedrock

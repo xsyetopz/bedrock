@@ -52,3 +52,9 @@ Package.resolved text linguist-generated
 *.hpp diff=cpp
 *.hxx diff=cpp
 # <<< swift-bedrock-cxx
+
+# >>> jvm-bedrock
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+# <<< jvm-bedrock

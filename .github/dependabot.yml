@@ -40,3 +40,13 @@ updates:
       swift:
         patterns: ["*"]
 # <<< swift-bedrock
+
+# >>> jvm-bedrock
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      gradle:
+        patterns: ["*"]
+# <<< jvm-bedrock

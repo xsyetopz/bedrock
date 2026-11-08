@@ -43,3 +43,14 @@
 - Build Swift through `just`, which turns on the compile cache every checkout shares, in a repository without C or C++. When worktrees fill the disk, `just swift::clean-worktrees` deletes each `.build` folder no process is using.
 - Document each `public` or `open` declaration other modules can reach. Internal and private code needs no docs, and SwiftLint reports a `public` member of an internal type instead.
 <!-- /swift-bedrock -->
+
+<!-- jvm-bedrock -->
+- Build Java and Kotlin with `./gradlew` through `just`. Each module's `build.gradle.kts` applies one `bedrock.*` plugin: `bedrock.java`, `bedrock.kotlin`, `bedrock.application`, `bedrock.native-image`, `bedrock.kmp`, `bedrock.cmp`, `bedrock.android`, or `bedrock.kotlin-native`. They compile with GraalVM Community 25 to Java 8 bytecode, with warnings as errors.
+- Keep main code on the Java 8 API and Android 5 (API 21). The compilers reject newer JDK APIs, and Android Lint rejects newer Android APIs.
+- Pin each dependency once, in `gradle/libs.versions.toml`, and reference it as `libs.…`. `gradle/bedrock.versions.toml` and `gradle/bedrock/` belong to jvm-bedrock, and `just guard` reports a change to them.
+- Mark nullable Java types with JSpecify's `@Nullable`; NullAway treats the rest of the project's packages as non-null.
+- Silence a warning only with `@SuppressWarnings` or `@Suppress` and a `//` comment on it or the line above that says why.
+- Write tests with JUnit 6, `org.junit.jupiter.api`, or `kotlin.test`. JUnit 4 is only for Android tests.
+- Keep only the classes reflection needs in a module's `proguard-rules.pro`; `just guard` rejects rules that turn shrinking, optimizing, or obfuscating off.
+- Port Java to Kotlin with `just jvm::j2k <path>…`, which runs IntelliJ IDEA's converter and rewrites the files in place, instead of porting by hand. Commit first, then fix what the build reports.
+<!-- /jvm-bedrock -->

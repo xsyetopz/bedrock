@@ -1,0 +1,45 @@
+# Managed by jvm-bedrock: the toolchain and the build tools. Put the project's own
+# dependencies in gradle/libs.versions.toml.
+[versions]
+jdk = "25"
+bytecode = "8"
+kotlin = "2.4.21"
+# Android 5 (API 21) is the floor. Compose 1.10 and activity 1.12 need API 23, so Compose
+# stays on 1.9, Compose Multiplatform on 1.9, and activity-compose on 1.11.
+android-min-sdk = "21"
+android-compile-sdk = "37"
+agp = "9.5.1"
+compose-multiplatform = "1.9.3"
+activity-compose = "1.11.0"
+androidx-compose = "1.9.5"
+# The iOS floor is Kotlin/Native's 15.0, which is above Compose Multiplatform's iOS 14.
+ios-min = "15.0"
+junit = "6.1.3"
+proguard = "7.10.0"
+google-java-format = "2.0.0"
+ktfmt = "0.65"
+errorprone = "2.52.0"
+nullaway = "0.14.3"
+jspecify = "1.0.1"
+
+[libraries]
+agp-gradle = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+compose-gradle = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-multiplatform" }
+compose-compiler-gradle = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
+androidx-compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "androidx-compose" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+spotless-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version = "8.11.0" }
+errorprone-gradle = { module = "net.ltgt.gradle:gradle-errorprone-plugin", version = "5.2.0" }
+graalvm-native-gradle = { module = "org.graalvm.buildtools:native-gradle-plugin", version = "1.1.18" }
+foojay-gradle = { module = "org.gradle.toolchains:foojay-resolver", version = "1.0.0" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+proguard = { module = "com.guardsquare:proguard-base", version.ref = "proguard" }
+errorprone = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
