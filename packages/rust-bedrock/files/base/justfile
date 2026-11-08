@@ -8,10 +8,11 @@ mod? typescript ".just/typescript.just"
 mod? rust ".just/rust.just"
 mod? swift ".just/swift.just"
 mod? cpp ".just/cpp.just"
+mod? jvm ".just/jvm.just"
 
 import? "project.just"
 
-languages := "typescript rust swift cpp"
+languages := "typescript rust swift cpp jvm"
 
 # List the recipes.
 default:

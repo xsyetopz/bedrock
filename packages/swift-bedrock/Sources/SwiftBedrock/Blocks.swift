@@ -31,6 +31,7 @@ enum Syntax {
 /// same whichever bedrock adopts first.
 private let order = [
   "bedrock", "typescript-bedrock", "rust-bedrock", "swift-bedrock", "swift-bedrock-cxx",
+  "jvm-bedrock",
 ]
 
 /// Returns `current` with each block replaced or, when missing, added in bedrock order.

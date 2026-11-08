@@ -20,12 +20,13 @@ impl Syntax {
 
 /// Every bedrock's block, in the order a file lists them, so a file comes out the
 /// same whichever bedrock adopts first.
-const ORDER: [&str; 5] = [
+const ORDER: [&str; 6] = [
     "bedrock",
     "typescript-bedrock",
     "rust-bedrock",
     "swift-bedrock",
     "swift-bedrock-cxx",
+    "jvm-bedrock",
 ];
 
 /// Where a line starting with `marker` begins in `text`.

@@ -17,6 +17,7 @@ const ORDER = [
 	"rust-bedrock",
 	"swift-bedrock",
 	"swift-bedrock-cxx",
+	"jvm-bedrock",
 ];
 
 /** Where the first line starting with `marker` begins in `text`, or -1. */
