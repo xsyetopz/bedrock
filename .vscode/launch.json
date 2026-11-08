@@ -1,0 +1,24 @@
+{
+	"configurations": [
+		{
+			"type": "swift",
+			"request": "launch",
+			"args": [],
+			"cwd": "${workspaceFolder:bedrock}",
+			"name": "Debug swift-bedrock",
+			"target": "swift-bedrock",
+			"configuration": "debug",
+			"preLaunchTask": "swift: Build Debug swift-bedrock"
+		},
+		{
+			"type": "swift",
+			"request": "launch",
+			"args": [],
+			"cwd": "${workspaceFolder:bedrock}",
+			"name": "Release swift-bedrock",
+			"target": "swift-bedrock",
+			"configuration": "release",
+			"preLaunchTask": "swift: Build Release swift-bedrock"
+		}
+	]
+}
