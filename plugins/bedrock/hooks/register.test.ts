@@ -38,7 +38,7 @@ const engine = ({
 		fs: { exists: (path) => Promise.resolve(files.includes(path)) },
 		process: {
 			run: (argv) => {
-				const tool = argv[0] === "sh" ? argv.at(-1) : undefined;
+				const tool = argv[2] === 'command -v "$1"' ? argv.at(-1) : undefined;
 				if (tool !== undefined) {
 					const exitCode = missing.includes(tool) ? 1 : 0;
 					return Promise.resolve({ exitCode, stdout: "", stderr: "" });
@@ -67,6 +67,12 @@ describe("parseArgs", () => {
 			target: "app",
 			cxx: false,
 			apply: true,
+		});
+	});
+
+	test("reads the JVM names as one language, after the others", () => {
+		expect(parseArgs("Kotlin java rust gradle kt")).toMatchObject({
+			languages: ["rust", "jvm"],
 		});
 	});
 
@@ -128,6 +134,9 @@ describe("adoptCommand", () => {
 			"--cxx",
 			"--yes",
 		]);
+		const jvm = adoptCommand(SOURCE, "jvm", request);
+		expect(jvm.slice(0, 2)).toEqual(["sh", "-c"]);
+		expect(jvm.slice(3)).toEqual([SOURCE, "adopt", "/work/app", "--dry-run"]);
 	});
 });
 
@@ -160,15 +169,17 @@ describe("runAdopt", () => {
 			`${SOURCE}/packages/typescript-bedrock/package.json`,
 			"/work/app/Package.swift",
 			"/work/app/package.json",
+			"/work/app/pom.xml",
 		];
 		const result = await runAdopt(engine({ calls, files }), "app");
-		expect(calls.map(([tool]) => tool)).toEqual(["bun", "swift"]);
+		expect(calls.map(([tool]) => tool)).toEqual(["bun", "swift", "sh"]);
 		expect(calls.map((argv) => argv.includes("/work/app"))).toEqual([
+			true,
 			true,
 			true,
 		]);
 		expect(result.text).toBe(
-			"typescript-bedrock:\nplan\n\nswift-bedrock:\nplan\n\nTo apply this plan, run /adopt typescript swift app --yes",
+			"typescript-bedrock:\nplan\n\nswift-bedrock:\nplan\n\njvm-bedrock:\nplan\n\nTo apply this plan, run /adopt typescript swift jvm app --yes",
 		);
 	});
 

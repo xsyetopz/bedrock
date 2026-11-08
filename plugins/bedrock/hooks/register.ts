@@ -1,50 +1,23 @@
 import type { BashCall, Engine, Hook, On } from "./engine.ts";
+import {
+	ALIASES,
+	CXX_ALIASES,
+	type Language,
+	LANGUAGES,
+	MARKERS,
+	NEEDS,
+	RUNNERS,
+	TOOLS,
+} from "./languages.ts";
 
-export type Language = "typescript" | "rust" | "swift";
-
-/** The bedrocks in the order their blocks sit in shared files. */
-const LANGUAGES: readonly Language[] = ["typescript", "rust", "swift"];
-const ALIASES = new Map<string, Language>([
-	["bun", "typescript"],
-	["javascript", "typescript"],
-	["js", "typescript"],
-	["node", "typescript"],
-	["ts", "typescript"],
-	["typescript", "typescript"],
-	["rs", "rust"],
-	["rust", "rust"],
-	["swift", "swift"],
-]);
-/** C, C++, and Objective-C come with swift-bedrock's C++ part. */
-const CXX_ALIASES = new Set(["c", "c++", "cpp", "cxx", "objc", "objective-c"]);
-/** The files that show a repo already uses a language. */
-const MARKERS: Readonly<Record<Language, string>> = {
-	typescript: "package.json",
-	rust: "Cargo.toml",
-	swift: "Package.swift",
-};
 const REPOSITORY = "https://github.com/xsyetopz/bedrock";
-/** What each adopt runs, and where to get it. The recipes adopt writes need `just` too. */
-const TOOLS: Readonly<Record<string, string>> = {
-	bun: "https://bun.sh, or brew install oven-sh/bun/bun",
-	cargo: "rustup from https://rustup.rs",
-	git: "the system's package manager, such as brew install git",
-	just: "brew install just, or cargo install --locked just",
-	swift: "Xcode, or a toolchain from https://www.swift.org/install",
-};
-const NEEDS: Readonly<Record<Language, string>> = {
-	typescript: "bun",
-	rust: "cargo",
-	swift: "swift",
-};
-
 // A package manager in command position: at a line start or after ; & | ( $( or `, past env assignments and sudo, exec, or command.
 const FOREIGN =
 	/(?:^|[;&|(`]|\$\()\s*(?:\w+=\S*\s+)*(?:(?:sudo|exec|command)\s+)?(npm|npx|pnpm|pnpx|yarn)(?=\s|$)/mu;
 
 const USAGE = [
 	"Usage: /adopt [<language>...] [<target>] [--cxx] [--yes]",
-	"Languages: typescript (ts, js, bun), rust, swift, cpp (c, c++, objc: Swift with C++20).",
+	"Languages: typescript (ts, js, bun), rust, swift, cpp (c, c++, objc: Swift with C++20), jvm (java, kotlin, kt, gradle).",
 	"Without a language, it adopts each one the target has. Without --yes, it prints the plan and changes nothing.",
 ].join("\n");
 
@@ -99,46 +72,16 @@ export const adoptCommand = (
 	source: string,
 	language: Language,
 	request: Request,
-): string[] => {
-	const mode = request.apply ? "--yes" : "--dry-run";
-	if (language === "typescript") {
-		const bedrock = `${source}/packages/typescript-bedrock`;
-		return [
-			"bun",
-			`${bedrock}/src/cli.ts`,
-			"adopt",
-			request.target,
-			"--package",
-			`file:${bedrock}`,
-			mode,
-		];
-	}
-	if (language === "rust") {
-		return [
-			"cargo",
-			"run",
-			"--quiet",
-			"--manifest-path",
-			`${source}/packages/rust-bedrock/Cargo.toml`,
-			"--",
-			"adopt",
-			request.target,
-			mode,
-		];
-	}
-	return [
-		"swift",
-		"run",
-		"--quiet",
-		"--package-path",
-		source,
-		"swift-bedrock",
-		"adopt",
-		request.target,
-		...(request.cxx ? ["--cxx"] : []),
-		mode,
-	];
-};
+): string[] => [
+	...RUNNERS[language](source),
+	"adopt",
+	request.target,
+	...(language === "typescript"
+		? ["--package", `file:${source}/packages/typescript-bedrock`]
+		: []),
+	...(language === "swift" && request.cxx ? ["--cxx"] : []),
+	request.apply ? "--yes" : "--dry-run",
+];
 
 /**
  * The bedrock repository: the checkout the plugin sits in when it has one,
@@ -169,7 +112,12 @@ const detect = async (
 	target: string,
 ): Promise<readonly Language[]> => {
 	const found = await Promise.all(
-		LANGUAGES.map((language) => $.fs.exists(`${target}/${MARKERS[language]}`)),
+		LANGUAGES.map(async (language) => {
+			const exists = await Promise.all(
+				MARKERS[language].map((marker) => $.fs.exists(`${target}/${marker}`)),
+			);
+			return exists.includes(true);
+		}),
 	);
 	return LANGUAGES.filter((_, index) => found[index] === true);
 };
@@ -232,7 +180,7 @@ export const runAdopt = async (
 		request.languages.length > 0 ? request.languages : await detect($, target);
 	if (languages.length === 0) {
 		return {
-			text: `${request.target} has no package.json, Cargo.toml, or Package.swift; name the languages.\n${USAGE}`,
+			text: `${request.target} has no package.json, Cargo.toml, Package.swift, or JVM build file; name the languages.\n${USAGE}`,
 			context: [],
 		};
 	}
