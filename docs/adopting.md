@@ -11,6 +11,8 @@ git clone --depth 1 https://github.com/xsyetopz/bedrock ~/bedrock
 bun ~/bedrock/packages/typescript-bedrock/src/cli.ts adopt <target> --package file:$HOME/bedrock/packages/typescript-bedrock --dry-run
 cargo run --manifest-path ~/bedrock/packages/rust-bedrock/Cargo.toml -- adopt <target> --dry-run
 swift run --package-path ~/bedrock swift-bedrock adopt <target> [--cxx] --dry-run
+~/bedrock/gradlew --project-dir ~/bedrock :jvm-bedrock:installDist
+~/bedrock/packages/jvm-bedrock/build/install/jvm-bedrock/bin/jvm-bedrock adopt <target> --dry-run
 ```
 
 `--dry-run` prints the plan and stops. Without it, adopt prints the plan and asks `Apply these changes? [y/N]`. An agent or CI job, which has no terminal to answer in, passes `--yes`.
@@ -141,6 +143,23 @@ To fix the errors, run `just lint-fix`, which moves test modules from `tests.rs`
 - with C++, writes `.clang-format` and `.clang-tidy` in place of `_clang-format` and `_clang-tidy`, and `.just/cpp.just`. clang-tidy reads the compile database that `swift-bedrock compile-commands` writes from the SwiftPM targets and each xmake project, and `just setup` installs xmake when the repo tracks an `xmake.lua`.
 
 To fix the errors, run `just lint-fix`, which also converts XCTest files to Swift Testing outside `*UITests` targets, then work through `just lint`. Mark each unsafe expression with `unsafe`, spell existentials `any P`, and document each `public` or `open` declaration.
+
+## Java and Kotlin
+
+`jvm-bedrock adopt` writes the Gradle wrapper, `gradle/bedrock/` with the convention plugins, `gradle/bedrock.versions.toml`, and the ProGuard rules, and adds its blocks to `settings.gradle.kts` and `gradle.properties`. `--group` sets `group` in `gradle.properties` when the build doesn't name one; NullAway checks that package. It stops when the repo has Scala or Groovy sources, which bedrock doesn't compile.
+
+It then migrates the build it finds, in this order, to one `build.gradle.kts` per module that applies a `bedrock.*` plugin, with the dependencies in `gradle/libs.versions.toml`:
+
+| Build | What it reads |
+| --- | --- |
+| Maven `pom.xml` | Modules, `groupId`, dependencies with their scopes, `dependencyManagement` imports and an external parent as platforms, `system` jars, and the main class from a plugin's `mainClass` or `Main-Class`, or the `start-class` or `exec.mainClass` property |
+| sbt `build.sbt` | `organization`, each `project`, `dependsOn`, Java `%` dependencies, and `mainClass` |
+| Ant `build.xml` and Ivy `ivy.xml` | The javac source folders, which move to `src/main/java` and `src/test/java`, the `Main-Class` attribute, Ivy dependencies by conf, and `lib/*.jar` |
+| Gradle, either DSL | `include`s, `group`, the Kotlin plugin, `mainClass`, and each `dependencies` line in string, map, `project()`, `platform()`, or `libs.` form |
+
+Each old build file is kept as `<file>.bak`, and adopt prints a note for what it couldn't carry over: Java levels above 8, `%%` Scala dependencies, Maven classifiers, and Gradle lines it didn't parse. sbt and Gradle scripts are code, so compare each new build with the old one. It leaves Android and multiplatform Gradle modules, which need `bedrock.android`, `bedrock.kmp`, or `bedrock.cmp` applied by hand, and it names Mill and Bazel builds without reading them.
+
+To fix the errors, run `just lint-fix`, then work through `just verify`: code that needs a JDK API newer than Java 8, Error Prone findings, and NullAway's reports, which `@Nullable` from JSpecify answers where a value can be null. [jvm.md](jvm.md) explains the setup, and `just jvm::j2k <path>…` converts Java to Kotlin.
 
 ## Commit the Migration
 

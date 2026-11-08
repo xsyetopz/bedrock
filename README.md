@@ -1,11 +1,12 @@
 # Bedrock
 
-Strict, shared setups for TypeScript (on Bun), Rust, and Swift (with optional C++20) repositories. Each language has a bedrock: a tool that starts a repo or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run them the same way.
+Strict, shared setups for TypeScript (on Bun), Rust, Swift (with optional C++20), and Java and Kotlin repositories. Each language has a bedrock: a tool that starts a repo or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run them the same way.
 
 | Bedrock | For | Tooling |
 | --- | --- | --- |
 | [`typescript-bedrock`](packages/typescript-bedrock) | TypeScript and JavaScript | Bun 1.4.4, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
 | [`rust-bedrock`](packages/rust-bedrock) | Rust | Rust 1.99.1, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, inline unit tests |
+| [`jvm-bedrock`](packages/jvm-bedrock) | Java and Kotlin, with KMP, Compose Multiplatform, and Android | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |
 | [`swift-bedrock`](packages/swift-bedrock) | Swift, and C++20 with `--cxx` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config; clang-format and clang-tidy for C++ |
 
 ## What Every Repo Gets
@@ -37,7 +38,7 @@ From a Claude Code session with the plugin installed:
 /adopt cpp ../app --yes # Swift with C++20, in another folder
 ```
 
-Language names are case-insensitive: `typescript`, `ts`, `js`, or `bun`; `rust` or `rs`; `swift`; `cpp`, `c++`, `c`, or `objc` for Swift with C++. Without `--yes`, `/adopt` prints the plan and changes nothing. It checks that `git`, `just`, and each language's toolchain are installed first, and names any that are missing.
+Language names are case-insensitive: `typescript`, `ts`, `js`, or `bun`; `rust` or `rs`; `swift`; `cpp`, `c++`, `c`, or `objc` for Swift with C++; `jvm`, `java`, `kotlin`, `kt`, or `gradle`. Without `--yes`, `/adopt` prints the plan and changes nothing. It checks that `git`, `just`, and each language's toolchain are installed first, and names any that are missing.
 
 By hand, from a checkout of this repo:
 
@@ -45,6 +46,7 @@ By hand, from a checkout of this repo:
 bun packages/typescript-bedrock/src/cli.ts adopt <dir> --package file:$PWD/packages/typescript-bedrock --dry-run
 cargo run --manifest-path packages/rust-bedrock/Cargo.toml -- adopt <dir> --dry-run
 swift run swift-bedrock adopt <dir> [--cxx] --dry-run
+./gradlew :jvm-bedrock:installDist && packages/jvm-bedrock/build/install/jvm-bedrock/bin/jvm-bedrock adopt <dir> --dry-run
 ```
 
 Drop `--dry-run` to apply, or add `--yes` to apply without asking. Then run `just setup` and `just verify` in the target, fix what they report, and delete each `.bak` file once you've compared it. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in.
@@ -55,6 +57,7 @@ Drop `--dry-run` to apply, or add `--yes` to apply without asking. Then run `jus
 cargo run --manifest-path packages/rust-bedrock/Cargo.toml -- new <dir> --kind lib   # or bin, no-std, ffi, wasm
 swift run swift-bedrock new <dir> --kind library                                   # or executable, app; add --cxx
 bun packages/typescript-bedrock/src/cli.ts adopt <empty dir> --package file:$PWD/packages/typescript-bedrock
+packages/jvm-bedrock/build/install/jvm-bedrock/bin/jvm-bedrock new <dir> --kind kotlin-library # or java-library, java-application, java-native, kotlin-application, kotlin-native, kmp, cmp, android
 ```
 
 ## Guards
@@ -62,9 +65,10 @@ bun packages/typescript-bedrock/src/cli.ts adopt <empty dir> --package file:$PWD
 Each bedrock has a `guard` that `just verify` and the pre-commit hook run. It catches what the linters can't:
 
 - suppression comments and file-wide disables, where each tool has a narrower, reasoned form;
-- files from replaced tools, such as another package manager's lockfile, a Podfile, or `.swiftformat`;
+- files from replaced tools, such as another package manager's lockfile, a Podfile, `.swiftformat`, or `pom.xml`;
 - Rust unit tests in a separate `tests.rs`, which `just lint-fix` moves inline;
-- XCTest outside UI tests, which `just lint-fix` converts to Swift Testing;
+- XCTest outside UI tests, which `just lint-fix` converts to Swift Testing, and JUnit 4 outside Android tests;
+- ProGuard rules that turn shrinking off;
 - public API without docs;
 - managed files that drifted from what adopt writes.
 
@@ -85,6 +89,7 @@ Installed from the marketplace, the plugin clones this repo on its first `/adopt
 | `base/` | The files every bedrock writes. Each bedrock embeds a copy, which the tests keep in sync. |
 | `packages/typescript-bedrock` | The TypeScript bedrock, a workspace package published to npm |
 | `packages/rust-bedrock` | The Rust bedrock, a Cargo package with its starter files |
+| `packages/jvm-bedrock` | The JVM bedrock, a Kotlin CLI and the Gradle convention plugins it copies, built by the root `settings.gradle.kts` |
 | `packages/swift-bedrock` | The Swift and C++ bedrock, built by the root `Package.swift` |
 | `plugins/bedrock` | The Claude Code plugin |
 
@@ -95,6 +100,7 @@ The repo adopts its own bedrocks, so `just verify` checks all of it.
 | File | Content |
 | --- | --- |
 | [docs/adopting.md](docs/adopting.md) | What adopt changes, and how to fix the errors that follow |
+| [docs/jvm.md](docs/jvm.md) | How the Java and Kotlin setup works, and Java to Kotlin with J2K |
 | [docs/tsconfig.md](docs/tsconfig.md) | Every TypeScript compiler option and why it's set |
 | [docs/lint-rules.md](docs/lint-rules.md) | How oxlint and markdownlint are set up |
 | [docs/node-apis.md](docs/node-apis.md) | When to use a Bun API and when a `node:` module |

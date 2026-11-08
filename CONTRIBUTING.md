@@ -2,7 +2,7 @@
 
 ## Setup
 
-You need `just`, Bun 1.4.4, rustup, and Swift 6.4 (Xcode on macOS 14 or newer runs the Swift tests).
+You need `just`, Bun 1.4.4, rustup, Swift 6.4 (Xcode on macOS 14 or newer runs the Swift tests), and a JDK 17 or newer to start Gradle, which downloads GraalVM Community 25.
 
 ```bash
 bun install
@@ -41,7 +41,7 @@ Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`
 
 ## Releases
 
-Bump a bedrock's version in `packages/typescript-bedrock/package.json`, `packages/rust-bedrock/Cargo.toml`, or `packages/swift-bedrock/Sources/SwiftBedrock/Files.swift`. Once every check passes on `main`, the Release workflow publishes a new `typescript-bedrock` version to npm, then tags that commit `<bedrock>-v<version>` and creates its GitHub release. Adopted TypeScript repos install from npm; Rust and Swift repos pin the tags. `gh workflow run Release` releases the head of `main` by hand, once its checks have passed. npm trusts the Release workflow to publish `typescript-bedrock` through trusted publishing, so the repository holds no npm token.
+Bump a bedrock's version in `packages/typescript-bedrock/package.json`, `packages/rust-bedrock/Cargo.toml`, `packages/jvm-bedrock/build.gradle.kts`, or `packages/swift-bedrock/Sources/SwiftBedrock/Files.swift`. Once every check passes on `main`, the Release workflow publishes a new `typescript-bedrock` version to npm, then tags that commit `<bedrock>-v<version>` and creates its GitHub release. Adopted TypeScript repos install from npm; Rust and Swift repos pin the tags, and JVM repos carry a copy of the conventions. `gh workflow run Release` releases the head of `main` by hand, once its checks have passed. npm trusts the Release workflow to publish `typescript-bedrock` through trusted publishing, so the repository holds no npm token.
 
 ## Agents
 
