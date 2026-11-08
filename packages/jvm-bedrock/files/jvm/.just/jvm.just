@@ -6,9 +6,10 @@ set working-directory := ".."
 gradle := "./gradlew --console=plain"
 
 # Check for the JDK that starts Gradle, then fetch Gradle and the plugins. The first compile
-# fetches the GraalVM Community JDK the build compiles with.
+# fetches the GraalVM Community JDK the build compiles with. macOS ships a java that only says
+# none is installed, so the check runs it.
 setup:
-    @command -v java >/dev/null || [[ -n "${JAVA_HOME:-}" ]] || { echo "Gradle needs a JDK 17 or newer to start: brew install openjdk, or the system's package manager" >&2; exit 1; }
+    @[[ -n "${JAVA_HOME:-}" ]] || java -version >/dev/null 2>&1 || { echo "Gradle needs a JDK 17 or newer to start. Install one with the system's package manager, then set JAVA_HOME to it; on macOS, linking it into /Library/Java/JavaVirtualMachines, as brew info openjdk shows, also works for git apps." >&2; exit 1; }
     {{ gradle }} --quiet help >/dev/null
 
 # Format the Java with google-java-format and the Kotlin with ktfmt's Google style.
