@@ -79,6 +79,7 @@ describe("planAdoption and applySteps", () => {
 		"typescript-bedrock/files/base",
 		"rust-bedrock/files/base",
 		"swift-bedrock/Sources/SwiftBedrock/files/base",
+		"jvm-bedrock/files/base",
 	])("packages/%s is base/ unchanged", async (copy) => {
 		const root = join(import.meta.dir, "../../../..");
 		const diff = await $`diff -r ${root}/base ${root}/packages/${copy}`
