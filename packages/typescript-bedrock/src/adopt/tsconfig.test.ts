@@ -42,7 +42,14 @@ describe("migrateTsconfig", () => {
 				types: ["node", "bun"],
 			},
 			include: ["src"],
-			exclude: ["fixtures", "**/dist", "**/.build", "**/coverage", "**/target"],
+			exclude: [
+				"fixtures",
+				"**/dist",
+				"**/.build",
+				"**/build",
+				"**/coverage",
+				"**/target",
+			],
 		});
 		expect(notes).toHaveLength(5);
 	});

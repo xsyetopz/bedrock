@@ -204,7 +204,7 @@ describe("planAdoption and applySteps", () => {
 		const target = await tempDir();
 		await put(target, {
 			"tsconfig.json":
-				'{\n\t"$schema": "https://json.schemastore.org/tsconfig.json",\n\t// mine\n\t"extends": "typescript-bedrock/tsconfig.base.json", "compilerOptions": {},\n\t"exclude": ["**/.build", "**/coverage", "**/dist", "**/target"]\n}\n',
+				'{\n\t"$schema": "https://json.schemastore.org/tsconfig.json",\n\t// mine\n\t"extends": "typescript-bedrock/tsconfig.base.json", "compilerOptions": {},\n\t"exclude": ["**/.build", "**/build", "**/coverage", "**/dist", "**/target"]\n}\n',
 		});
 		const plan = await planAdoption(packageRoot, target, {});
 		expect(plan.steps.map((step) => step.path)).not.toContain("tsconfig.json");

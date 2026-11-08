@@ -4,5 +4,5 @@
 	"compilerOptions": {
 		"rootDir": "."
 	},
-	"exclude": ["**/.build", "**/coverage", "**/dist", "**/target"]
+	"exclude": ["**/.build", "**/build", "**/coverage", "**/dist", "**/target"]
 }

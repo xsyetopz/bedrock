@@ -23,8 +23,17 @@ const REMOVED_OPTIONS = new Set([
 /** Project facts the base config cannot know. */
 const PROJECT_OPTIONS = new Set(["jsx", "lib", "types"]);
 const BASE_FILE = "typescript-bedrock/tsconfig.base.json";
-/** Build output a repo can hold: Bun's, Rust's (`cargo doc` writes JavaScript), and SwiftPM's. */
-const GENERATED_DIRS = ["**/.build", "**/coverage", "**/dist", "**/target"];
+/**
+ * Build output a repo can hold: Bun's, Rust's (`cargo doc` writes JavaScript), SwiftPM's, and
+ * Gradle's (its test reports are JavaScript).
+ */
+const GENERATED_DIRS = [
+	"**/.build",
+	"**/build",
+	"**/coverage",
+	"**/dist",
+	"**/target",
+];
 const EMIT_OPTIONS = [
 	"composite",
 	"declaration",
