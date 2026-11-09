@@ -62,7 +62,7 @@ Commands inside your other scripts are rewritten:
 | `rimraf` | `rm -rf` |
 | `cross-env A=1 cmd` | `A=1 cmd` |
 
-Scripts named `check` or `fmt` become `check:project` and `fmt:project`, so `bun check` and `bun fmt` keep running Bun's own commands. Test files that import `@jest/globals` or `vitest` import `bun:test` instead, and test files that call the Jest globals without an import get one from `bun:test`. Adopt prints a note for each script that ran Jest or Vitest: move its setup files and other config into `[test]` in `bunfig.toml`, such as `preload`.
+Scripts named `check` or `fmt` become `check:project` and `fmt:project`, so `bun check` and `bun fmt` keep running Bun's own commands. Test files that import `@jest/globals` or `vitest` import `bun:test` instead, and test files that call the Jest globals without an import get one from `bun:test`. Adopt leaves test files in `node_modules` and in paths that git ignores as they are. Adopt prints a note for each script that ran Jest or Vitest: move its setup files and other config into `[test]` in `bunfig.toml`, such as `preload`.
 
 ### Dependencies
 
