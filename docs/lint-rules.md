@@ -55,6 +55,7 @@ The template turns on rules beyond the four categories. The full list is in `oxl
 | `*.test.*`, `*.spec.*` | `max-lines-per-function` and `max-nested-callbacks` are off. |
 | `scripts/**` | `no-console` is off. |
 | `*.config.*` | Default exports are allowed. |
+| `src/theme/**` | Default exports are allowed. Docusaurus imports a swizzled theme component as its default export. |
 | `*.d.ts`, `*.d.mts`, `*.d.cts` | `typescript/no-namespace` is off. |
 
 ## Imports With a Bun Replacement

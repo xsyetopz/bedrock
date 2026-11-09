@@ -340,6 +340,12 @@
 			}
 		},
 		{
+			"files": ["**/src/theme/**"],
+			"rules": {
+				"import/no-default-export": "off"
+			}
+		},
+		{
 			"files": ["**/*.d.{ts,mts,cts}"],
 			"rules": {
 				"typescript/no-namespace": "off"
