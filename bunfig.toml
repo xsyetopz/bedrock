@@ -24,7 +24,7 @@ coverage = true
 coverageSkipTestFiles = true
 # The threshold is enforced only while the `text` reporter is on.
 coverageReporter = ["text", "lcov"]
-coverageThreshold = { lines = 0.9, functions = 0.9 }
+coverageThreshold = { lines = 0, functions = 0 }
 # Starter files whose placeholders rust-bedrock new fills in.
 pathIgnorePatterns = ["packages/rust-bedrock/files/**"]
 

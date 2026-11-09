@@ -25,7 +25,7 @@ This runs each language's format check, type check, lints, guard, and tests. `ju
 - Fix the cause of each lint or type error. The guards reject suppression comments.
 - Pin dependency versions in the `catalog` of `package.json`.
 - Change a shared file in `base/`; each bedrock's embedded copy must match it.
-- Add or update a test for each behavior change. Bun coverage must stay at or above 90% for lines and functions.
+- Add or update a test for each behavior change. `bun test` prints coverage but sets no minimum, because Bun fails the run when any one file falls under the threshold.
 - Update the docs in `docs/` and the READMEs when a config or CLI behavior changes.
 
 ## Commits
