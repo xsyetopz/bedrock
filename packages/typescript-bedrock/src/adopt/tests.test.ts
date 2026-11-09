@@ -3,6 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { $ } from "bun";
+
 import { migrateTestFile, testSteps } from "./tests.ts";
 
 // Built at runtime so adopt does not migrate this file.
@@ -59,6 +61,20 @@ describe("testSteps", () => {
 				content: `import { test } from "bun:test";\n\n${jest}`,
 			},
 		]);
+		await rm(root, { recursive: true });
+	});
+
+	test("leaves the test files git ignores alone", async () => {
+		const root = await mkdtemp(join(tmpdir(), "tests-test-"));
+		const jest = 'test("x", () => {});\n';
+		await Promise.all([
+			Bun.write(join(root, ".gitignore"), "captures/\n"),
+			Bun.write(join(root, "src/a.test.ts"), jest),
+			Bun.write(join(root, "captures/dep/c.test.ts"), jest),
+		]);
+		await $`git init -q`.cwd(root);
+		const steps = await testSteps(root);
+		expect(steps.map((step) => step.path)).toEqual(["src/a.test.ts"]);
 		await rm(root, { recursive: true });
 	});
 });

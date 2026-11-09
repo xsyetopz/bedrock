@@ -1,5 +1,6 @@
 import { join } from "node:path";
 
+import { listFiles } from "../files.ts";
 import type { Step } from "./steps.ts";
 
 const TEST_FILES = new Bun.Glob(
@@ -39,18 +40,15 @@ export const migrateTestFile = (text: string): string => {
 		: text;
 };
 
-/** Rewrites each test file outside node_modules that is not on bun:test yet. */
+/** Rewrites each test file outside node_modules and git's ignored files that is not on bun:test yet. */
 export const testSteps = async (target: string): Promise<Step[]> => {
-	const steps: Step[] = [];
-	for await (const path of TEST_FILES.scan({ cwd: target, dot: false })) {
-		if (path.split("/").includes("node_modules")) {
-			continue;
-		}
-		const text = await Bun.file(join(target, path)).text();
+	const paths = await listFiles(target, TEST_FILES);
+	const texts = await Promise.all(
+		paths.map((path) => Bun.file(join(target, path)).text()),
+	);
+	return paths.flatMap((path, index): Step[] => {
+		const text = texts[index] ?? "";
 		const content = migrateTestFile(text);
-		if (content !== text) {
-			steps.push({ kind: "write", path, content });
-		}
-	}
-	return steps;
+		return content === text ? [] : [{ kind: "write", path, content }];
+	});
 };

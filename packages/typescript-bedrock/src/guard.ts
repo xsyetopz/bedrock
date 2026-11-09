@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { $, Glob } from "bun";
 
 import { planAdoption, PROJECT_FILES } from "./adopt/adopt.ts";
+import { listFiles } from "./files.ts";
 
 // Written as alternations so this file does not match itself.
 const SUPPRESSION =
@@ -39,25 +40,6 @@ const FOREIGN_FILES = [
 	"pnpm-workspace.yaml",
 	"yarn.lock",
 ];
-
-const listFiles = async (cwd: string, glob: Glob): Promise<string[]> => {
-	const git = await $`git ls-files --cached --others --exclude-standard`
-		.cwd(cwd)
-		.nothrow()
-		.quiet();
-	const listed = (
-		git.exitCode === 0
-			? git.stdout.toString().split("\n")
-			: await Array.fromAsync(glob.scan({ cwd }))
-	).filter(
-		(path) => glob.match(path) && !path.split("/").includes("node_modules"),
-	);
-	// The index still lists a file deleted since the last commit.
-	const present = await Promise.all(
-		listed.map((path) => Bun.file(join(cwd, path)).exists()),
-	);
-	return listed.filter((_, index) => present[index] === true);
-};
 
 export const findSuppressions = async (
 	cwd: string,
