@@ -201,6 +201,24 @@ describe("planAdoption and applySteps", () => {
 		expect(fresh.steps.some((step) => step.kind === "remove")).toBe(false);
 	});
 
+	test("keeps the settings a repo adds to bunfig.toml", async () => {
+		const target = await tempDir();
+		await put(target, {
+			"bunfig.toml":
+				'[test]\n# Cached packages carry their own tests.\npathIgnorePatterns = ["captures/**"]\n\n[fmt]\nignorePatterns = [\n\t# Built and committed.\n\t"cli/bin/",\n]\n',
+		});
+		const plan = await planAdoption(packageRoot, target, {});
+		await applySteps(target, plan.steps);
+		const bunfig = await Bun.file(join(target, "bunfig.toml")).text();
+		expect(bunfig).toContain(
+			'# Cached packages carry their own tests.\npathIgnorePatterns = ["captures/**"]\n',
+		);
+		expect(bunfig).toContain('\t# Built and committed.\n\t"cli/bin/",\n]');
+		expect(bunfig).toContain("useTabs = true");
+		const rerun = await planAdoption(packageRoot, target, {});
+		expect(rerun.steps).toEqual([]);
+	});
+
 	test("leaves a tsconfig alone when only its layout differs", async () => {
 		const target = await tempDir();
 		await put(target, {

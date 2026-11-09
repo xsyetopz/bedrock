@@ -1,6 +1,7 @@
 import { realpath } from "node:fs/promises";
 import { basename, join } from "node:path";
 
+import { mergeBunfig } from "./bunfig.ts";
 import { asRecord, exists, type Json, readJsonc, toJson } from "./json.ts";
 import { migrateManifest } from "./manifest.ts";
 import { sharedSteps } from "./shared.ts";
@@ -175,6 +176,21 @@ const planManifest = async (
 	);
 };
 
+const planBunfig = async (
+	filesRoot: string,
+	target: string,
+): Promise<{ steps: Step[]; notes: string[] }> => {
+	const file = Bun.file(join(target, "bunfig.toml"));
+	const merged = mergeBunfig(
+		await Bun.file(join(filesRoot, storedPath("bunfig.toml"))).text(),
+		(await file.exists()) ? await file.text() : undefined,
+	);
+	return {
+		steps: [{ kind: "write", path: "bunfig.toml", content: merged.content }],
+		notes: merged.notes,
+	};
+};
+
 const planTsconfig = async (
 	packageRoot: string,
 	target: string,
@@ -218,6 +234,7 @@ export const planAdoption = async (
 	const filesRoot = join(packageRoot, "files");
 	const migrated = await planManifest(packageRoot, target, options);
 	const ts = await planTsconfig(packageRoot, target);
+	const bunfig = await planBunfig(filesRoot, target);
 	const ci = Bun.file(join(target, OLD_CI));
 	const oldCi = (await ci.exists()) && OLD_CI_COMMAND.test(await ci.text());
 	const replaced = [
@@ -227,7 +244,7 @@ export const planAdoption = async (
 	const steps: Step[] = [
 		...(await jsonWrite(target, "package.json", migrated.manifest)),
 		...(await jsonWrite(target, "tsconfig.json", ts.tsconfig)),
-		...(await copies(filesRoot, target, ["bunfig.toml"], true)),
+		...bunfig.steps,
 		...(await copies(join(filesRoot, "base"), target, BASE_FILES, true)),
 		...(await copies(filesRoot, target, TOOL_FILES, true)),
 		...(await copies(filesRoot, target, STARTER_FILES, false)),
@@ -238,6 +255,6 @@ export const planAdoption = async (
 	return {
 		steps: await pending(target, steps),
 		lockfiles: await existing(target, LOCKFILES),
-		notes: [...migrated.notes, ...ts.notes],
+		notes: [...migrated.notes, ...ts.notes, ...bunfig.notes],
 	};
 };
