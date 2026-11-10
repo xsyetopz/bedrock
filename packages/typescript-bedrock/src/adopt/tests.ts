@@ -25,6 +25,29 @@ const GLOBALS = [
 const usesGlobal = (text: string, name: string): boolean =>
 	new RegExp(`(?<![\\w$.])${name}\\s*[(.]`, "u").test(text);
 
+const IMPORT_CLAUSES = /\bimport\s+(?:type\s+)?([^"';]*?)\s*from\s*["']/gu;
+// Whether the file already binds `name`, by an import or a declaration.
+const binds = (text: string, name: string): boolean => {
+	const declared = new RegExp(
+		`\\b(?:const|let|var|function|class)\\s+${name}\\b`,
+		"u",
+	);
+	const imported = [...text.matchAll(IMPORT_CLAUSES)].some(([, clause]) =>
+		(clause ?? "")
+			.replaceAll(/[{}]/gu, ",")
+			.split(",")
+			.some(
+				(part) =>
+					part
+						.trim()
+						.split(/\s+as\s+/u)
+						.at(-1)
+						?.trim() === name,
+			),
+	);
+	return imported || declared.test(text);
+};
+
 /**
  * Points a Jest or Vitest test file at bun:test, which has the same API: its
  * framework import changes module, and the globals it calls get imported, since
@@ -35,7 +58,9 @@ export const migrateTestFile = (text: string): string => {
 	if (/["']bun:test["']/u.test(imported)) {
 		return imported;
 	}
-	const used = GLOBALS.filter((name) => usesGlobal(text, name));
+	const used = GLOBALS.filter(
+		(name) => usesGlobal(text, name) && !binds(imported, name),
+	);
 	return used.length > 0
 		? `import { ${used.join(", ")} } from "bun:test";\n\n${text}`
 		: text;
