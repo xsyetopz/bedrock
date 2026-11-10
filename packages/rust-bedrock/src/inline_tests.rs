@@ -203,16 +203,22 @@ pub(crate) fn child_file(file: &Path, declaration: &OutOfLine) -> Option<PathBuf
     })
 }
 
-/// Moves every out-of-line test module of `file` inline. Returns one message per
-/// module it could not move.
-pub(crate) fn inline(file: &Path) -> std::io::Result<Vec<String>> {
-    let mut source = fs::read_to_string(file)?;
-    let mut problems = Vec::new();
-    let mut moved = Vec::new();
-    for declaration in declarations(&source)
+/// Inlines the out-of-line modules of `source`, the text of `file`, depth first so
+/// a module's own children move into it before it moves. `nested` is set inside a
+/// test module, where every `mod name;` is test code. A module whose tree cannot
+/// all move is left alone, with its problems; the other modules still move.
+/// Appends the files it emptied to `moved`, leaves before the files that held them.
+fn expand(
+    file: &Path,
+    source: &mut String,
+    nested: bool,
+    problems: &mut Vec<String>,
+    moved: &mut Vec<PathBuf>,
+) -> std::io::Result<()> {
+    for declaration in declarations(source)
         .into_iter()
         .rev()
-        .filter(|found| found.test_only)
+        .filter(|found| nested || found.test_only)
     {
         let location = format!("{}:{}", file.display(), declaration.line);
         let Some(child) = child_file(file, &declaration) else {
@@ -222,12 +228,18 @@ pub(crate) fn inline(file: &Path) -> std::io::Result<Vec<String>> {
             ));
             continue;
         };
-        let body = fs::read_to_string(&child)?;
-        if !declarations(&body).is_empty() {
-            problems.push(format!(
-                "{location}: {} declares its own out-of-line modules; move them first",
-                child.display()
-            ));
+        let mut body = fs::read_to_string(&child)?;
+        let mut inner_problems = Vec::new();
+        let mut inner_moved = Vec::new();
+        expand(
+            &child,
+            &mut body,
+            true,
+            &mut inner_problems,
+            &mut inner_moved,
+        )?;
+        if !inner_problems.is_empty() {
+            problems.extend(inner_problems);
             continue;
         }
         let body = body.trim_end();
@@ -240,16 +252,29 @@ pub(crate) fn inline(file: &Path) -> std::io::Result<Vec<String>> {
             let line_end = line_end + usize::from(source[line_end..].starts_with('\n'));
             source.replace_range(start..line_end, "");
         }
+        moved.extend(inner_moved);
         moved.push(child);
     }
+    Ok(())
+}
+
+/// Moves every out-of-line test module of `file` inline, with the modules inside
+/// them. Returns one message per module it could not move.
+pub(crate) fn inline(file: &Path) -> std::io::Result<Vec<String>> {
+    let mut source = fs::read_to_string(file)?;
+    let mut problems = Vec::new();
+    let mut moved = Vec::new();
+    expand(file, &mut source, false, &mut problems, &mut moved)?;
     if !moved.is_empty() {
         fs::write(file, source)?;
         for child in moved {
             fs::remove_file(&child)?;
-            if let Some(parent) = child.parent()
+            let mut directory = child.parent();
+            while let Some(parent) = directory
                 && fs::read_dir(parent)?.next().is_none()
             {
                 fs::remove_dir(parent)?;
+                directory = parent.parent();
             }
         }
     }
@@ -368,14 +393,63 @@ mod tests {
     }
 
     #[test]
-    fn refuses_children_with_their_own_modules() {
-        let root = scratch("nested");
+    fn moves_a_whole_nested_tree_in_one_run() {
+        let root = scratch("tree");
+        fs::create_dir_all(root.join("src/parser/tests/deep")).unwrap();
         let parent = root.join("src/parser.rs");
         fs::write(&parent, "#[cfg(test)]\nmod tests;\n").unwrap();
-        fs::write(root.join("src/parser/tests.rs"), "mod fixtures;\n").unwrap();
+        fs::write(
+            root.join("src/parser/tests.rs"),
+            "mod fixtures;\nmod deep;\n#[path = \"extra.rs\"]\nmod more;\n",
+        )
+        .unwrap();
+        fs::write(root.join("src/parser/tests/fixtures.rs"), "fn a() {}\n").unwrap();
+        fs::write(root.join("src/parser/tests/deep.rs"), "mod leaf;\n").unwrap();
+        fs::write(root.join("src/parser/tests/deep/leaf.rs"), "fn b() {}\n").unwrap();
+        fs::write(root.join("src/parser/extra.rs"), "fn c() {}\n").unwrap();
+        assert_eq!(inline(&parent).unwrap(), Vec::<String>::new());
+        assert_eq!(
+            fs::read_to_string(&parent).unwrap(),
+            "#[cfg(test)]\nmod tests {\nmod fixtures {\nfn a() {}\n}\nmod deep {\nmod leaf {\nfn b() {}\n}\n}\nmod more {\nfn c() {}\n}\n}\n"
+        );
+        assert!(!root.join("src/parser").exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn leaves_a_tree_with_a_missing_file_and_still_moves_the_others() {
+        let root = scratch("partial");
+        let parent = root.join("src/parser.rs");
+        fs::write(
+            &parent,
+            "#[cfg(test)]\nmod broken;\n#[cfg(test)]\nmod tests;\n",
+        )
+        .unwrap();
+        fs::write(root.join("src/parser/broken.rs"), "mod missing;\n").unwrap();
+        fs::write(root.join("src/parser/tests.rs"), "fn t() {}\n").unwrap();
         let problems = inline(&parent).unwrap();
         assert_eq!(problems.len(), 1);
-        assert!(root.join("src/parser/tests.rs").exists());
+        assert!(problems[0].contains("mod missing"));
+        assert!(root.join("src/parser/broken.rs").exists());
+        assert!(!root.join("src/parser/tests.rs").exists());
+        assert!(
+            fs::read_to_string(&parent)
+                .unwrap()
+                .contains("mod tests {\nfn t() {}\n}")
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn resolves_a_path_attribute_from_the_directory_of_the_file() {
+        let root = scratch("pathdir");
+        fs::write(root.join("src/parser/checks.rs"), "").unwrap();
+        fs::write(root.join("src/checks.rs"), "").unwrap();
+        let declaration = &declarations("#[cfg(test)]\n#[path = \"checks.rs\"]\nmod tests;")[0];
+        assert_eq!(
+            child_file(&root.join("src/parser.rs"), declaration).as_deref(),
+            Some(root.join("src/checks.rs").as_path())
+        );
         fs::remove_dir_all(root).unwrap();
     }
 }
