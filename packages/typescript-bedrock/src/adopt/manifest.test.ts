@@ -70,6 +70,9 @@ describe("migrateManifest", () => {
 		expect(notes.join("\n")).toContain(
 			'Replaced script "typecheck" ("bun check --cwd packages/app")',
 		);
+		expect(notes.join("\n")).toContain(
+			"into a `project-typecheck` recipe in project.just",
+		);
 	});
 
 	test("merges pnpm-workspace.yaml into workspaces", () => {
