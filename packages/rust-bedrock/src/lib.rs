@@ -149,7 +149,7 @@ fn adopt_in(root: &Path, options: &Options, targets: &[&str]) -> Result<(), Stri
     if !options.no_run {
         adopt::migrate_editions(root).map_err(failed)?;
         let problems = guard::guard(root, &source(options), true).map_err(failed)?;
-        adopt::cargo(root, &["update", "--workspace", "--quiet"]).map_err(failed)?;
+        adopt::update_lock(root).map_err(failed)?;
         adopt::cargo(root, &["fmt", "--all"]).map_err(failed)?;
         for problem in problems {
             println!("{problem}");
