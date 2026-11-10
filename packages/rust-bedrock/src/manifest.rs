@@ -94,7 +94,9 @@ pub(crate) fn root(current: &str) -> Result<String, TomlError> {
         .into_iter()
         .flat_map(Table::iter)
     {
-        release.insert(key, setting.clone());
+        if !release.contains_key(key) {
+            release.insert(key, setting.clone());
+        }
     }
     Ok(document.to_string())
 }
@@ -213,6 +215,17 @@ mod tests {
         assert!(updated.contains("debug = true"));
         assert!(updated.contains("lto = \"thin\""));
         assert!(updated.contains("allow_attributes = \"deny\""));
+        assert_eq!(root(&updated).unwrap(), updated);
+    }
+
+    #[test]
+    fn keeps_release_profile_keys_the_repo_already_set() {
+        let current = "[package]\nname = \"app\"\nedition = \"2024\"\n\n[profile.release]\npanic = \"unwind\"\nlto = \"fat\"\n";
+        let updated = root(current).unwrap();
+        assert!(updated.contains("panic = \"unwind\""));
+        assert!(updated.contains("lto = \"fat\""));
+        assert!(!updated.contains("panic = \"abort\""));
+        assert!(!updated.contains("lto = \"thin\""));
         assert_eq!(root(&updated).unwrap(), updated);
     }
 
