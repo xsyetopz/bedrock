@@ -35,7 +35,7 @@ fn rust_files(root: &Path) -> io::Result<Vec<String>> {
 }
 
 /// A `tests.rs` or `tests/` inside `src/` holds unit tests outside the file they test.
-fn is_test_file_in_src(path: &str) -> bool {
+pub(crate) fn is_test_file_in_src(path: &str) -> bool {
     let parts: Vec<_> = Path::new(path).components().collect();
     let Some(src) = parts
         .iter()
@@ -58,7 +58,7 @@ pub(crate) fn guard(root: &Path, source: &Source, fix: bool) -> io::Result<Vec<S
             continue;
         }
         if fix {
-            problems.extend(inline(&file)?);
+            problems.extend(inline(&file));
         } else {
             let text = fs::read_to_string(&file)?;
             for found in declarations(&text)

@@ -4,6 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::guard::is_test_file_in_src;
 use crate::lexer::{Kind, Token, tokens};
 
 /// A `mod name;` declaration.
@@ -173,13 +174,23 @@ fn owns_directory(file: &Path) -> bool {
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or_default();
-    let parent = file
-        .parent()
-        .and_then(Path::file_name)
+    if matches!(name, "lib.rs" | "main.rs" | "mod.rs" | "build.rs") {
+        return true;
+    }
+    // A target's own root: tests/x.rs, examples/x.rs, benches/x.rs beside the
+    // Cargo.toml, or src/bin/x.rs. A directory merely named `tests` inside src/ is
+    // an ordinary module directory.
+    let parent = file.parent().unwrap_or_else(|| Path::new(""));
+    let kind = parent
+        .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or_default();
-    matches!(name, "lib.rs" | "main.rs" | "mod.rs" | "build.rs")
-        || matches!(parent, "bin" | "tests" | "examples" | "benches")
+    let package = match kind {
+        "tests" | "examples" | "benches" => parent.parent(),
+        "bin" => parent.parent().and_then(Path::parent),
+        _ => None,
+    };
+    package.is_some_and(|package| package.join("Cargo.toml").is_file())
 }
 
 /// Returns the file that holds the body of `declaration`, declared in `file`.
@@ -188,97 +199,306 @@ pub(crate) fn child_file(file: &Path, declaration: &OutOfLine) -> Option<PathBuf
     if let Some(path) = &declaration.path {
         return Some(directory.join(path)).filter(|candidate| candidate.is_file());
     }
-    let nested = directory.join(file.file_stem().unwrap_or_default());
-    let mut bases = [directory.to_path_buf(), nested];
-    if !owns_directory(file) {
-        bases.reverse();
+    // rustc looks in one place only: beside a mod.rs, lib.rs or main.rs, and in a
+    // directory named for the file otherwise.
+    let base = if owns_directory(file) {
+        directory.to_path_buf()
+    } else {
+        directory.join(file.file_stem().unwrap_or_default())
+    };
+    [
+        base.join(format!("{}.rs", declaration.name)),
+        base.join(&declaration.name).join("mod.rs"),
+    ]
+    .into_iter()
+    .find(|candidate| candidate.is_file())
+}
+
+const INCLUDES: [&str; 3] = ["include", "include_str", "include_bytes"];
+
+/// An `include!`-style call with a plain relative string literal.
+#[derive(Debug)]
+pub(crate) struct Include {
+    pub name: String,
+    pub value: String,
+    pub line: usize,
+    /// Byte range of the string literal.
+    pub literal: (usize, usize),
+    /// Byte range of the call, through the `;` when it stands as an item.
+    pub call: (usize, usize),
+    /// Whether it is `include!("…");` standing on its own as an item, which can be
+    /// replaced by the file's contents.
+    pub item: bool,
+}
+
+pub(crate) fn includes(source: &str) -> Vec<Include> {
+    let all = tokens(source);
+    let mut found = Vec::new();
+    for (index, token) in all.iter().enumerate() {
+        let name = token.text(source);
+        if token.kind != Kind::Ident || !INCLUDES.contains(&name) {
+            continue;
+        }
+        let [_, bang, open, literal, close] = &all[index..all.len().min(index + 5)] else {
+            continue;
+        };
+        if bang.kind != Kind::Punct(b'!')
+            || open.kind != Kind::Punct(b'(')
+            || literal.kind != Kind::Literal
+            || close.kind != Kind::Punct(b')')
+        {
+            continue;
+        }
+        let Some(value) = literal
+            .text(source)
+            .strip_prefix('"')
+            .and_then(|text| text.strip_suffix('"'))
+            .filter(|text| !text.contains('\\') && !text.starts_with('/'))
+        else {
+            continue;
+        };
+        let standing = index
+            .checked_sub(1)
+            .is_none_or(|before| matches!(all[before].kind, Kind::Punct(b';' | b'}' | b'{')));
+        let semicolon = all
+            .get(index + 5)
+            .filter(|next| next.kind == Kind::Punct(b';'));
+        found.push(Include {
+            name: name.to_owned(),
+            value: value.to_owned(),
+            line: token.line,
+            literal: (literal.start, literal.end),
+            call: (token.start, semicolon.map_or(close.end, |next| next.end)),
+            item: name == "include" && standing && semicolon.is_some(),
+        });
     }
-    bases.iter().find_map(|base| {
-        [
-            base.join(format!("{}.rs", declaration.name)),
-            base.join(&declaration.name).join("mod.rs"),
-        ]
-        .into_iter()
-        .find(|candidate| candidate.is_file())
-    })
+    found
+}
+
+/// The components of `path` with each `..` folded into the directory before it, so
+/// the result does not pass through a directory that is about to be deleted.
+fn normalized(path: &Path) -> Vec<std::path::Component<'_>> {
+    let mut parts: Vec<std::path::Component<'_>> = Vec::new();
+    for part in path.components() {
+        match part {
+            std::path::Component::ParentDir
+                if parts
+                    .last()
+                    .is_some_and(|last| matches!(last, std::path::Component::Normal(_))) =>
+            {
+                parts.pop();
+            }
+            std::path::Component::CurDir => {}
+            other => parts.push(other),
+        }
+    }
+    parts
+}
+
+/// The path from directory `from` to `to`, with `..` where they part.
+fn relative_to(from: &Path, to: &Path) -> PathBuf {
+    let from = normalized(from);
+    let to = normalized(to);
+    let shared = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
+    let mut path = PathBuf::new();
+    for _ in shared..from.len() {
+        path.push("..");
+    }
+    for part in &to[shared..] {
+        path.push(part);
+    }
+    path
+}
+
+/// What `expand` found out about a tree: what blocks it, what it only reports, and
+/// the files it emptied, leaves before the files that held them.
+#[derive(Default)]
+struct Outcome {
+    problems: Vec<String>,
+    notes: Vec<String>,
+    moved: Vec<PathBuf>,
+}
+
+fn failure(operation: &str, path: &Path, error: &std::io::Error) -> String {
+    format!("{}: cannot {operation}: {error}", path.display())
+}
+
+enum Edit {
+    Module(OutOfLine),
+    Include(Include),
 }
 
 /// Inlines the out-of-line modules of `source`, the text of `file`, depth first so
 /// a module's own children move into it before it moves. `nested` is set inside a
-/// test module, where every `mod name;` is test code. A module whose tree cannot
-/// all move is left alone, with its problems; the other modules still move.
-/// Appends the files it emptied to `moved`, leaves before the files that held them.
+/// test module, where every `mod name;` is test code and each `include!("…");` of a
+/// file is spliced in; outside one, only the `include!` of a test file is. `dir` is where the text's relative include paths start, and
+/// `home` the directory of the file the text ends up in. Any other include path is
+/// rewritten to still reach its file from `home`. A module whose tree cannot all
+/// move is left alone, with its problems; the other modules still move.
 fn expand(
     file: &Path,
+    dir: &Path,
+    home: &Path,
     source: &mut String,
     nested: bool,
-    problems: &mut Vec<String>,
-    moved: &mut Vec<PathBuf>,
-) -> std::io::Result<()> {
-    for declaration in declarations(source)
+    out: &mut Outcome,
+) {
+    let mut edits: Vec<(usize, Edit)> = declarations(source)
         .into_iter()
-        .rev()
         .filter(|found| nested || found.test_only)
-    {
-        let location = format!("{}:{}", file.display(), declaration.line);
-        let Some(child) = child_file(file, &declaration) else {
-            problems.push(format!(
-                "{location}: cannot find the file for mod {}",
-                declaration.name
-            ));
-            continue;
-        };
-        let mut body = fs::read_to_string(&child)?;
-        let mut inner_problems = Vec::new();
-        let mut inner_moved = Vec::new();
-        expand(
-            &child,
-            &mut body,
-            true,
-            &mut inner_problems,
-            &mut inner_moved,
-        )?;
-        if !inner_problems.is_empty() {
-            problems.extend(inner_problems);
-            continue;
+        .map(|found| (found.span.0, Edit::Module(found)))
+        .collect();
+    // Outside a test module only the includes of test files are spliced in.
+    edits.extend(
+        includes(source)
+            .into_iter()
+            .filter(|found| {
+                nested
+                    || (found.item
+                        && is_test_file_in_src(&dir.join(&found.value).to_string_lossy()))
+            })
+            .map(|found| (found.call.0, Edit::Include(found))),
+    );
+    edits.sort_by_key(|(start, _)| std::cmp::Reverse(*start));
+    for (_, edit) in edits {
+        match edit {
+            Edit::Module(declaration) => expand_module(file, home, source, &declaration, out),
+            Edit::Include(call) => expand_include(file, dir, home, source, &call, out),
         }
-        let body = body.trim_end();
-        let replacement = format!("mod {} {{\n{body}\n}}", declaration.name);
-        source.replace_range(declaration.span.0..declaration.span.1, &replacement);
-        if let Some((start, end)) = declaration.path_attribute {
-            let line_end = source[end..]
-                .find(|character: char| !character.is_whitespace() || character == '\n')
-                .map_or(end, |offset| end + offset);
-            let line_end = line_end + usize::from(source[line_end..].starts_with('\n'));
-            source.replace_range(start..line_end, "");
-        }
-        moved.extend(inner_moved);
-        moved.push(child);
     }
-    Ok(())
+}
+
+fn expand_module(
+    file: &Path,
+    home: &Path,
+    source: &mut String,
+    declaration: &OutOfLine,
+    out: &mut Outcome,
+) {
+    let location = format!("{}:{}", file.display(), declaration.line);
+    let Some(child) = child_file(file, declaration) else {
+        out.problems.push(format!(
+            "{location}: cannot find the file for mod {}",
+            declaration.name
+        ));
+        return;
+    };
+    let mut body = match fs::read_to_string(&child) {
+        Ok(body) => body,
+        Err(error) => {
+            out.problems.push(failure("read", &child, &error));
+            return;
+        }
+    };
+    let mut inner = Outcome::default();
+    let child_dir = child.parent().unwrap_or_else(|| Path::new(""));
+    expand(&child, child_dir, home, &mut body, true, &mut inner);
+    out.notes.append(&mut inner.notes);
+    if !inner.problems.is_empty() {
+        out.problems.append(&mut inner.problems);
+        return;
+    }
+    let body = body.trim_end();
+    let replacement = format!("mod {} {{\n{body}\n}}", declaration.name);
+    source.replace_range(declaration.span.0..declaration.span.1, &replacement);
+    if let Some((start, end)) = declaration.path_attribute {
+        let line_end = source[end..]
+            .find(|character: char| !character.is_whitespace() || character == '\n')
+            .map_or(end, |offset| end + offset);
+        let line_end = line_end + usize::from(source[line_end..].starts_with('\n'));
+        source.replace_range(start..line_end, "");
+    }
+    out.moved.append(&mut inner.moved);
+    out.moved.push(child);
+}
+
+fn expand_include(
+    file: &Path,
+    dir: &Path,
+    home: &Path,
+    source: &mut String,
+    call: &Include,
+    out: &mut Outcome,
+) {
+    let target = dir.join(&call.value);
+    if call.item && target.is_file() {
+        let mut text = match fs::read_to_string(&target) {
+            Ok(text) => text,
+            Err(error) => {
+                out.problems.push(failure("read", &target, &error));
+                return;
+            }
+        };
+        let mut inner = Outcome::default();
+        let target_dir = target.parent().unwrap_or_else(|| Path::new(""));
+        expand(file, target_dir, home, &mut text, true, &mut inner);
+        out.notes.append(&mut inner.notes);
+        if !inner.problems.is_empty() {
+            out.problems.append(&mut inner.problems);
+            return;
+        }
+        source.replace_range(call.call.0..call.call.1, text.trim_end());
+        out.moved.append(&mut inner.moved);
+        out.moved.push(target);
+        return;
+    }
+    if !target.exists() {
+        out.notes.push(format!(
+            "{}:{}: cannot find {} named by {}!; its path now points at the same place",
+            file.display(),
+            call.line,
+            target.display(),
+            call.name
+        ));
+    }
+    let path = relative_to(home, &target);
+    if path != Path::new(&call.value) {
+        let literal = format!("\"{}\"", path.display());
+        source.replace_range(call.literal.0..call.literal.1, &literal);
+    }
 }
 
 /// Moves every out-of-line test module of `file` inline, with the modules inside
-/// them. Returns one message per module it could not move.
-pub(crate) fn inline(file: &Path) -> std::io::Result<Vec<String>> {
-    let mut source = fs::read_to_string(file)?;
-    let mut problems = Vec::new();
-    let mut moved = Vec::new();
-    expand(file, &mut source, false, &mut problems, &mut moved)?;
-    if !moved.is_empty() {
-        fs::write(file, source)?;
-        for child in moved {
-            fs::remove_file(&child)?;
-            let mut directory = child.parent();
-            while let Some(parent) = directory
-                && fs::read_dir(parent)?.next().is_none()
-            {
-                fs::remove_dir(parent)?;
-                directory = parent.parent();
+/// them and the files they `include!`. Returns one message per module it could not
+/// move or file it could not read or remove; none of them stops the other modules.
+pub(crate) fn inline(file: &Path) -> Vec<String> {
+    let mut source = match fs::read_to_string(file) {
+        Ok(source) => source,
+        Err(error) => return vec![failure("read", file, &error)],
+    };
+    let home = file.parent().unwrap_or_else(|| Path::new(""));
+    let mut out = Outcome::default();
+    expand(file, home, home, &mut source, false, &mut out);
+    let mut problems = out.problems;
+    problems.append(&mut out.notes);
+    if out.moved.is_empty() {
+        return problems;
+    }
+    if let Err(error) = fs::write(file, source) {
+        problems.push(failure("write", file, &error));
+        return problems;
+    }
+    for child in out.moved {
+        match fs::remove_file(&child) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => {
+                problems.push(failure("remove", &child, &error));
+                continue;
             }
         }
+        let mut directory = child.parent();
+        while let Some(parent) = directory
+            && fs::read_dir(parent).is_ok_and(|mut entries| entries.next().is_none())
+        {
+            if let Err(error) = fs::remove_dir(parent) {
+                problems.push(failure("remove", parent, &error));
+                break;
+            }
+            directory = parent.parent();
+        }
     }
-    Ok(problems)
+    problems
 }
 
 #[cfg(test)]
@@ -364,7 +584,7 @@ mod tests {
             "use super::f;\n\n#[test]\nfn raw() {\n    let _ = r\"\n  kept\n\";\n}\n",
         )
         .unwrap();
-        assert_eq!(inline(&parent).unwrap(), Vec::<String>::new());
+        assert_eq!(inline(&parent), Vec::<String>::new());
         assert_eq!(
             fs::read_to_string(&parent).unwrap(),
             "fn f() {}\n\n#[cfg(test)]\nmod tests {\nuse super::f;\n\n#[test]\nfn raw() {\n    let _ = r\"\n  kept\n\";\n}\n}\n"
@@ -383,7 +603,7 @@ mod tests {
         )
         .unwrap();
         fs::write(root.join("src/checks.rs"), "#[test]\nfn t() {}\n").unwrap();
-        assert_eq!(inline(&parent).unwrap(), Vec::<String>::new());
+        assert_eq!(inline(&parent), Vec::<String>::new());
         assert_eq!(
             fs::read_to_string(&parent).unwrap(),
             "#[cfg(test)]\nmod tests {\n#[test]\nfn t() {}\n}\n"
@@ -407,7 +627,7 @@ mod tests {
         fs::write(root.join("src/parser/tests/deep.rs"), "mod leaf;\n").unwrap();
         fs::write(root.join("src/parser/tests/deep/leaf.rs"), "fn b() {}\n").unwrap();
         fs::write(root.join("src/parser/extra.rs"), "fn c() {}\n").unwrap();
-        assert_eq!(inline(&parent).unwrap(), Vec::<String>::new());
+        assert_eq!(inline(&parent), Vec::<String>::new());
         assert_eq!(
             fs::read_to_string(&parent).unwrap(),
             "#[cfg(test)]\nmod tests {\nmod fixtures {\nfn a() {}\n}\nmod deep {\nmod leaf {\nfn b() {}\n}\n}\nmod more {\nfn c() {}\n}\n}\n"
@@ -427,7 +647,7 @@ mod tests {
         .unwrap();
         fs::write(root.join("src/parser/broken.rs"), "mod missing;\n").unwrap();
         fs::write(root.join("src/parser/tests.rs"), "fn t() {}\n").unwrap();
-        let problems = inline(&parent).unwrap();
+        let problems = inline(&parent);
         assert_eq!(problems.len(), 1);
         assert!(problems[0].contains("mod missing"));
         assert!(root.join("src/parser/broken.rs").exists());
@@ -449,6 +669,144 @@ mod tests {
         assert_eq!(
             child_file(&root.join("src/parser.rs"), declaration).as_deref(),
             Some(root.join("src/checks.rs").as_path())
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn splices_included_test_files_and_deletes_them() {
+        let root = scratch("splice");
+        fs::create_dir_all(root.join("src/parser/tests/deep")).unwrap();
+        let parent = root.join("src/parser.rs");
+        fs::write(&parent, "#[cfg(test)]\nmod tests;\n").unwrap();
+        fs::write(
+            root.join("src/parser/tests.rs"),
+            "include!(\"tests/one.rs\");\nfn t() {}\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("src/parser/tests/one.rs"),
+            "include!(\"deep/two.rs\");\nfn one() {}\n",
+        )
+        .unwrap();
+        fs::write(root.join("src/parser/tests/deep/two.rs"), "fn two() {}\n").unwrap();
+        assert_eq!(inline(&parent), Vec::<String>::new());
+        assert_eq!(
+            fs::read_to_string(&parent).unwrap(),
+            "#[cfg(test)]\nmod tests {\nfn two() {}\nfn one() {}\nfn t() {}\n}\n"
+        );
+        assert!(!root.join("src/parser").exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn repoints_includes_it_cannot_splice_and_reports_missing_ones() {
+        let root = scratch("repoint");
+        let parent = root.join("src/parser.rs");
+        fs::write(&parent, "#[cfg(test)]\nmod tests;\n").unwrap();
+        fs::write(
+            root.join("src/parser/tests.rs"),
+            "const A: &str = include_str!(\"data.txt\");\ninclude!(\"nope.rs\");\n",
+        )
+        .unwrap();
+        fs::write(root.join("src/parser/data.txt"), "x").unwrap();
+        let problems = inline(&parent);
+        assert_eq!(problems.len(), 1);
+        assert!(problems[0].contains("nope.rs"));
+        let text = fs::read_to_string(&parent).unwrap();
+        assert!(text.contains("include_str!(\"parser/data.txt\")"), "{text}");
+        assert!(text.contains("include!(\"parser/nope.rs\")"), "{text}");
+        assert!(root.join("src/parser/data.txt").exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn an_unreadable_file_is_reported_and_the_other_modules_still_move() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let root = scratch("unreadable");
+        let parent = root.join("src/parser.rs");
+        fs::write(
+            &parent,
+            "#[cfg(test)]\nmod locked;\n#[cfg(test)]\nmod tests;\n",
+        )
+        .unwrap();
+        let locked = root.join("src/parser/locked.rs");
+        fs::write(&locked, "fn l() {}\n").unwrap();
+        fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+        fs::write(root.join("src/parser/tests.rs"), "fn t() {}\n").unwrap();
+        let problems = inline(&parent);
+        fs::set_permissions(&locked, fs::Permissions::from_mode(0o644)).unwrap();
+        assert_eq!(problems.len(), 1);
+        assert!(problems[0].contains("locked.rs") && problems[0].contains("read"));
+        assert!(
+            fs::read_to_string(&parent)
+                .unwrap()
+                .contains("mod tests {\nfn t() {}\n}")
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn splices_a_top_level_include_of_a_test_file() {
+        let root = scratch("toplevel");
+        fs::create_dir_all(root.join("src/parser/tests")).unwrap();
+        let parent = root.join("src/parser.rs");
+        fs::write(
+            &parent,
+            "fn f() {}\ninclude!(\"parser/tests/a.rs\");\ninclude!(\"parser/data.rs\");\n",
+        )
+        .unwrap();
+        fs::write(root.join("src/parser/tests/a.rs"), "#[test]\nfn a() {}\n").unwrap();
+        fs::write(root.join("src/parser/data.rs"), "").unwrap();
+        assert_eq!(inline(&parent), Vec::<String>::new());
+        assert_eq!(
+            fs::read_to_string(&parent).unwrap(),
+            "fn f() {}\n#[test]\nfn a() {}\ninclude!(\"parser/data.rs\");\n"
+        );
+        assert!(root.join("src/parser/data.rs").exists());
+        assert!(!root.join("src/parser/tests").exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn a_nested_module_never_takes_a_same_named_file_from_the_parent_directory() {
+        let root = scratch("samename");
+        fs::create_dir_all(root.join("src/parser/tests/npm")).unwrap();
+        let parent = root.join("src/parser.rs");
+        fs::write(&parent, "#[cfg(test)]\nmod tests;\n").unwrap();
+        fs::write(root.join("src/parser/tests.rs"), "mod npm;\nmod smoke;\n").unwrap();
+        fs::write(root.join("src/parser/tests/npm.rs"), "mod smoke;\n").unwrap();
+        fs::write(
+            root.join("src/parser/tests/npm/smoke.rs"),
+            "fn inner() {}\n",
+        )
+        .unwrap();
+        fs::write(root.join("src/parser/tests/smoke.rs"), "fn outer() {}\n").unwrap();
+        assert_eq!(inline(&parent), Vec::<String>::new());
+        assert_eq!(
+            fs::read_to_string(&parent).unwrap(),
+            "#[cfg(test)]\nmod tests {\nmod npm {\nmod smoke {\nfn inner() {}\n}\n}\nmod smoke {\nfn outer() {}\n}\n}\n"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn repointed_includes_do_not_pass_through_a_removed_directory() {
+        let root = scratch("normal");
+        fs::create_dir_all(root.join("src/parser/tests")).unwrap();
+        let parent = root.join("src/parser.rs");
+        fs::write(&parent, "#[cfg(test)]\nmod tests;\n").unwrap();
+        fs::write(
+            root.join("src/parser/tests.rs"),
+            "const D: &str = include_str!(\"../../data.txt\");\n",
+        )
+        .unwrap();
+        fs::write(root.join("data.txt"), "x").unwrap();
+        assert_eq!(inline(&parent), Vec::<String>::new());
+        assert_eq!(
+            fs::read_to_string(&parent).unwrap(),
+            "#[cfg(test)]\nmod tests {\nconst D: &str = include_str!(\"../data.txt\");\n}\n"
         );
         fs::remove_dir_all(root).unwrap();
     }
