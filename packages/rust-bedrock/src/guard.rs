@@ -79,7 +79,7 @@ pub(crate) fn guard(root: &Path, source: &Source, fix: bool) -> io::Result<Vec<S
     }
     for step in pending(root, plan(root, source, &[])?) {
         problems.push(match step {
-            Step::Move { from, path } => {
+            Step::Move { from, path, .. } => {
                 format!("{from}: name it {path}, beside its directory (cargo bedrock adopt does it)")
             }
             step => format!(

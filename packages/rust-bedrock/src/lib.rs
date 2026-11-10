@@ -13,6 +13,7 @@ mod guard;
 mod inline_tests;
 mod lexer;
 mod manifest;
+mod mod_paths;
 mod plan;
 
 use std::env;

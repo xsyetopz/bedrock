@@ -19,10 +19,12 @@ pub(crate) enum Step {
         path: String,
         target: &'static str,
     },
-    /// Renames a file whose content stays as it is, so it needs no backup.
+    /// Renames a file, so it needs no backup. `content` replaces its text when the
+    /// rename changes what its relative paths mean.
     Move {
         from: String,
         path: String,
+        content: Option<String>,
     },
 }
 
@@ -52,7 +54,7 @@ impl Step {
             Self::Write { path, .. } => format!("create  {path}"),
             Self::Remove { path } => format!("remove  {path} (kept as {path}.bak)"),
             Self::Link { path, target } => format!("link    {path} -> {target}"),
-            Self::Move { from, path } => format!("move    {from} -> {path}"),
+            Self::Move { from, path, .. } => format!("move    {from} -> {path}"),
         }
     }
 
@@ -80,8 +82,11 @@ impl Step {
     /// existing backup stays, since it holds the file from before the first adopt.
     pub(crate) fn apply(&self, root: &Path) -> io::Result<()> {
         let path = root.join(self.path());
-        if let Self::Move { from, .. } = self {
-            return fs::rename(root.join(from), path);
+        if let Self::Move { from, content, .. } = self {
+            fs::rename(root.join(from), &path)?;
+            return content
+                .as_ref()
+                .map_or(Ok(()), |text| fs::write(&path, text));
         }
         if let Ok(meta) = fs::symlink_metadata(&path) {
             let backup = root.join(format!("{}.bak", self.path()));
@@ -158,6 +163,7 @@ mod tests {
                 Step::Move {
                     from: "mod.rs".to_owned(),
                     path: "a.rs".to_owned(),
+                    content: None,
                 },
             ],
         );
