@@ -59,6 +59,7 @@ The template turns on rules beyond the four categories. The full list is in `oxl
 | `*.config.*` | Default exports are allowed. |
 | `src/theme/**` | Default exports are allowed. Docusaurus imports a swizzled theme component as its default export. |
 | `hooks/**` | `func-style`, `promise/prefer-await-to-then`, and `promise/no-callback-in-promise` are off. Claude Code's hook loader follows the engine object `$` across files only into a function declaration, and a hook registration's `.catch(handler)` is the framework's failure handler, not `Promise.prototype.catch`. |
+| `hooks/register.{js,mjs,ts,mts}` | `import/max-dependencies` is off. `hooks.json` loads this one module, which imports every hook module and calls each in order, so its import count grows with the hook count. Every other file keeps the limit of 10. |
 | `*.d.ts`, `*.d.mts`, `*.d.cts` | `typescript/no-namespace` is off. |
 
 ## Imports With a Bun Replacement
