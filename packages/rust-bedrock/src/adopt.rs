@@ -342,9 +342,160 @@ pub(crate) fn cargo(root: &Path, args: &[&str]) -> io::Result<()> {
     }
 }
 
+/// The packages Cargo names in `failed to select a version for` errors.
+fn conflicting(stderr: &str) -> Vec<String> {
+    stderr
+        .lines()
+        .filter_map(|line| line.split_once("failed to select a version for `"))
+        .filter_map(|(_, rest)| rest.split_once('`'))
+        .map(|(name, _)| name.to_owned())
+        .collect()
+}
+
+/// Locks the dependencies `xtask` added. `cargo update --workspace` keeps every other
+/// pin, so a pin older than `rust-bedrock` needs makes it fail; `cargo update -p`
+/// unlocks just the packages Cargo names as conflicting, and the rest of the
+/// lockfile stays as it was.
+pub(crate) fn update_lock(root: &Path) -> io::Result<()> {
+    let mut unlock: Vec<String> = Vec::new();
+    loop {
+        let mut command = Command::new("cargo");
+        command.args(["update", "--quiet"]).current_dir(root);
+        if unlock.is_empty() {
+            command.arg("--workspace");
+        }
+        for name in &unlock {
+            command.args(["-p", name]);
+        }
+        let output = command.output()?;
+        if output.status.success() {
+            return Ok(());
+        }
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let before = unlock.len();
+        for name in conflicting(&stderr) {
+            if !unlock.contains(&name) {
+                unlock.push(name);
+            }
+        }
+        if unlock.len() == before {
+            eprint!("{stderr}");
+            return Err(io::Error::other("cargo update failed"));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Source, gate_integration_test, toolchain};
+    use super::{Source, conflicting, gate_integration_test, toolchain, update_lock};
+    use std::fs;
+    use std::path::Path;
+    use std::process::Command;
+
+    fn run(dir: &Path, program: &str, args: &[&str]) {
+        let output = Command::new(program)
+            .args(args)
+            .current_dir(dir)
+            .output()
+            .expect("the command starts");
+        assert!(
+            output.status.success(),
+            "{program} {args:?}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    fn locked(root: &Path, name: &str) -> String {
+        let lock = fs::read_to_string(root.join("Cargo.lock")).expect("Cargo.lock exists");
+        let (_, rest) = lock
+            .split_once(&format!("name = \"{name}\"\nversion = \""))
+            .expect("the package is locked");
+        rest.split('"').next().unwrap_or_default().to_owned()
+    }
+
+    #[test]
+    fn names_the_packages_cargo_cannot_select() {
+        let stderr = "error: failed to select a version for `toml_edit`.\n  required by x\nfailed to select a version for `serde_json` which could resolve this conflict\n";
+        assert_eq!(conflicting(stderr), ["toml_edit", "serde_json"]);
+        assert_eq!(conflicting("error: no matching package").len(), 0);
+    }
+
+    #[test]
+    fn unlocks_only_the_pins_a_new_git_dependency_conflicts_with() {
+        let base = std::env::temp_dir().join(format!("rust-bedrock-lock-{}", std::process::id()));
+        drop(fs::remove_dir_all(&base));
+        let dep = base.join("dep");
+        let root = base.join("target");
+        fs::create_dir_all(dep.join("src")).expect("dep dir");
+        fs::create_dir_all(root.join("app/src")).expect("app dir");
+        fs::write(
+            dep.join("Cargo.toml"),
+            "[package]\nname = \"needs-newer\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nserde_json = \"1.0.154\"\n",
+        )
+        .expect("dep manifest");
+        fs::write(dep.join("src/lib.rs"), "").expect("dep source");
+        run(&dep, "git", &["init", "--quiet"]);
+        run(&dep, "git", &["add", "."]);
+        run(
+            &dep,
+            "git",
+            &[
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@example.com",
+                "commit",
+                "--quiet",
+                "-m",
+                "dep",
+            ],
+        );
+        fs::write(
+            root.join("Cargo.toml"),
+            "[workspace]\nmembers = [\"app\"]\nresolver = \"3\"\n",
+        )
+        .expect("root manifest");
+        fs::write(
+            root.join("app/Cargo.toml"),
+            "[package]\nname = \"app\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\nserde = \"1\"\nserde_json = \"1.0.150\"\n",
+        )
+        .expect("app manifest");
+        fs::write(root.join("app/src/lib.rs"), "").expect("app source");
+        run(&root, "cargo", &["generate-lockfile", "--quiet"]);
+        run(
+            &root,
+            "cargo",
+            &["update", "--quiet", "serde_json", "--precise", "1.0.150"],
+        );
+        run(
+            &root,
+            "cargo",
+            &["update", "--quiet", "serde", "--precise", "1.0.228"],
+        );
+
+        fs::create_dir_all(root.join("xtask/src")).expect("xtask dir");
+        fs::write(
+            root.join("xtask/Cargo.toml"),
+            format!(
+                "[package]\nname = \"xtask\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n[dependencies]\nneeds-newer = {{ git = \"file://{}\" }}\n",
+                dep.display()
+            ),
+        )
+        .expect("xtask manifest");
+        fs::write(root.join("xtask/src/main.rs"), "fn main() {}\n").expect("xtask source");
+        fs::write(
+            root.join("Cargo.toml"),
+            "[workspace]\nmembers = [\"app\", \"xtask\"]\nresolver = \"3\"\n",
+        )
+        .expect("root manifest");
+
+        update_lock(&root).expect("the lock takes the new dependency");
+
+        assert_eq!(locked(&root, "serde_json"), "1.0.154");
+        assert_eq!(locked(&root, "serde"), "1.0.228");
+        assert_eq!(locked(&root, "needs-newer"), "0.1.0");
+        drop(fs::remove_dir_all(&base));
+    }
 
     #[test]
     fn keeps_project_targets_in_the_toolchain() {
