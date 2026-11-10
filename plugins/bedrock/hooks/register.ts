@@ -76,9 +76,6 @@ export const adoptCommand = (
 	...RUNNERS[language](source),
 	"adopt",
 	request.target,
-	...(language === "typescript"
-		? ["--package", `file:${source}/packages/typescript-bedrock`]
-		: []),
 	...(language === "swift" && request.cxx ? ["--cxx"] : []),
 	request.apply ? "--yes" : "--dry-run",
 ];

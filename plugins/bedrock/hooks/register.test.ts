@@ -101,14 +101,12 @@ describe("adoptCommand", () => {
 		throw new TypeError(request);
 	}
 
-	test("runs each bedrock from the checkout", () => {
+	test("runs each bedrock from the checkout, without a machine-local --package", () => {
 		expect(adoptCommand(SOURCE, "typescript", request)).toEqual([
 			"bun",
 			`${SOURCE}/packages/typescript-bedrock/src/cli.ts`,
 			"adopt",
 			"/work/app",
-			"--package",
-			`file:${SOURCE}/packages/typescript-bedrock`,
 			"--dry-run",
 		]);
 		expect(adoptCommand(SOURCE, "rust", request)).toEqual([
