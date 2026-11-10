@@ -13,6 +13,7 @@ use crate::files::{
     Managed, RUST, STARTERS, TOOLCHAIN,
 };
 use crate::manifest;
+use crate::mod_paths::prefix_paths;
 use crate::plan::Step;
 
 /// Files whose job a managed file took over: hook managers, the old toolchain and
@@ -156,15 +157,31 @@ fn gate_integration_test(source: &str) -> Option<String> {
     Some(format!("{head}#![cfg(test)]\n\n{tail}"))
 }
 
-/// Every `foo/mod.rs` under a `src/` directory, with the `foo.rs` it moves to.
-fn mod_files(directory: &Path, found: &mut Vec<(PathBuf, PathBuf)>) -> io::Result<()> {
+/// A `foo/mod.rs` and the `foo.rs` it moves to, with its text once its relative paths
+/// reach the same files from there.
+type ModMove = (PathBuf, PathBuf, Option<String>);
+
+/// Every `foo/mod.rs` under a `src/` directory, with the `foo.rs` it moves to. A file
+/// whose paths cannot be rewritten safely stays where it is, and gets a warning.
+fn mod_files(directory: &Path, found: &mut Vec<ModMove>) -> io::Result<()> {
     for entry in fs::read_dir(directory)? {
         let path = entry?.path();
         if path.is_dir() {
             let module = path.join("mod.rs");
             let sibling = path.with_extension("rs");
             if module.is_file() && !sibling.exists() {
-                found.push((module, sibling));
+                let text = fs::read_to_string(&module)?;
+                let name = path.file_name().unwrap_or_default().to_string_lossy();
+                match prefix_paths(&text, &format!("{name}/")) {
+                    Some(updated) => {
+                        let content = (updated != text).then_some(updated);
+                        found.push((module, sibling, content));
+                    }
+                    None => eprintln!(
+                        "{}: not renamed to {name}.rs, because a #[path] or include! in it cannot be rewritten safely; move it by hand",
+                        module.display()
+                    ),
+                }
             }
             mod_files(&path, found)?;
         }
@@ -281,9 +298,10 @@ pub(crate) fn plan(root: &Path, source: &Source, targets: &[&str]) -> io::Result
         if directory.join("src").is_dir() {
             mod_files(&directory.join("src"), &mut moves)?;
         }
-        steps.extend(moves.into_iter().map(|(from, to)| Step::Move {
+        steps.extend(moves.into_iter().map(|(from, to, content)| Step::Move {
             from: relative(root, &from),
             path: relative(root, &to),
+            content,
         }));
     }
     Ok(steps)
@@ -387,7 +405,8 @@ pub(crate) fn update_lock(root: &Path) -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Source, conflicting, gate_integration_test, toolchain, update_lock};
+    use super::{Source, conflicting, gate_integration_test, mod_files, toolchain, update_lock};
+    use crate::inline_tests::{child_file, declarations};
     use std::fs;
     use std::path::Path;
     use std::process::Command;
@@ -533,5 +552,45 @@ mod tests {
                 .xtask_manifest()
                 .contains("path = \"../bedrock\"")
         );
+    }
+
+    #[test]
+    fn a_mod_rs_rename_keeps_its_path_attributes_and_includes_pointing_at_the_same_files() {
+        let root = std::env::temp_dir().join(format!("rust-bedrock-modrs-{}", std::process::id()));
+        if root.exists() {
+            fs::remove_dir_all(&root).unwrap();
+        }
+        let src = root.join("src");
+        fs::create_dir_all(src.join("session/matrix")).unwrap();
+        fs::create_dir_all(src.join("odd")).unwrap();
+        fs::write(
+            src.join("session/mod.rs"),
+            "#[cfg(test)]\n#[path = \"matrix/tests.rs\"]\nmod matrix;\ninclude!(\"data.rs\");\n",
+        )
+        .unwrap();
+        fs::write(src.join("session/matrix/tests.rs"), "").unwrap();
+        fs::write(src.join("session/data.rs"), "").unwrap();
+        fs::write(
+            src.join("odd/mod.rs"),
+            "include!(concat!(env!(\"OUT_DIR\"), \"/x.rs\"));",
+        )
+        .unwrap();
+        let mut moves = Vec::new();
+        mod_files(&src, &mut moves).unwrap();
+        assert_eq!(moves.len(), 1, "the file it cannot rewrite is skipped");
+        let (from, to, content) = moves.remove(0);
+        assert_eq!(to, src.join("session.rs"));
+        fs::rename(&from, &to).unwrap();
+        fs::write(&to, content.expect("the paths change")).unwrap();
+        let text = fs::read_to_string(&to).unwrap();
+        let module = declarations(&text).remove(0);
+        assert_eq!(
+            child_file(&to, &module),
+            Some(src.join("session/matrix/tests.rs"))
+        );
+        assert!(
+            src.join("session/data.rs").is_file() && text.contains("include!(\"session/data.rs\")")
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 }
