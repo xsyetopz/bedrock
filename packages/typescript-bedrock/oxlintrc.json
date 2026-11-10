@@ -346,6 +346,14 @@
 			}
 		},
 		{
+			"files": ["**/hooks/**"],
+			"rules": {
+				"eslint/func-style": "off",
+				"promise/prefer-await-to-then": "off",
+				"promise/no-callback-in-promise": "off"
+			}
+		},
+		{
 			"files": ["**/*.d.{ts,mts,cts}"],
 			"rules": {
 				"typescript/no-namespace": "off"
