@@ -1,6 +1,85 @@
 {
+	"$schema": "https://clawdipedia.cc/schemas/claude-code-marketplace.json",
 	"name": "xsyetopz",
-	"description": "Claude Code plugins for repos set up with the bedrocks.",
+	"description": "Claude Code plugins by xsyetopz.",
 	"owner": { "name": "xsyetopz" },
-	"plugins": [{ "name": "bedrock", "source": "./plugins/bedrock" }]
+	"plugins": [
+		{
+			"name": "bedrock",
+			"source": "./plugins/bedrock",
+			"description": "Adds /adopt to set a repo up with the bedrocks for Bun, Rust, Swift, and C++, and keeps Claude on bun in Bun repos.",
+			"category": "development"
+		},
+		{
+			"name": "claudetto",
+			"source": {
+				"source": "git-subdir",
+				"url": "https://github.com/xsyetopz/claudetto.git",
+				"path": "plugins/claudetto"
+			},
+			"description": "Tunes Claude Code for coding at the lowest token cost, through its official extension points only: settings, hooks, skills, and an output style. It patches nothing.",
+			"category": "productivity"
+		},
+		{
+			"name": "claudetto-you-should-know",
+			"source": {
+				"source": "git-subdir",
+				"url": "https://github.com/xsyetopz/claudetto.git",
+				"path": "plugins/claudetto-you-should-know"
+			},
+			"description": "Shows a short note above the prompt when a side check finds something about the work you likely missed. Off by default; once on, one small request every sixth step, no telemetry.",
+			"category": "productivity"
+		},
+		{
+			"name": "claudetto-openspec",
+			"source": {
+				"source": "git-subdir",
+				"url": "https://github.com/xsyetopz/claudetto.git",
+				"path": "plugins/claudetto-openspec"
+			},
+			"description": "A lean OpenSpec workflow: one deferred tool that validates, reports status, and archives a change, and six short skills. It needs no openspec executable and no network.",
+			"category": "productivity"
+		},
+		{
+			"name": "clawdipedia-docs",
+			"displayName": "Anthropic Docs",
+			"source": {
+				"source": "git-subdir",
+				"url": "https://github.com/xsyetopz/www.clawdipedia.cc.git",
+				"path": "plugin"
+			},
+			"description": "MCP server and skill for four doc sources: Clawdipedia (unofficial Claude Code docs), platform.claude.com, code.claude.com, and claude.com/resources. Searches, reads pages, serves schemas.",
+			"category": "documentation"
+		},
+		{
+			"name": "clawdipedia-docs-cli",
+			"displayName": "Anthropic Docs CLI",
+			"source": {
+				"source": "git-subdir",
+				"url": "https://github.com/xsyetopz/www.clawdipedia.cc.git",
+				"path": "cli"
+			},
+			"description": "The same four doc sources as a clawdipedia command for the Bash tool, plus a light skill. No MCP server, so it adds no tool list. Needs Bun. Claude Code only.",
+			"category": "documentation"
+		},
+		{
+			"name": "cc-inspect",
+			"source": {
+				"source": "git-subdir",
+				"url": "https://github.com/xsyetopz/www.clawdipedia.cc.git",
+				"path": "inspect"
+			},
+			"description": "MCP server and skill that read your Claude Code transcripts and the code of the installed binary: sessions, code, surface, and release. Local, except release notes and the readable view.",
+			"category": "development"
+		},
+		{
+			"name": "asd-ste100",
+			"source": {
+				"source": "github",
+				"repo": "xsyetopz/asd-ste100-skill-next"
+			},
+			"description": "Rewrites English in the style of ASD-STE100 Simplified Technical English, so that a model or a reader with no way to ask has one reading. Includes the ste-lint script for the structural rules.",
+			"category": "writing"
+		}
+	]
 }
