@@ -1,6 +1,6 @@
 {
 	"name": "bedrock",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"description": "Adds /adopt to set a repo up with the bedrocks for Bun, Rust, Swift, and C++, and keeps Claude on bun in Bun repos.",
 	"author": { "name": "xsyetopz" }
 }
