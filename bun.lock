@@ -18,7 +18,7 @@
     },
     "packages/typescript-bedrock": {
       "name": "typescript-bedrock",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "bin": {
         "typescript-bedrock": "./src/cli.ts",
       },
