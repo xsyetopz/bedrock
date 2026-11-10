@@ -55,7 +55,7 @@ const migrateScripts = (
 	for (const [name, command] of Object.entries(tools)) {
 		if (kept[name] !== undefined && kept[name] !== command) {
 			notes.push(
-				`Replaced script "${name}" (${JSON.stringify(kept[name])}) with ${JSON.stringify(command)}. Move any step it still needs, such as a build, into "${name}".`,
+				`Replaced script "${name}" (${JSON.stringify(kept[name])}) with ${JSON.stringify(command)}. Move any step it still needs, such as a build, into a \`project-${name}\` recipe in project.just, which \`just ${name}\` runs.`,
 			);
 		}
 	}
