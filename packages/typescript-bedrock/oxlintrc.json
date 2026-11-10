@@ -368,6 +368,12 @@
 			}
 		},
 		{
+			"files": ["**/hooks/register.{js,mjs,ts,mts}"],
+			"rules": {
+				"import/max-dependencies": "off"
+			}
+		},
+		{
 			"files": ["**/*.d.{ts,mts,cts}"],
 			"rules": {
 				"typescript/no-namespace": "off"
