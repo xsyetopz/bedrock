@@ -94,6 +94,23 @@ describe("migrateManifest", () => {
 		expect(manifest["trustedDependencies"]).toEqual(["esbuild"]);
 	});
 
+	test("drops trusted entries for the packages it removed", () => {
+		const { manifest } = migrateManifest(
+			{
+				name: "app",
+				devDependencies: { "@biomejs/biome": "2.0.0" },
+				trustedDependencies: ["@biomejs/biome", "esbuild"],
+			},
+			template,
+		);
+		expect(manifest["trustedDependencies"]).toEqual(["esbuild"]);
+		const { manifest: only } = migrateManifest(
+			{ name: "app", trustedDependencies: ["@biomejs/biome"] },
+			template,
+		);
+		expect("trustedDependencies" in only).toBe(false);
+	});
+
 	test("merges overrides: the template wins a conflict, the target keeps the rest", () => {
 		const { manifest } = migrateManifest(
 			{
