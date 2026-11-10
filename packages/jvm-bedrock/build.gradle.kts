@@ -3,7 +3,7 @@ plugins {
   id("bedrock.application")
 }
 
-version = "0.1.0"
+version = "0.1.1"
 
 application { mainClass = "bedrock.jvm.MainKt" }
 

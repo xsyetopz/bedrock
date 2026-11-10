@@ -1,7 +1,7 @@
 import Foundation
 
 /// The release `new` and `adopt` pin BuildTools to.
-let version = "0.1.0"
+let version = "0.1.1"
 let repository = "https://github.com/xsyetopz/bedrock"
 
 /// The files swift-bedrock writes, copied into its bundle at build time.
