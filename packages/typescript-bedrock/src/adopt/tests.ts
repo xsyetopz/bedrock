@@ -1,6 +1,7 @@
 import { join } from "node:path";
 
 import { listFiles } from "../files.ts";
+import { readBunfigTestIgnores } from "../ignores.ts";
 import type { Step } from "./steps.ts";
 
 const TEST_FILES = new Bun.Glob(
@@ -40,9 +41,16 @@ export const migrateTestFile = (text: string): string => {
 		: text;
 };
 
-/** Rewrites each test file outside node_modules and git's ignored files that is not on bun:test yet. */
+/**
+ * Rewrites each test file that is not on bun:test yet, except those in node_modules,
+ * those git ignores, and those bunfig.toml keeps `bun test` from running.
+ */
 export const testSteps = async (target: string): Promise<Step[]> => {
-	const paths = await listFiles(target, TEST_FILES);
+	const paths = await listFiles(
+		target,
+		TEST_FILES,
+		await readBunfigTestIgnores(target),
+	);
 	const texts = await Promise.all(
 		paths.map((path) => Bun.file(join(target, path)).text()),
 	);

@@ -77,4 +77,20 @@ describe("testSteps", () => {
 		expect(steps.map((step) => step.path)).toEqual(["src/a.test.ts"]);
 		await rm(root, { recursive: true });
 	});
+
+	test("leaves the test files bunfig.toml says bun test skips", async () => {
+		const root = await mkdtemp(join(tmpdir(), "tests-test-"));
+		const jest = 'test("x", () => {});\n';
+		await Promise.all([
+			Bun.write(
+				join(root, "bunfig.toml"),
+				'[test]\npathIgnorePatterns = ["plugins/**"]\n',
+			),
+			Bun.write(join(root, "src/a.test.ts"), jest),
+			Bun.write(join(root, "plugins/lab/c.test.ts"), jest),
+		]);
+		const steps = await testSteps(root);
+		expect(steps.map((step) => step.path)).toEqual(["src/a.test.ts"]);
+		await rm(root, { recursive: true });
+	});
 });

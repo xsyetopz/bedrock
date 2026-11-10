@@ -219,6 +219,39 @@ describe("planAdoption and applySteps", () => {
 		expect(rerun.steps).toEqual([]);
 	});
 
+	test("keeps the ignores a repo adds to the oxlint and markdownlint configs", async () => {
+		const target = await tempDir();
+		await put(target, {
+			".oxlintrc.json":
+				'{\n\t"ignorePatterns": ["**/dist/**", "openspec/**", "labs/"]\n}\n',
+			".markdownlint-cli2.jsonc":
+				'{\n\t"ignores": ["**/node_modules/**", "openspec/**"]\n}\n',
+		});
+		const plan = await planAdoption(packageRoot, target, {});
+		await applySteps(target, plan.steps);
+		const oxlint = await readJson(join(target, ".oxlintrc.json"));
+		expect(oxlint["ignorePatterns"]).toEqual([
+			"**/coverage/**",
+			"**/dist/**",
+			"**/node_modules/**",
+			"**/*.gen.*",
+			"openspec/**",
+			"labs/",
+		]);
+		expect(oxlint["extends"]).toEqual([
+			"./node_modules/typescript-bedrock/oxlintrc.json",
+		]);
+		const markdown = await Bun.file(
+			join(target, ".markdownlint-cli2.jsonc"),
+		).text();
+		expect(markdown).toContain(
+			'"ignores": ["**/node_modules/**", "openspec/**"],',
+		);
+		expect(markdown).toContain("// A repo without a .gitignore");
+		const rerun = await planAdoption(packageRoot, target, {});
+		expect(rerun.steps).toEqual([]);
+	});
+
 	test("leaves a tsconfig alone when only its layout differs", async () => {
 		const target = await tempDir();
 		await put(target, {

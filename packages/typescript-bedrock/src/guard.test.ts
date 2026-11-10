@@ -84,6 +84,34 @@ describe("findProblems", () => {
 	});
 });
 
+describe("a repo's own ignores", () => {
+	test("skips the paths .oxlintrc.json ignores, and passes the repo that added them", async () => {
+		const root = await repo({
+			"package.json": JSON.stringify({ scripts: { test: "bun test" } }),
+			"src/index.ts": "export const one = 1;\n",
+		});
+		const { steps } = await planAdoption(PACKAGE_ROOT, root, {});
+		await applySteps(root, steps);
+		const oxlint = await Bun.file(join(root, ".oxlintrc.json")).text();
+		await Promise.all([
+			Bun.write(
+				join(root, ".oxlintrc.json"),
+				oxlint.replace('"**/*.gen.*"', '"**/*.gen.*", "openspec/**"'),
+			),
+			Bun.write(join(root, "openspec/old/a.ts"), `${SUPPRESSION}\n`),
+			Bun.write(
+				join(root, "openspec/old/package.json"),
+				JSON.stringify({ scripts: { build: "npx tsc" } }),
+			),
+		]);
+		expect(await findProblems(root)).toEqual([]);
+		await Bun.write(join(root, "other/a.ts"), `${SUPPRESSION}\n`);
+		expect(await findProblems(root)).toEqual([
+			"other/a.ts:1: suppression comment",
+		]);
+	}, 30_000);
+});
+
 describe("the package API check", () => {
 	test("needs JSDoc only on what the entry points expose", async () => {
 		const root = await repo({

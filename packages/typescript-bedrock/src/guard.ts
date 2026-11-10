@@ -5,6 +5,7 @@ import { $, Glob } from "bun";
 
 import { planAdoption, PROJECT_FILES } from "./adopt/adopt.ts";
 import { listFiles } from "./files.ts";
+import { readOxlintIgnores } from "./ignores.ts";
 
 // Written as alternations so this file does not match itself.
 const SUPPRESSION =
@@ -181,9 +182,12 @@ const reExported = (
  * The tracked source files each package exposes: its entry points and, through
  * relative re-exports, the files they re-export from.
  */
-const listApiFiles = async (cwd: string): Promise<string[]> => {
-	const sources = new Set(await listFiles(cwd, SOURCE));
-	const manifests = await listFiles(cwd, MANIFEST);
+const listApiFiles = async (
+	cwd: string,
+	ignore: readonly string[],
+): Promise<string[]> => {
+	const sources = new Set(await listFiles(cwd, SOURCE, ignore));
+	const manifests = await listFiles(cwd, MANIFEST, ignore);
 	const entries = await Promise.all(
 		manifests.map(async (path) => {
 			const manifest: unknown = await Bun.file(join(cwd, path)).json();
@@ -215,8 +219,11 @@ const listApiFiles = async (cwd: string): Promise<string[]> => {
 };
 
 /** Exported declarations in the package API that lack a JSDoc comment. */
-const findUndocumentedApi = async (cwd: string): Promise<string[]> => {
-	const files = await listApiFiles(cwd);
+const findUndocumentedApi = async (
+	cwd: string,
+	ignore: readonly string[],
+): Promise<string[]> => {
+	const files = await listApiFiles(cwd, ignore);
 	if (files.length === 0) {
 		return [];
 	}
@@ -255,15 +262,18 @@ const findDrift = async (cwd: string): Promise<string[]> => {
 		);
 };
 
-export const findProblems = async (cwd: string): Promise<string[]> => [
-	...(await findSuppressions(cwd, await listFiles(cwd, SOURCE))),
-	...(await findUndocumentedApi(cwd)),
-	...(await findForeignFiles(cwd)),
-	...(await findForeignScripts(cwd)),
-	...(await findTypescriptDrift(cwd)),
-	...findUnsortedCatalogs(await Bun.file(join(cwd, "package.json")).json()),
-	...(await findDrift(cwd)),
-];
+export const findProblems = async (cwd: string): Promise<string[]> => {
+	const ignore = await readOxlintIgnores(cwd);
+	return [
+		...(await findSuppressions(cwd, await listFiles(cwd, SOURCE, ignore))),
+		...(await findUndocumentedApi(cwd, ignore)),
+		...(await findForeignFiles(cwd)),
+		...(await findForeignScripts(cwd)),
+		...(await findTypescriptDrift(cwd)),
+		...findUnsortedCatalogs(await Bun.file(join(cwd, "package.json")).json()),
+		...(await findDrift(cwd)),
+	];
+};
 
 export const guard = async (cwd: string): Promise<number> => {
 	const problems = await findProblems(cwd);

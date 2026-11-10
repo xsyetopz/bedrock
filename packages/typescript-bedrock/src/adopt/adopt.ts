@@ -1,8 +1,8 @@
 import { realpath } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-import { mergeBunfig } from "./bunfig.ts";
-import { asRecord, exists, type Json, readJsonc, toJson } from "./json.ts";
+import { copies, existing, planBunfig } from "./copies.ts";
+import { asRecord, type Json, readJsonc, toJson } from "./json.ts";
 import { migrateManifest } from "./manifest.ts";
 import { sharedSteps } from "./shared.ts";
 import { pending, type Step } from "./steps.ts";
@@ -100,7 +100,8 @@ export const BASE_FILES = [
 	".markdownlint.jsonc",
 	"justfile",
 ];
-/** Thin files that point at typescript-bedrock. A changed copy is backed up, then replaced. */
+/** Thin files that point at typescript-bedrock. A changed copy is backed up, then replaced,
+ * except the entries a repo adds to the ignore list of `.oxlintrc.json` or `.markdownlint-cli2.jsonc`, which stay. */
 const TOOL_FILES = [
 	".bun-version",
 	".github/workflows/typescript.yml",
@@ -113,46 +114,6 @@ const STARTER_FILES = [".vscode/extensions.json", ".vscode/settings.json"];
 /** The CI file of the old template, or one that runs another package manager. */
 const OLD_CI = ".github/workflows/ci.yml";
 const OLD_CI_COMMAND = /\b(?:npm|npx|pnpm|yarn)\b|bun run verify/u;
-
-const existing = async (
-	root: string,
-	paths: readonly string[],
-): Promise<string[]> => {
-	const found = await Promise.all(
-		paths.map((path) => exists(join(root, path))),
-	);
-	return paths.filter((_, index) => found[index] === true);
-};
-
-/** npm packs drop `bunfig.toml`, and linters read nested configs, so these keep a suffix. */
-const STORED_WITH_SUFFIX = new Set([
-	".markdownlint-cli2.jsonc",
-	".oxlintrc.json",
-	"bunfig.toml",
-]);
-const storedPath = (path: string): string =>
-	STORED_WITH_SUFFIX.has(path) ? `${path}.template` : path;
-
-const copyFile = async (dir: string, path: string): Promise<Step> => ({
-	kind: "write",
-	path,
-	content: await Bun.file(join(dir, storedPath(path))).text(),
-	executable: path.startsWith(".githooks/"),
-});
-
-const copies = async (
-	dir: string,
-	target: string,
-	paths: readonly string[],
-	overwrite: boolean,
-): Promise<Step[]> => {
-	const present = new Set(overwrite ? [] : await existing(target, paths));
-	return Promise.all(
-		paths
-			.filter((path) => !present.has(path))
-			.map((path) => copyFile(dir, path)),
-	);
-};
 
 const planManifest = async (
 	packageRoot: string,
@@ -174,21 +135,6 @@ const planManifest = async (
 		await templateManifest(packageRoot, manifest, packageSpec),
 		pnpm,
 	);
-};
-
-const planBunfig = async (
-	filesRoot: string,
-	target: string,
-): Promise<{ steps: Step[]; notes: string[] }> => {
-	const file = Bun.file(join(target, "bunfig.toml"));
-	const merged = mergeBunfig(
-		await Bun.file(join(filesRoot, storedPath("bunfig.toml"))).text(),
-		(await file.exists()) ? await file.text() : undefined,
-	);
-	return {
-		steps: [{ kind: "write", path: "bunfig.toml", content: merged.content }],
-		notes: merged.notes,
-	};
 };
 
 const planTsconfig = async (
