@@ -1,11 +1,14 @@
 #!/usr/bin/env bun
 import { adopt } from "./adopt/command.ts";
 import { guard } from "./guard.ts";
+import { lint } from "./lint.ts";
 
 const USAGE = `Usage: typescript-bedrock <command> [args]
 
 Commands:
   adopt <target>     Set up a repo with typescript-bedrock. See \`adopt --help\`.
+  lint [oxlint args] Run oxlint. A type-aware run waits for the machine-wide lock,
+                     so one runs at a time on this machine.
   guard              Report suppression comments, foreign lockfiles and scripts,
                      TypeScript drift, and unsorted catalogs, and files that differ
                      from what adopt writes.`;
@@ -13,6 +16,7 @@ Commands:
 const COMMANDS: Record<string, (args: string[]) => Promise<number>> = {
 	adopt,
 	guard: () => guard(process.cwd()),
+	lint,
 };
 
 const [name = "", ...args] = Bun.argv.slice(2);

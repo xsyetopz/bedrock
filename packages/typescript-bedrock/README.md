@@ -14,6 +14,7 @@ Shared tooling for strict Bun and TypeScript 7 repos. It holds the configs each 
 | Command | Does |
 | --- | --- |
 | `typescript-bedrock adopt <target>` | Set up a repo. `--help` lists the options. |
+| `typescript-bedrock lint [oxlint args]` | Run oxlint. A type-aware run takes the lock `/tmp/typescript-bedrock-lint.lock`, so one runs at a time on the machine and a second one prints that it waits |
 | `typescript-bedrock guard` | Fail on suppression comments, other package managers, TypeScript drift, unsorted catalogs, package API without JSDoc, and files that differ from what `adopt` writes |
 
 `adopt` writes `.just/typescript.just` and `.github/workflows/typescript.yml` beside the files every bedrock shares (`files/base`, a copy of `base/`). Git hooks, Markdown linting, and `AGENTS.md` come from the shared part; `just setup` points git at `.githooks`. `adopt` upserts its own `typescript-bedrock` block in `AGENTS.md`, `.gitignore`, `.gitattributes`, `.editorconfig`, and `.github/dependabot.yml` and keeps the rest of each file. It keeps every file it replaces or removes as `<file>.bak`, and a second `adopt` plans nothing.

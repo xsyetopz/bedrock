@@ -36,6 +36,15 @@
 			}
 		],
 		"typescript/dot-notation": "error",
+		"typescript/no-misused-promises": [
+			"error",
+			{
+				"checksVoidReturn": {
+					"arguments": false
+				}
+			}
+		],
+		"typescript/strict-void-return": "off",
 		"typescript/prefer-readonly-parameter-types": "off",
 		"eslint/arrow-body-style": ["error", "as-needed"],
 		"eslint/grouped-accessor-pairs": "error",
