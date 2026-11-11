@@ -19,7 +19,7 @@ AlignAfterOpenBracket: AlwaysBreak
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 BinPackArguments: false
-BinPackParameters: false
+BinPackParameters: OnePerLine
 AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortCompoundRequirementOnASingleLine: true

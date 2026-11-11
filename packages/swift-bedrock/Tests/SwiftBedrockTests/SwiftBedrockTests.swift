@@ -271,3 +271,64 @@ struct Starters {
     #expect(Xcode.wired(wired) == nil)
   }
 }
+
+/// Checks the C++ template against the SchemaStore schema for clang-format 21
+/// (`Tests/Fixtures/clang-format-21.x.json`), so a key that clang-format changed
+/// from a boolean to an enum fails here instead of in an editor.
+@Suite
+struct ClangFormatTemplate {
+  /// The keys and scalar values of a flat `.clang-format`, one level of nesting at most.
+  private func entries(_ text: String) -> [(parent: String?, key: String, value: String)] {
+    var parent: String?
+    var found: [(parent: String?, key: String, value: String)] = []
+    for line in text.split(separator: "\n") where !line.hasPrefix("#") && line != "---" {
+      guard let colon = line.firstIndex(of: ":") else { continue }
+      let nested = line.hasPrefix(" ")
+      let key = line[..<colon].trimmingCharacters(in: .whitespaces)
+      var value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+      if value.count >= 2, value.hasPrefix("\""), value.hasSuffix("\"") {
+        value = String(value.dropFirst().dropLast())
+      }
+      if !nested { parent = value.isEmpty ? key : nil }
+      found.append((nested ? parent : nil, key, value))
+    }
+    return found
+  }
+
+  @Test
+  func matchesTheSchema() throws {
+    let schema = try #require(
+      JSONSerialization.jsonObject(
+        with: Data(packageFile("Tests/Fixtures/clang-format-21.x.json").utf8)
+      ) as? [String: Any]
+    )
+    let top = try #require(schema["properties"] as? [String: [String: Any]])
+    let template = try packageFile("Sources/SwiftBedrock/files/cpp/.clang-format")
+    var problems: [String] = []
+    for (parent, key, value) in entries(template) where !value.isEmpty {
+      let nested = parent.flatMap { top[$0]?["properties"] as? [String: [String: Any]] }
+      guard let property = (parent == nil ? top : nested)?[key] else {
+        problems.append("\(key) is not in the schema")
+        continue
+      }
+      if let allowed = property["enum"] as? [String] {
+        if !allowed.contains(value) { problems.append("\(key): \(value) is not in \(allowed)") }
+      } else if property["type"] as? String == "boolean" {
+        if !["true", "false"].contains(value) {
+          problems.append("\(key): \(value) is not a boolean")
+        }
+      } else if property["type"] as? String == "integer" {
+        if Int(value) == nil { problems.append("\(key): \(value) is not an integer") }
+      }
+    }
+    #expect(problems.isEmpty, "\(problems)")
+  }
+
+  @Test
+  func rootCopyMatchesTheTemplate() throws {
+    #expect(
+      try packageFile("Sources/SwiftBedrock/files/cpp/.clang-format")
+        == packageFile("../../.clang-format")
+    )
+  }
+}
