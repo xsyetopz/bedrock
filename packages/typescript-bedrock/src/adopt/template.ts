@@ -8,9 +8,9 @@ const SCRIPTS = {
 	format: "bun fmt",
 	"format:check": "bun fmt --check",
 	guard: "typescript-bedrock guard",
-	lint: "bun run --sequential --no-exit-on-error oxlint markdownlint-cli2",
+	lint: "bun run --sequential --no-exit-on-error 'typescript-bedrock lint' markdownlint-cli2",
 	"lint:fix":
-		"bun run --sequential --no-exit-on-error 'oxlint --fix' 'markdownlint-cli2 --fix'",
+		"bun run --sequential --no-exit-on-error 'typescript-bedrock lint --fix' 'markdownlint-cli2 --fix'",
 	test: "bun test --pass-with-no-tests",
 	typecheck: "bun check",
 	verify: "bun run --sequential format:check typecheck lint guard test",

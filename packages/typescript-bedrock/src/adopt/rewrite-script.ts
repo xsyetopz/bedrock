@@ -60,11 +60,11 @@ const TOOLS: ReadonlyMap<string, (args: Tokens) => Tokens> = new Map<
 		([sub = "", ...args]) =>
 			sub === "format"
 				? ["bun", "fmt", ...(args.includes("--write") ? [] : ["--check"])]
-				: ["oxlint", ...withFix(args)],
+				: ["typescript-bedrock", "lint", ...withFix(args)],
 	],
 	["cross-env", (args) => rewriteCommand(args)],
 	["esno", runOnBun],
-	["eslint", (args) => ["oxlint", ...withFix(args)]],
+	["eslint", (args) => ["typescript-bedrock", "lint", ...withFix(args)]],
 	["jest", (args) => ["bun", "test", ...args]],
 	["node", runOnBun],
 	["npm", (args) => packageManager("npm", args)],

@@ -15,6 +15,8 @@ Every rule in the `correctness`, `suspicious`, `pedantic`, and `perf` categories
 
 oxlint loads its eslint, typescript, unicorn, oxc, import, promise, node, and jest plugins, and it runs type-aware rules through `oxlint-tsgolint`, which brings its own copy of TypeScript. `bunfig.toml` sets `[run] bun = true`, so oxlint runs on Bun even where Node.js is installed.
 
+Each type-aware run loads a whole TypeScript program into memory, and a repo with a large overloaded API can take gigabytes in one run. The recipes and scripts run `typescript-bedrock lint` instead of `oxlint`, which takes a lock in `/tmp/typescript-bedrock-lint.lock` that every repo, sandbox, and session on the machine shares. A second run prints that it waits and starts when the first finishes; a lock whose process is gone is broken. oxlint documents no memory or thread option for `tsgolint`, so the config cuts the two checks that were measured as the cause: `typescript/strict-void-return` is off, and `typescript/no-misused-promises` skips `checksVoidReturn.arguments`. Both resolve the contextual signature of each callback argument, which an API with many overloads makes expensive. Keep the `include` of each `tsconfig.json` to the folders you lint, as the oxlint docs advise.
+
 Each repo keeps its own `ignorePatterns` (`coverage`, `dist`, `node_modules`, `*.gen.*`), because oxlint does not inherit them through `extends`.
 
 ## Suppression Comments
