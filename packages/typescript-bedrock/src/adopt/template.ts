@@ -18,7 +18,9 @@ const SCRIPTS = {
 
 /**
  * Picks where the repo gets typescript-bedrock from: the --package spec, then the
- * repo's own non-catalog spec, then its catalog pin, then this version.
+ * repo's own non-catalog spec, then its catalog pin, then this version. A `file:` or
+ * `link:` spec points into one machine's disk, which a clean runner lacks, so only
+ * --package keeps one.
  */
 const bedrockSpec = (
 	manifest: Json,
@@ -30,7 +32,11 @@ const bedrockSpec = (
 	if (packageSpec !== undefined) {
 		return packageSpec;
 	}
-	if (typeof current === "string" && current !== "catalog:") {
+	if (
+		typeof current === "string" &&
+		current !== "catalog:" &&
+		!/^(?:file|link):/u.test(current)
+	) {
 		return current;
 	}
 	return typeof pinned === "string" ? pinned : String(own["version"]);

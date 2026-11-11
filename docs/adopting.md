@@ -40,7 +40,7 @@ Project checks that `just verify` should run, such as a build or a repo-specific
 | `--yes` | Apply the plan without asking. |
 | `--no-install` | Skip `bun install` and the steps that run after it. |
 
-Without `--package`, adopt keeps the repo's current `typescript-bedrock` spec, or pins the version it ships with. The target is the repo to change; adopt stops with an error when you point it at the `typescript-bedrock` folder.
+Without `--package`, adopt keeps the repo's current `typescript-bedrock` version or git spec, or pins the version it ships with. It replaces a `file:` or `link:` spec, since a clean runner has no such path; only `--package` writes one. The target is the repo to change; adopt stops with an error when you point it at the `typescript-bedrock` folder.
 
 ### Package Manager
 
