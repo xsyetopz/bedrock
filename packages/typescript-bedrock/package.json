@@ -1,6 +1,6 @@
 {
 	"name": "typescript-bedrock",
-	"version": "0.1.8",
+	"version": "0.1.9",
 	"description": "Strictest Bun + TypeScript 7 tooling: shared configs, git hooks, a guard, and an adopt command.",
 	"license": "MIT",
 	"author": "xsyetopz",

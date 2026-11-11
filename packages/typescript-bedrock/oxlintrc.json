@@ -142,7 +142,12 @@
 		"typescript/prefer-return-this-type": "error",
 		"typescript/prefer-string-starts-ends-with": "error",
 		"typescript/unified-signatures": "error",
-		"unicorn/catch-error-name": "error",
+		"unicorn/catch-error-name": [
+			"error",
+			{
+				"ignore": ["^_?\\$$"]
+			}
+		],
 		"unicorn/consistent-date-clone": "error",
 		"unicorn/consistent-existence-index-check": "error",
 		"unicorn/error-message": "error",
