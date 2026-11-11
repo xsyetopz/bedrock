@@ -41,7 +41,7 @@ Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`
 
 ## Releases
 
-Bump a bedrock's version in `packages/typescript-bedrock/package.json`, `packages/rust-bedrock/Cargo.toml`, `packages/jvm-bedrock/build.gradle.kts`, or `packages/swift-bedrock/Sources/SwiftBedrock/Files.swift`. Once every check passes on `main`, the Release workflow publishes a new `typescript-bedrock` version to npm, then tags that commit `<bedrock>-v<version>` and creates its GitHub release. Adopted TypeScript repos install from npm; Rust and Swift repos pin the tags, and JVM repos carry a copy of the conventions. `gh workflow run Release` releases the head of `main` by hand, once its checks have passed. npm trusts the Release workflow to publish `typescript-bedrock` through trusted publishing, so the repository holds no npm token.
+Bump a bedrock's version in `packages/typescript-bedrock/package.json`, `packages/rust-bedrock/Cargo.toml`, `packages/jvm-bedrock/build.gradle.kts`, `packages/swift-bedrock/Sources/SwiftBedrock/Files.swift`, or `packages/go-bedrock/cmd/go-bedrock/main.go`. Once every check passes on `main`, the Release workflow publishes a new `typescript-bedrock` version to npm, then tags that commit `<bedrock>-v<version>` and creates its GitHub release. Adopted TypeScript repos install from npm; Rust, Go, and Swift repos pin the tags, and JVM repos carry a copy of the conventions. `gh workflow run Release` releases the head of `main` by hand, once its checks have passed. npm trusts the Release workflow to publish `typescript-bedrock` through trusted publishing, so the repository holds no npm token.
 
 ## Agents
 

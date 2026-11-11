@@ -7,6 +7,7 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift (with optional C++20)
 | [`typescript-bedrock`](packages/typescript-bedrock) | TypeScript and JavaScript | Bun 1.4.4, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
 | [`rust-bedrock`](packages/rust-bedrock) | Rust | Rust 1.99.1, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, inline unit tests |
 | [`jvm-bedrock`](packages/jvm-bedrock) | Java and Kotlin, with KMP, Compose Multiplatform, and Android | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |
+| [`go-bedrock`](packages/go-bedrock) | Go | The golang-standards project layout, golangci-lint v2 with a strict config, `go test`, bounded `GOMEMLIMIT`, `-p`, and `run.concurrency` |
 | [`swift-bedrock`](packages/swift-bedrock) | Swift, and C++20 with `--cxx` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config; clang-format and clang-tidy for C++ |
 
 ## What Every Repo Gets
@@ -38,7 +39,7 @@ From a Claude Code session with the plugin installed:
 /adopt cpp ../app --yes # Swift with C++20, in another folder
 ```
 
-Language names are case-insensitive: `typescript`, `ts`, `js`, or `bun`; `rust` or `rs`; `swift`; `cpp`, `c++`, `c`, or `objc` for Swift with C++; `jvm`, `java`, `kotlin`, `kt`, or `gradle`. Without `--yes`, `/adopt` prints the plan and changes nothing. It checks that `git`, `just`, and each language's toolchain are installed first, and names any that are missing.
+Language names are case-insensitive: `typescript`, `ts`, `js`, or `bun`; `rust` or `rs`; `swift`; `cpp`, `c++`, `c`, or `objc` for Swift with C++; `jvm`, `java`, `kotlin`, `kt`, or `gradle`; `go` or `golang`. Without `--yes`, `/adopt` prints the plan and changes nothing. It checks that `git`, `just`, and each language's toolchain are installed first, and names any that are missing.
 
 By hand, from a checkout of this repo:
 
@@ -90,6 +91,7 @@ Installed from the marketplace, the plugin clones this repo on its first `/adopt
 | `packages/typescript-bedrock` | The TypeScript bedrock, a workspace package published to npm |
 | `packages/rust-bedrock` | The Rust bedrock, a Cargo package with its starter files |
 | `packages/jvm-bedrock` | The JVM bedrock, a Kotlin CLI and the Gradle convention plugins it copies, built by the root `settings.gradle.kts` |
+| `packages/go-bedrock` | The Go bedrock, a Go module with its starter files |
 | `packages/swift-bedrock` | The Swift and C++ bedrock, built by the root `Package.swift` |
 | `plugins/bedrock` | The Claude Code plugin |
 

@@ -1,6 +1,6 @@
 /** What /adopt knows about each bedrock's language. */
 
-export type Language = "typescript" | "rust" | "swift" | "jvm";
+export type Language = "typescript" | "rust" | "swift" | "jvm" | "go";
 
 /** The bedrocks in the order their blocks sit in shared files. */
 export const LANGUAGES: readonly Language[] = [
@@ -8,6 +8,7 @@ export const LANGUAGES: readonly Language[] = [
 	"rust",
 	"swift",
 	"jvm",
+	"go",
 ];
 export const ALIASES = new Map<string, Language>([
 	["bun", "typescript"],
@@ -24,6 +25,8 @@ export const ALIASES = new Map<string, Language>([
 	["jvm", "jvm"],
 	["kotlin", "jvm"],
 	["kt", "jvm"],
+	["go", "go"],
+	["golang", "go"],
 ]);
 /** C, C++, and Objective-C come with swift-bedrock's C++ part. */
 export const CXX_ALIASES = new Set([
@@ -48,12 +51,14 @@ export const MARKERS: Readonly<Record<Language, readonly string[]>> = {
 		"build.sbt",
 		"build.xml",
 	],
+	go: ["go.mod"],
 };
 /** What each adopt runs, and where to get it. The recipes adopt writes need `just` too. */
 export const TOOLS: Readonly<Record<string, string>> = {
 	bun: "https://bun.sh, or brew install oven-sh/bun/bun",
 	cargo: "rustup from https://rustup.rs",
 	git: "the system's package manager, such as brew install git",
+	go: "https://go.dev/dl, or brew install go",
 	java: "a JDK 17 or newer, such as brew install openjdk",
 	just: "brew install just, or cargo install --locked just",
 	swift: "Xcode, or a toolchain from https://www.swift.org/install",
@@ -63,6 +68,7 @@ export const NEEDS: Readonly<Record<Language, string>> = {
 	rust: "cargo",
 	swift: "swift",
 	jvm: "java",
+	go: "go",
 };
 
 /** What starts each bedrock's CLI from the checkout at `source`. */
@@ -94,5 +100,12 @@ export const RUNNERS: Readonly<Record<Language, (source: string) => string[]>> =
 			"-c",
 			'"$0/gradlew" --quiet --project-dir "$0" :jvm-bedrock:installDist && exec "$0/packages/jvm-bedrock/build/install/jvm-bedrock/bin/jvm-bedrock" "$@"',
 			source,
+		],
+		go: (source) => [
+			"go",
+			"run",
+			"-C",
+			`${source}/packages/go-bedrock`,
+			"./cmd/go-bedrock",
 		],
 	};

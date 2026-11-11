@@ -17,7 +17,7 @@ const FOREIGN =
 
 const USAGE = [
 	"Usage: /adopt [<language>...] [<target>] [--cxx] [--yes]",
-	"Languages: typescript (ts, js, bun), rust, swift, cpp (c, c++, objc: Swift with C++20), jvm (java, kotlin, kt, gradle).",
+	"Languages: typescript (ts, js, bun), rust, swift, cpp (c, c++, objc: Swift with C++20), jvm (java, kotlin, kt, gradle), go (golang).",
 	"Without a language, it adopts each one the target has. Without --yes, it prints the plan and changes nothing.",
 ].join("\n");
 
@@ -177,7 +177,7 @@ export const runAdopt = async (
 		request.languages.length > 0 ? request.languages : await detect($, target);
 	if (languages.length === 0) {
 		return {
-			text: `${request.target} has no package.json, Cargo.toml, Package.swift, or JVM build file; name the languages.\n${USAGE}`,
+			text: `${request.target} has no package.json, Cargo.toml, Package.swift, go.mod, or JVM build file; name the languages.\n${USAGE}`,
 			context: [],
 		};
 	}
