@@ -88,7 +88,7 @@ describe("planAdoption and applySteps", () => {
 		expect(diff.stdout.toString()).toBe("");
 	});
 
-	test("pins typescript-bedrock in the catalog, or keeps a --package spec", async () => {
+	test("pins typescript-bedrock in the catalog, or keeps a --package spec while it is passed", async () => {
 		const target = await tempDir();
 		const plan = await planAdoption(packageRoot, target, {});
 		await applySteps(target, plan.steps);
@@ -106,13 +106,39 @@ describe("planAdoption and applySteps", () => {
 			packageSpec: "file:../typescript-bedrock",
 		});
 		await applySteps(local, localPlan.steps);
-		const rerun = await planAdoption(packageRoot, local, {});
+		const rerun = await planAdoption(packageRoot, local, {
+			packageSpec: "file:../typescript-bedrock",
+		});
 		expect(rerun.steps).toEqual([]);
 		const manifest = await readJson(join(local, "package.json"));
 		expect(asRecord(manifest["devDependencies"])["typescript-bedrock"]).toBe(
 			"file:../typescript-bedrock",
 		);
 		expect(manifest["packageManager"]).toBe("bun@1.4.4");
+	});
+
+	test("replaces a machine-local typescript-bedrock path with the pinned version", async () => {
+		const stale =
+			"file:/home/dev/.claude/plugins/cache/xsyetopz/bedrock/0.1.4/.bedrock/packages/typescript-bedrock";
+		const target = await tempDir();
+		await put(target, {
+			"package.json": json({
+				name: "app",
+				devDependencies: { "typescript-bedrock": stale },
+			}),
+		});
+		const plan = await planAdoption(packageRoot, target, {});
+		await applySteps(target, plan.steps);
+		const manifest = await readJson(join(target, "package.json"));
+		expect(asRecord(manifest["devDependencies"])["typescript-bedrock"]).toBe(
+			"catalog:",
+		);
+		expect(JSON.stringify(manifest)).not.toContain(".claude/plugins");
+		expect(
+			asRecord(asRecord(manifest["workspaces"])["catalog"])[
+				"typescript-bedrock"
+			],
+		).toBe("0.1.0");
 	});
 
 	test("migrates a Prettier, ESLint, and pnpm repo, keeping backups", async () => {
