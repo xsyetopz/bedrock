@@ -138,6 +138,7 @@ pub(crate) const KINDS: &[Kind] = &[
         files: &[
             kind_file!("lib", "Cargo.toml"),
             kind_file!("lib", "src/lib.rs"),
+            kind_file!("lib", "src/tests.rs"),
             kind_file!("lib", "tests/parse.rs"),
         ],
         target: None,
@@ -148,6 +149,7 @@ pub(crate) const KINDS: &[Kind] = &[
         files: &[
             kind_file!("bin", "Cargo.toml"),
             kind_file!("bin", "src/main.rs"),
+            kind_file!("bin", "src/tests.rs"),
         ],
         target: None,
     },
@@ -157,6 +159,7 @@ pub(crate) const KINDS: &[Kind] = &[
         files: &[
             kind_file!("no-std", "Cargo.toml"),
             kind_file!("no-std", "src/lib.rs"),
+            kind_file!("no-std", "src/tests.rs"),
         ],
         target: None,
     },
@@ -166,6 +169,7 @@ pub(crate) const KINDS: &[Kind] = &[
         files: &[
             kind_file!("ffi", "Cargo.toml"),
             kind_file!("ffi", "src/lib.rs"),
+            kind_file!("ffi", "src/tests.rs"),
         ],
         target: None,
     },
@@ -175,6 +179,7 @@ pub(crate) const KINDS: &[Kind] = &[
         files: &[
             kind_file!("wasm", "Cargo.toml"),
             kind_file!("wasm", "src/lib.rs"),
+            kind_file!("wasm", "src/tests.rs"),
         ],
         target: Some("wasm32-unknown-unknown"),
     },

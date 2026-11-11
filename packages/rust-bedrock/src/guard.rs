@@ -1,14 +1,14 @@
-//! Reports what Clippy cannot: test modules in other files, and files that differ
+//! Reports what Clippy cannot: unit tests that sit in the file they test, and files that differ
 //! from what adopt writes, such as a member that skips the workspace lints.
 
 use std::fs;
 use std::io;
-use std::path::{Component, Path};
+use std::path::Path;
 use std::process::Command;
 
 use crate::adopt::{Source, plan};
-use crate::inline_tests::{declarations, inline};
 use crate::plan::{Step, pending};
+use crate::test_modules::{inline_tests, move_out, path_tests, tests_file};
 
 /// The Rust files git tracks or would track.
 fn rust_files(root: &Path) -> io::Result<Vec<String>> {
@@ -34,46 +34,35 @@ fn rust_files(root: &Path) -> io::Result<Vec<String>> {
         .collect())
 }
 
-/// A `tests.rs` or `tests/` inside `src/` holds unit tests outside the file they test.
-pub(crate) fn is_test_file_in_src(path: &str) -> bool {
-    let parts: Vec<_> = Path::new(path).components().collect();
-    let Some(src) = parts
-        .iter()
-        .position(|part| *part == Component::Normal("src".as_ref()))
-    else {
-        return false;
-    };
-    parts[src + 1..].iter().any(|part| {
-        *part == Component::Normal("tests".as_ref())
-            || *part == Component::Normal("tests.rs".as_ref())
-    })
-}
-
 pub(crate) fn guard(root: &Path, source: &Source, fix: bool) -> io::Result<Vec<String>> {
     let mut problems = Vec::new();
     for path in rust_files(root)? {
         let file = root.join(&path);
-        // Inlining an earlier file can remove a later one in the list.
+        // Moving the tests of an earlier file can remove a later one in the list.
         if !file.exists() {
             continue;
         }
         if fix {
-            problems.extend(inline(&file));
-        } else {
-            let text = fs::read_to_string(&file)?;
-            for found in declarations(&text)
-                .into_iter()
-                .filter(|found| found.test_only)
-            {
-                problems.push(format!(
-                    "{path}:{}: mod {} keeps its tests in another file; move them here as `mod {} {{ … }}` (just lint-fix does it)",
-                    found.line, found.name, found.name
-                ));
-            }
+            problems.extend(move_out(&file));
+            continue;
         }
-        if is_test_file_in_src(&path) && file.exists() {
+        let text = fs::read_to_string(&file)?;
+        let destination = tests_file(&file);
+        let destination = destination.strip_prefix(root).unwrap_or(&destination);
+        for found in inline_tests(&text) {
             problems.push(format!(
-                "{path}: unit tests belong inline in the file they test, in #[cfg(test)] mod tests {{ … }}"
+                "{path}:{}: mod {} keeps its tests in this file; move them to {} and declare `#[cfg(test)] mod tests;` (just lint-fix does it)",
+                found.line,
+                found.name,
+                destination.display()
+            ));
+        }
+        for found in path_tests(&text) {
+            problems.push(format!(
+                "{path}:{}: mod {} sets its file with #[path]; drop the attribute and keep the tests in {} (just lint-fix does it)",
+                found.line,
+                found.name,
+                destination.display()
             ));
         }
     }
@@ -90,17 +79,4 @@ pub(crate) fn guard(root: &Path, source: &Source, fix: bool) -> io::Result<Vec<S
         });
     }
     Ok(problems)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::is_test_file_in_src;
-
-    #[test]
-    fn finds_test_files_inside_src_only() {
-        assert!(is_test_file_in_src("src/parser/tests.rs"));
-        assert!(is_test_file_in_src("crates/a/src/tests/mod.rs"));
-        assert!(!is_test_file_in_src("crates/a/tests/cli.rs"));
-        assert!(!is_test_file_in_src("src/parser.rs"));
-    }
 }
