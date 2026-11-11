@@ -49,7 +49,14 @@ describe("withLock", () => {
 			);
 		const results = await Promise.all([hold("a"), hold("b")]);
 		expect(results).toEqual(["a", "b"]);
-		expect(events).toEqual(["a:start", "a:end", "b:start", "b:end"]);
+		// Both holders race for `mkdir`, so either may run first.
+		const [first, second] = new Set(events.map((event) => event.split(":")[0]));
+		expect(events).toEqual([
+			`${first}:start`,
+			`${first}:end`,
+			`${second}:start`,
+			`${second}:end`,
+		]);
 		expect(messages).toHaveLength(1);
 		expect(messages[0]).toContain("waiting");
 	});
