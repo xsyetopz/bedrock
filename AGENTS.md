@@ -17,7 +17,7 @@
 <!-- /bedrock -->
 
 <!-- rust-bedrock -->
-- Keep Rust unit tests inline, as `#[cfg(test)] mod tests { … }` at the end of the file. `cargo bedrock guard` rejects a `mod tests;` whose body sits in another file, and `just lint-fix` moves it inline.
+- Keep Rust unit tests out of the file they test: declare `#[cfg(test)] mod tests;` with no `#[path]`, and put the body in `foo/tests.rs` beside `foo.rs`, or in `tests.rs` beside `lib.rs`, `main.rs`, or `mod.rs`. `cargo bedrock guard` rejects a `#[cfg(test)] mod name { … }` with its body in the file, and `just lint-fix` moves it out.
 - Silence a lint only with `#[expect(lint, reason = "…")]`. Clippy rejects `#[allow]`, and an `#[expect]` that no longer fires.
 - Start each integration test in `tests/` with `#![cfg(test)]`, and give its helpers `pub(crate)`.
 - Name module files `foo.rs` beside `foo/`, not `foo/mod.rs`.

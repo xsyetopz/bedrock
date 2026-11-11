@@ -32,7 +32,7 @@ lint:
     RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --locked --no-deps
     @just rust::deny
 
-# Inline out-of-line test modules and apply Clippy's fixes.
+# Move inline test modules to tests.rs and apply Clippy's fixes.
 lint-fix:
     cargo bedrock guard --fix
     cargo clippy --fix --allow-dirty --allow-staged --workspace --all-targets --all-features
@@ -42,7 +42,7 @@ lint-fix:
 test:
     cargo test --workspace --all-features --locked
 
-# Report out-of-line tests, members that skip the workspace lints, and drift.
+# Report inline tests, members that skip the workspace lints, and drift.
 guard:
     cargo bedrock guard
 

@@ -131,7 +131,7 @@ Work through them on a branch, in this order:
 
 `just setup` installs cargo-deny and [kache](https://github.com/kunobi-ninja/kache), and runs `kache init`, which makes kache Cargo's compiler wrapper for your user and starts its background service. Set `KACHE_DISABLED=1` to build without it. CI caches through `kache-action`.
 
-To fix the errors, run `just lint-fix`, which moves test modules from `tests.rs` files inline and applies Clippy's fixes to every target, tests included, then work through `just lint` one lint at a time. Silence a lint only with `#[expect(lint, reason = "…")]`, and document each public item, with `# Panics` and `# Errors` sections where they apply.
+To fix the errors, run `just lint-fix`, which moves each inline `#[cfg(test)] mod tests { … }` to a `tests.rs` file beside the file it tests, and applies Clippy's fixes to every target, tests included, then work through `just lint` one lint at a time. Silence a lint only with `#[expect(lint, reason = "…")]`, and document each public item, with `# Panics` and `# Errors` sections where they apply.
 
 ## Swift and C++
 
