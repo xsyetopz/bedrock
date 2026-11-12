@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { $ } from "bun";
 
 const BASE = join(import.meta.dir, "../../../../base/justfile");
+const MODULE = join(import.meta.dir, "../../files/.just/typescript.just");
 const roots: string[] = [];
 
 const scratch = async (project: string): Promise<string> => {
@@ -25,6 +26,16 @@ const scratch = async (project: string): Promise<string> => {
 const run = async (root: string, recipe: string): Promise<string> => {
 	const output = await $`just ${recipe}`.cwd(root).quiet().text();
 	return output.trim();
+};
+
+const typecheck = async (project: string): Promise<string> => {
+	const root = await scratch(project);
+	await Bun.write(join(root, ".just/typescript.just"), Bun.file(MODULE));
+	await Bun.write(
+		join(root, "package.json"),
+		'{"scripts":{"check":"echo bun check"}}',
+	);
+	return run(root, "typescript::typecheck");
 };
 
 afterAll(async () => {
@@ -47,5 +58,23 @@ describe("each", () => {
 	test("works without a project.just", async () => {
 		const root = await scratch("");
 		expect(await run(root, "test")).toBe("language test");
+	});
+});
+
+describe("typescript::typecheck", () => {
+	test("runs project-pre-typecheck before bun check", async () => {
+		const output = await typecheck(
+			'project-pre-typecheck:\n\t@echo "pre typecheck"\n',
+		);
+		expect(output).toContain("pre typecheck\n");
+		expect(output.indexOf("pre typecheck")).toBeLessThan(
+			output.indexOf("bun check"),
+		);
+	});
+
+	test("runs only bun check without such a recipe", async () => {
+		const output = await typecheck('project-lint:\n\t@echo "project lint"\n');
+		expect(output).not.toContain("pre typecheck");
+		expect(output).toContain("bun check");
 	});
 });

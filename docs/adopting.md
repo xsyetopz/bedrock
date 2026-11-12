@@ -21,7 +21,7 @@ Keep the clone afterwards. The adopted repo installs `typescript-bedrock` from t
 
 When it finishes, run `just setup`, then `just verify`, in the target. Each file adopt changed or removed is saved next to it as `<file>.bak`. Compare each backup with its replacement, move what a removed Makefile or hook manager did into `project.just`, and delete the backups; `.gitignore` already ignores them.
 
-Project checks that `just verify` should run, such as a build or a repo-specific script, go in `project.just` as recipes named `project-<task>`: `project-verify`, `project-test`, `project-lint`, and so on. The shared `justfile` runs the matching one after each language's `<task>`. Adopt replaces the `verify` script in `package.json`, so do not keep such steps there.
+Project checks that `just verify` should run, such as a build or a repo-specific script, go in `project.just` as recipes named `project-<task>`: `project-verify`, `project-test`, `project-lint`, and so on. The shared `justfile` runs the matching one after each language's `<task>`. `project-pre-typecheck` is the one that runs before a language's task: the TypeScript `typecheck` runs it before `bun check`, so generated files the types import exist in CI and in the pre-commit hook. Adopt replaces the `verify` script in `package.json`, so do not keep such steps there.
 
 ## What Every Bedrock Changes
 
