@@ -251,7 +251,7 @@ describe("planAdoption and applySteps", () => {
 			".oxlintrc.json":
 				'{\n\t"ignorePatterns": ["**/dist/**", "openspec/**", "labs/"]\n}\n',
 			".markdownlint-cli2.jsonc":
-				'{\n\t"ignores": ["**/node_modules/**", "openspec/**"]\n}\n',
+				'{\n\t"ignores": ["**/node_modules/**", "labs/**"]\n}\n',
 		});
 		const plan = await planAdoption(packageRoot, target, {});
 		await applySteps(target, plan.steps);
@@ -271,7 +271,7 @@ describe("planAdoption and applySteps", () => {
 			join(target, ".markdownlint-cli2.jsonc"),
 		).text();
 		expect(markdown).toContain(
-			'"ignores": ["**/node_modules/**", "openspec/**"],',
+			'"ignores": ["**/node_modules/**", ".claude/**", "openspec/**", "labs/**"],',
 		);
 		expect(markdown).toContain("// A repo without a .gitignore");
 		const rerun = await planAdoption(packageRoot, target, {});
