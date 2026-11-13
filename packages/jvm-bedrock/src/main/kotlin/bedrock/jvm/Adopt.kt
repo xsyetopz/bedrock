@@ -22,6 +22,7 @@ private val BASE =
     "justfile",
     ".githooks/commit-msg",
     ".githooks/pre-commit",
+    ".githooks/pre-push",
     ".markdownlint.jsonc",
     ".github/workflows/base.yml",
   )

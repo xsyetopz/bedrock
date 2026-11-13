@@ -199,6 +199,8 @@ describe("planAdoption and applySteps", () => {
 		]);
 		const hook = await stat(join(target, ".githooks/pre-commit"));
 		expect(hook.mode & 0o111).not.toBe(0);
+		const prePush = await stat(join(target, ".githooks/pre-push"));
+		expect(prePush.mode & 0o111).not.toBe(0);
 
 		await applySteps(target, plan.steps);
 		expect(await Bun.file(join(target, "package.json.bak")).exists()).toBe(

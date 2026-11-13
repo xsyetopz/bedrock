@@ -26,6 +26,7 @@ pub(crate) const BASE: &[Managed] = &[
     managed!("base", "justfile"),
     managed!("base", ".githooks/commit-msg", true),
     managed!("base", ".githooks/pre-commit", true),
+    managed!("base", ".githooks/pre-push", true),
     managed!("base", ".markdownlint.jsonc"),
     managed!("base", ".github/workflows/base.yml"),
 ];

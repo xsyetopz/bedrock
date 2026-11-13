@@ -97,6 +97,7 @@ export const BASE_FILES = [
 	".github/workflows/base.yml",
 	".githooks/commit-msg",
 	".githooks/pre-commit",
+	".githooks/pre-push",
 	".markdownlint.jsonc",
 	"justfile",
 ];

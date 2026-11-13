@@ -38,6 +38,7 @@ enum Files {
     managed("base", "justfile"),
     managed("base", ".githooks/commit-msg", executable: true),
     managed("base", ".githooks/pre-commit", executable: true),
+    managed("base", ".githooks/pre-push", executable: true),
     managed("base", ".markdownlint.jsonc"),
     managed("base", ".github/workflows/base.yml"),
   ]
