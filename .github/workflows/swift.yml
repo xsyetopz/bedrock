@@ -30,6 +30,9 @@ jobs:
         with:
           path: BuildTools/.build
           key: build-tools-${{ runner.arch }}-${{ steps.versions.outputs.swift }}-${{ hashFiles('BuildTools/Package.swift', 'BuildTools/Package.resolved') }}
+      # A repo whose checks need more on the runner, such as a library a C target links, adds those steps in this composite action.
+      - if: hashFiles('.github/actions/project-setup/action.yml') != ''
+        uses: ./.github/actions/project-setup
       - run: if [[ -f .just/cpp.just ]]; then just cpp::setup; fi
       - run: just swift::setup
       - run: if [[ -f .just/cpp.just ]]; then just cpp::verify; fi
