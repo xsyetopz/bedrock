@@ -1,7 +1,7 @@
 import Foundation
 
 /// The release `new` and `adopt` pin BuildTools to.
-let version = "0.1.2"
+let version = "0.1.3"
 let repository = "https://github.com/xsyetopz/bedrock"
 
 /// The files swift-bedrock writes, copied into its bundle at build time.
@@ -38,6 +38,7 @@ enum Files {
     managed("base", "justfile"),
     managed("base", ".githooks/commit-msg", executable: true),
     managed("base", ".githooks/pre-commit", executable: true),
+    managed("base", ".githooks/pre-push", executable: true),
     managed("base", ".markdownlint.jsonc"),
     managed("base", ".github/workflows/base.yml"),
   ]
