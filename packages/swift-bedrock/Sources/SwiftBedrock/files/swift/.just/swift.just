@@ -51,10 +51,11 @@ lint-fix:
     just swift::format
 
 # Run the Swift Testing tests, then each shared Xcode scheme's tests. A package
-# without a test target passes, as it does for Bun and Rust.
+# without a test target passes, as it does for Bun and Rust. grep reads the whole dump,
+# because under pipefail the early exit of grep -q fails the pipe and skips the tests.
 test:
     just swift::trim-cache
-    if [[ -f Package.swift ]] && swift package dump-package | grep -q '"type" : "test"'; then swift test --parallel {{ cached }}; fi
+    if [[ -f Package.swift ]] && swift package dump-package | grep '"type" : "test"' >/dev/null; then swift test --parallel {{ cached }}; fi
     just swift::xcode test
 
 # Report XCTest outside UI tests, settings the manifest loses, foreign tools, and drift.
