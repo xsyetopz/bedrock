@@ -10,10 +10,11 @@ mod? rust ".just/rust.just"
 mod? swift ".just/swift.just"
 mod? cpp ".just/cpp.just"
 mod? jvm ".just/jvm.just"
+mod? go ".just/go.just"
 
 import? "project.just"
 
-languages := "typescript rust swift cpp jvm"
+languages := "typescript rust swift cpp jvm go"
 
 # The bedrock release .bedrock.json pins; "source" runs the CLI from this checkout.
 bedrock_version := `sed -n 's/^[[:space:]]*"version": "\(.*\)",$/\1/p' .bedrock.json 2>/dev/null || true`

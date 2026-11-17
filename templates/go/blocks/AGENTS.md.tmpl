@@ -1,0 +1,5 @@
+- Build and test Go through `just`: `just go::test`, `just go::lint`, and `just go::format`. The recipes cap parallelism with `GOMEMLIMIT` and `GOFLAGS=-p`; `BEDROCK_GO_MEMLIMIT` and `BEDROCK_GO_JOBS` raise the caps on a dedicated machine.
+- Put commands under `cmd/<name>/` and private code under `internal/`, as the golang-standards project layout does.
+- Fix the cause of each golangci-lint finding in the code. `.golangci.yml` is the project's own once written, but loosen it only with the user's approval, and keep `run.concurrency` set.
+- Silence a finding only with `//nolint:<linter> // <reason>`; nolintlint rejects a directive without a linter name or a reason.
+- Keep `go.mod` and `go.sum` tidy: `just go::guard` fails when `go mod tidy` would change them.

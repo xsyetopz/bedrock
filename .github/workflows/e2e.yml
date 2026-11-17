@@ -32,6 +32,9 @@ jobs:
           # The swift tests build Swift 6.4 packages, and the C++ interop, with Xcode 27.
           - language: swift
             os: xcode-27
+          # Go and golangci-lint run the starter files through the same format and lint recipes.
+          - language: go
+            os: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,5 +45,14 @@ jobs:
       - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: just@1.59.0
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27"
+      - if: matrix.language == 'go'
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.15.0
+          install-only: true
       - run: bun install --frozen-lockfile
       - run: bun test "cli/src/languages/${{ matrix.language }}/e2e.test.ts"
