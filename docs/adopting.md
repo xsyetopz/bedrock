@@ -13,6 +13,8 @@ bedrock adopt <target> ts rust
 
 The target must be a git repository, and git is the backup: adopt refuses to change a file with uncommitted work unless you pass `--allow-dirty`, and it leaves no `.bak` files. Review the change with `git diff`, and move what a removed Makefile or hook manager did into `project.just`. When it finishes, run `just setup`, then `just verify`, in the target. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes those whose content git holds, and lists the rest for `bedrock clean --force`.
 
+Project checks that `just verify` should run, such as a build or a repo-specific script, go in `project.just` as recipes named `project-<task>`: `project-verify`, `project-test`, `project-lint`, and so on. The shared `justfile` runs the matching one after each language's `<task>`.
+
 ## What Every Language Changes
 
 - It writes the shared `justfile`, `.githooks/`, `.markdownlint.jsonc`, and `.github/workflows/base.yml`, plus its own `.just/<language>.just` and `.github/workflows/<language>.yml`.

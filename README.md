@@ -14,7 +14,7 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C++20, and Java and 
 
 Every language writes the same base, so a repo with several languages has one of each:
 
-- a `justfile` that runs each task for every language, through `.just/<language>.just`, with the project's own recipes in `project.just`;
+- a `justfile` that runs each task for every language, through `.just/<language>.just`, with the project's own recipes in `project.just`; a `project-<task>` recipe there, such as `project-verify`, runs after the languages' `<task>`;
 - `.githooks`: `pre-commit` runs the checks for the languages a commit touches, `pre-push` runs `just verify`, and `commit-msg` checks Conventional Commits;
 - `AGENTS.md`, linked as `CLAUDE.md` and `GEMINI.md`, with a block of rules from each language;
 - `.gitignore`, `.gitattributes`, `.editorconfig`, and `.github/dependabot.yml`, with a block from each language;
