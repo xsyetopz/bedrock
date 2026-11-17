@@ -1,6 +1,10 @@
 import { parseArgs } from "node:util";
 
-import { readConfig, SOURCE_VERSION } from "../core/config.ts";
+import {
+	type LanguageOptions,
+	readConfig,
+	SOURCE_VERSION,
+} from "../core/config.ts";
 import { exists } from "../core/fs.ts";
 import { uncommitted } from "../core/git.ts";
 import { inOrder } from "../core/order.ts";
@@ -52,7 +56,7 @@ const selection = async (
 	mode: Mode,
 	root: string,
 	names: readonly string[],
-	cxx: boolean,
+	flags: LanguageOptions,
 ): Promise<Selected[]> => {
 	const config = await readConfig(root);
 	if (mode === "update" && config === undefined) {
@@ -62,7 +66,7 @@ const selection = async (
 	const found =
 		named.length === 0 && config === undefined ? await detect(root) : [];
 	const detected = found.map((language) => ({ language }));
-	const selected = select(config, [...named, ...detected], { cxx });
+	const selected = select(config, [...named, ...detected], flags);
 	if (selected.length === 0) {
 		throw new Error(
 			`Found no language in ${root}. Name one, such as bedrock ${mode} ${mode === "init" ? "<dir> " : ""}typescript.`,
@@ -109,6 +113,7 @@ const OPTIONS = {
 	"allow-dirty": { type: "boolean", default: false },
 	cxx: { type: "boolean", default: false },
 	"dry-run": { type: "boolean", default: false },
+	group: { type: "string" },
 	help: { type: "boolean", short: "h", default: false },
 	"no-run": { type: "boolean", default: false },
 	yes: { type: "boolean", default: false },
@@ -130,7 +135,10 @@ export const adopt = async (
 	}
 	const { root, names } = await target(mode, positionals);
 	await prepare(mode, root, values["dry-run"]);
-	const selected = await selection(mode, root, names, values.cxx);
+	const selected = await selection(mode, root, names, {
+		cxx: values.cxx,
+		...(values.group === undefined ? {} : { group: values.group }),
+	});
 	const init = mode === "init";
 	const version = await versionFor(root);
 	const plan = await buildPlan(root, selected, { init, version });

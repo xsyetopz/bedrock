@@ -1,5 +1,7 @@
 import { resolve } from "node:path";
 
+import { Glob } from "bun";
+
 import type { Config, LanguageOptions } from "../core/config.ts";
 import { existing } from "../core/fs.ts";
 import type { Language } from "../core/language.ts";
@@ -37,15 +39,58 @@ export const parseNamed = (arg: string): Named => {
 	return kind === undefined ? { language } : { language, kind };
 };
 
+/** Whether a file matches the glob `pattern` under `root`. */
+const matches = async (root: string, pattern: string): Promise<boolean> => {
+	for await (const _ of new Glob(pattern).scan({
+		cwd: root,
+		onlyFiles: true,
+	})) {
+		return true;
+	}
+	return false;
+};
+
+/** Whether any of `language`'s markers, a path or a glob, is at `root`. */
+const hasMarker = async (
+	root: string,
+	language: Language,
+): Promise<boolean> => {
+	const globs = language.markers.filter((marker) => /[*?{[]/u.test(marker));
+	const paths = language.markers.filter((marker) => !globs.includes(marker));
+	const present = await existing(root, paths);
+	if (present.length > 0) {
+		return true;
+	}
+	const found = await Promise.all(globs.map((glob) => matches(root, glob)));
+	return found.includes(true);
+};
+
 /** The languages whose marker files sit at `root`. */
 export const detect = async (root: string): Promise<Language[]> => {
 	const found = await Promise.all(
-		LANGUAGES.map(async (language) => {
-			const markers = await existing(root, language.markers);
-			return markers.length > 0;
-		}),
+		LANGUAGES.map((language) => hasMarker(root, language)),
 	);
 	return LANGUAGES.filter((_, index) => found[index] === true);
+};
+
+/** A Java package name, which the group becomes for the starter code. */
+const GROUP = /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/u;
+
+/** The jvm options `--group` adds to, or an error when the run has no jvm or the group is no package name. */
+const jvmOptions = (
+	options: ReadonlyMap<string, LanguageOptions>,
+	group: string,
+): LanguageOptions => {
+	const current = options.get("jvm");
+	if (current === undefined) {
+		throw new Error("--group sets the jvm group; name jvm too.");
+	}
+	if (!GROUP.test(group)) {
+		throw new Error(
+			`--group ${group} is no Java package name, such as com.example.app.`,
+		);
+	}
+	return current;
 };
 
 /**
@@ -83,6 +128,10 @@ export const select = (
 		if (language !== undefined) {
 			add(language, {});
 		}
+	}
+	if (typeof flags["group"] === "string") {
+		const group = flags["group"];
+		options.set("jvm", { ...jvmOptions(options, group), group });
 	}
 	return LANGUAGES.filter((language) => options.has(language.id)).map(
 		(language) => ({

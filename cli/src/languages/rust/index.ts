@@ -1,4 +1,5 @@
 import type { Language } from "../../core/language.ts";
+import { migrateEditions } from "./editions.ts";
 import { guardRust } from "./guard.ts";
 import { crateVariables, KINDS, packageName } from "./kinds.ts";
 import { planRust } from "./plan.ts";
@@ -28,6 +29,7 @@ export const rust: Language = {
 	plan: planRust,
 	afterApply: async (context) => {
 		if (Bun.which("cargo") !== null) {
+			await migrateEditions(context.root);
 			await Bun.$`cargo fetch`.cwd(context.root).nothrow();
 		}
 	},

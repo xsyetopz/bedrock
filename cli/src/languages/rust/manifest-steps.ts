@@ -39,13 +39,13 @@ const edited = (
 	}
 };
 
-/** One note when the manifest declares an edition older than 2024, which bedrock does not migrate. */
+/** One note when the manifest declares an edition older than 2024, which the steps' after-run migrates. */
 const editionNotes = (path: string, text: string): string[] => {
 	const old = editionsOf(text).filter((edition) => edition !== "2024");
 	return old.length === 0
 		? []
 		: [
-				`${path}: edition ${old.join(", ")}; run cargo fix --edition, then raise it to 2024 (bedrock does not migrate editions).`,
+				`${path}: edition ${old.join(", ")}; after applying, cargo fix --edition migrates it to 2024 (skipped with --no-run).`,
 			];
 };
 

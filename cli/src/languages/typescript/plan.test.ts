@@ -112,6 +112,52 @@ describe("planTypescript on a fresh repo", () => {
 	});
 });
 
+/** Adopts `root`, lets `edit` change .oxlintrc.json's text, and returns the next plan's drift paths. */
+const driftAfter = async (
+	edit: (text: string) => string,
+): Promise<string[]> => {
+	const root = await tempRepo({ "package.json": '{"name":"x"}' });
+	await adoptTypescript(root);
+	const path = join(root, ".oxlintrc.json");
+	await Bun.write(path, edit(await Bun.file(path).text()));
+	const next = await adoptTypescript(root);
+	return next.steps
+		.map((step) => step.path)
+		.filter((step) => !next.projectFiles.has(step));
+};
+
+/** Turns off oxlint's correctness category. */
+const turnOff = (text: string): string =>
+	text.replace('"correctness": "error"', '"correctness": "off"');
+
+/** Adds an ignore entry after openspec's. */
+const addIgnore = (text: string): string =>
+	text.replace('"openspec/**"', '"openspec/**",\n\t\t"vendor/**"');
+
+describe("lint config drift", () => {
+	test("a changed rule in .oxlintrc.json is drift", async () => {
+		// Arrange
+		const edit = turnOff;
+
+		// Act
+		const drifted = await driftAfter(edit);
+
+		// Assert
+		expect(drifted).toContain(".oxlintrc.json");
+	});
+
+	test("an added ignore entry in .oxlintrc.json is the repo's own", async () => {
+		// Arrange
+		const edit = addIgnore;
+
+		// Act
+		const drifted = await driftAfter(edit);
+
+		// Assert
+		expect(drifted).not.toContain(".oxlintrc.json");
+	});
+});
+
 describe("installDependencies", () => {
 	test("removes the other lockfiles once bun.lock exists", async () => {
 		const root = await tempRepo({
@@ -126,5 +172,19 @@ describe("installDependencies", () => {
 		await installDependencies(contextIn(root));
 		expect(await exists(join(root, "bun.lock"))).toBe(true);
 		expect(await exists(join(root, "yarn.lock"))).toBe(false);
+	}, 60_000);
+
+	test("formats the tree after the install", async () => {
+		// Arrange
+		const root = await tempRepo({
+			"package.json": '{"name":"x","version":"1.0.0"}',
+			"index.ts": "export const a = {b:1}\n",
+		});
+
+		// Act
+		await installDependencies(contextIn(root));
+
+		// Assert
+		expect(await textOf(root, "index.ts")).toBe("export const a = { b: 1 };\n");
 	}, 60_000);
 });

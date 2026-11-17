@@ -46,6 +46,7 @@ const OPTIONS = `
 Options:
   --cxx          Add C++20 to a Swift repo (same as naming cpp).
   --dry-run      Print the plan. Change nothing.
+  --group <pkg>  The JVM group and package, such as com.example.app; kept in .bedrock.json.
   --yes          Apply without asking (agents, CI).
   --no-run       Skip the installs that follow, such as bun install.
   --allow-dirty  Apply even where a changed file holds uncommitted work.

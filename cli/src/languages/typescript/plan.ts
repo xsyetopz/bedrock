@@ -1,6 +1,5 @@
 import type { Context, LanguagePlan } from "../../core/language.ts";
 import { planBunfig, planTsconfig } from "./configs.ts";
-import { IGNORE_KEYS } from "./ignore-lists.ts";
 import {
 	legacyMentions,
 	removalSteps,
@@ -10,14 +9,12 @@ import { planIgnoreLists } from "./lint-configs.ts";
 import { planManifest } from "./manifest-plan.ts";
 import { testSteps } from "./tests.ts";
 
-/** Files that stay the project's own after the first write, so drift checks skip them. */
-const PROJECT_FILES = [
-	"bunfig.toml",
-	"package.json",
-	// A repo adds its own ignore entries to these two.
-	...Object.keys(IGNORE_KEYS),
-	"tsconfig.json",
-];
+/**
+ * Files that stay the project's own after the first write, so drift checks
+ * skip them. The lint configs are not among them: adopt rewrites each from the
+ * template plus the repo's own ignore entries, so a changed rule is drift.
+ */
+const PROJECT_FILES = ["bunfig.toml", "package.json", "tsconfig.json"];
 
 /** Plans the TypeScript part of an adopt: the manifest, configs, removed tools, and test files. */
 export const planTypescript = async (
