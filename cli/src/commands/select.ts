@@ -6,6 +6,7 @@ import type { Config, LanguageOptions } from "../core/config.ts";
 import { existing } from "../core/fs.ts";
 import type { Language } from "../core/language.ts";
 import type { Selected } from "../core/plan.ts";
+import { templateDir } from "../core/templates.ts";
 import { findLanguage, LANGUAGES } from "../languages/index.ts";
 
 /** A language named on the command line, as `<name>` or `<name>:<kind>[,<kind>]`. */
@@ -50,13 +51,17 @@ const matches = async (root: string, pattern: string): Promise<boolean> => {
 	return false;
 };
 
-/** Whether any of `language`'s markers, a path or a glob, is at `root`. */
+/** Whether any of `language`'s markers, a path or a glob, other than those `ignored`, is at `root`. */
 const hasMarker = async (
 	root: string,
 	language: Language,
+	ignored: readonly string[] = [],
 ): Promise<boolean> => {
-	const globs = language.markers.filter((marker) => /[*?{[]/u.test(marker));
-	const paths = language.markers.filter((marker) => !globs.includes(marker));
+	const markers = language.markers.filter(
+		(marker) => !ignored.includes(marker),
+	);
+	const globs = markers.filter((marker) => /[*?{[]/u.test(marker));
+	const paths = markers.filter((marker) => !globs.includes(marker));
 	const present = await existing(root, paths);
 	if (present.length > 0) {
 		return true;
@@ -75,19 +80,28 @@ export const detect = async (root: string): Promise<Language[]> => {
 
 /**
  * The languages a run leaves out that no marker file at `root` points to. A
- * repo that dropped one keeps no block of it in the shared files; one whose
- * markers remain, such as a repo adopted before it had a .bedrock.json, keeps it.
+ * repo that dropped one keeps no block or file of it; one whose markers
+ * remain, such as a repo adopted before it had a .bedrock.json, keeps it.
+ * Markers bedrock writes itself, such as gradlew, don't count: they outlive
+ * the code they were written for.
  */
 export const dropped = async (
 	root: string,
 	selected: readonly Selected[],
 ): Promise<Language[]> => {
-	const found = await detect(root);
-	return LANGUAGES.filter(
-		(language) =>
-			!found.includes(language) &&
-			!selected.some((entry) => entry.language === language),
+	const left = LANGUAGES.filter(
+		(language) => !selected.some((entry) => entry.language === language),
 	);
+	const marked = await Promise.all(
+		left.map(async (language) =>
+			hasMarker(
+				root,
+				language,
+				await templateDir(`${language.id}/files`).paths(),
+			),
+		),
+	);
+	return left.filter((_, index) => marked[index] !== true);
 };
 
 /** A Java package name, which the group becomes for the starter code. */

@@ -103,4 +103,27 @@ describe("dropped", () => {
 			"jvm",
 		]);
 	});
+
+	test("counts a language bedrock's own files alone mark as dropped", async () => {
+		// Arrange
+		const root = await tempRepo({
+			".swift-version": "6.3\n",
+			".just/cpp.just": "",
+			".clang-format": "",
+			gradlew: "",
+			"Cargo.toml": "[package]\n",
+		});
+		const selected = select(undefined, [parseNamed("go")]);
+
+		// Act
+		const languages = await dropped(root, selected);
+
+		// Assert
+		expect(languages.map((language) => language.id)).toEqual([
+			"typescript",
+			"swift",
+			"cpp",
+			"jvm",
+		]);
+	});
 });
