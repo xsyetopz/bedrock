@@ -33,7 +33,8 @@ test.skipIf(!hasGo).each(["command", "library"])(
 		const found = await guardGo(contextIn(root, kind));
 
 		// Assert
-		expect(build.output).toBe("");
+		// A go older than go.mod's line prints that it downloads the toolchain, so the output may not be empty.
+		expect(build.code).toBe(0);
 		expect(tests.code).toBe(0);
 		expect(tidy.code).toBe(0);
 		expect(found).toEqual([]);
