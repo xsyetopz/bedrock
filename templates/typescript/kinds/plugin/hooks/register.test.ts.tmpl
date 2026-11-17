@@ -1,0 +1,33 @@
+import { expect, test } from "bun:test";
+
+import type { Engine, On } from "./engine.ts";
+import { register, registerHello } from "./register.ts";
+
+const engine = (names: string[]): Engine => ({
+	plugin: { name: "demo", root: "/plugin" },
+	command: {
+		register: ({ name }) => {
+			names.push(name);
+			return Promise.resolve();
+		},
+	},
+});
+
+test("registerHello adds the hello command", async () => {
+	const names: string[] = [];
+
+	await registerHello(engine(names));
+
+	expect(names).toEqual(["hello"]);
+});
+
+test("register wires the session.start hook", () => {
+	const events: string[] = [];
+	const on: On = (event) => {
+		events.push(event);
+	};
+
+	register(on);
+
+	expect(events).toEqual(["session.start"]);
+});

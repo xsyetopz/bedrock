@@ -1,6 +1,6 @@
 # TypeScript Config
 
-Every compiler option lives in `typescript-bedrock/tsconfig.base.json`. A repo's `tsconfig.json` extends it and adds only `rootDir` and `exclude`. `bun check` reads `tsconfig.json`, type checks with the TypeScript 7 built into Bun, and never writes files. `bun check --help` lists its flags.
+Bedrock writes every compiler option into the repo's own `tsconfig.json`, from `templates/typescript/merge/tsconfig.json.tmpl` in this repo, with no `extends`. A repo keeps its `jsx`, `lib`, `types`, and `exclude` entries, and any other option the template doesn't set; where the template sets an option, its value wins. `bun check` reads `tsconfig.json`, type checks with the TypeScript 7 built into Bun, and never writes files. `bun check --help` lists its flags.
 
 ## Runtime and Modules
 

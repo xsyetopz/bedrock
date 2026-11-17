@@ -1,2 +1,0 @@
-[alias]
-bedrock = "run --quiet --package xtask --"

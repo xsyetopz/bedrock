@@ -1,0 +1,17 @@
+import { expect, test } from "bun:test";
+
+import { $ } from "bun";
+
+import { run } from "./main.ts";
+
+test("run succeeds", async () => {
+	const code = await run(["Ada"]);
+
+	expect(code).toBe(0);
+});
+
+test("the bin prints the greeting", async () => {
+	const output = await $`bun ${import.meta.dir}/cli.ts Ada`.text();
+
+	expect(output).toBe("Hello, Ada!\n");
+});

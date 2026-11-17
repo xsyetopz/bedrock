@@ -1,0 +1,11 @@
+#include "@@typeName@@Cxx.h"
+
+#include <numeric>
+
+namespace @@lowerName@@ {
+
+    std::int64_t sum(std::span<const std::int32_t> values) noexcept {
+        return std::accumulate(values.begin(), values.end(), std::int64_t {0});
+    }
+
+}  // namespace @@lowerName@@

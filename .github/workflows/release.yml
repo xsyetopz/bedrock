@@ -5,7 +5,7 @@ name: Release
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: [Base, Go, JVM, Rust, Swift, TypeScript]
+    workflows: [Base, TypeScript, E2E]
     types: [completed]
     branches: [main]
 
@@ -20,10 +20,9 @@ jobs:
   release:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: write
-      id-token: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -34,7 +33,7 @@ jobs:
         run: |
           passed=$(gh run list --commit "$SHA" --event push --json workflowName,conclusion \
             --jq '[.[] | select(.conclusion == "success") | .workflowName] | unique | join(" ")')
-          if [[ "$passed" == "Base Go JVM Rust Swift TypeScript" ]]; then
+          if [[ "$passed" == "Base E2E TypeScript" ]]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
           else
             echo "Only [$passed] passed on $SHA so far; the last check to pass releases it."
@@ -44,40 +43,26 @@ jobs:
         with:
           ref: ${{ env.SHA }}
           persist-credentials: false
-      - if: steps.checks.outputs.passed == 'true'
+      - name: Skip a version that is already released
+        if: steps.checks.outputs.passed == 'true'
+        id: version
+        run: |
+          version=$(jq -r .version package.json)
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "v$version is already released"
+          else
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.version.outputs.version != ''
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .bun-version
-      # Adopted TypeScript repos install typescript-bedrock from npm, so it publishes
-      # before any tag. npm trusts this workflow, so it needs no token; bun publish has no
-      # trusted publishing, so Bun packs it, which resolves catalog: versions, and npm
-      # publishes the tarball. A rerun skips a version npm already has.
-      - name: Publish typescript-bedrock to npm
-        if: steps.checks.outputs.passed == 'true'
-        working-directory: packages/typescript-bedrock
+      # `just setup` in adopted repos downloads these assets and checks them against SHA256SUMS.
+      - name: Build and release the binaries
+        if: steps.version.outputs.version != ''
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          version=$(jq -r .version package.json)
-          if [[ "$(bunx npm@11.20.0 view "typescript-bedrock@$version" version 2>/dev/null)" == "$version" ]]; then
-            echo "typescript-bedrock@$version is already on npm"
-          else
-            bunx npm@11.20.0 publish "$(bun pm pack --quiet --destination "$RUNNER_TEMP")"
-          fi
-      - name: Tag each bedrock version that has no release
-        if: steps.checks.outputs.passed == 'true'
-        run: |
-          release() {
-            if [[ -z "$2" ]]; then
-              echo "No version found for $1" >&2
-              exit 1
-            fi
-            if gh release view "$1-v$2" >/dev/null 2>&1; then
-              echo "$1-v$2 is already released"
-            else
-              gh release create "$1-v$2" --target "$SHA" --title "$1 v$2" --generate-notes --latest=false
-            fi
-          }
-          release typescript-bedrock "$(jq -r '.version // empty' packages/typescript-bedrock/package.json)"
-          release rust-bedrock "$(sed -n 's/^version = "\(.*\)"$/\1/p' packages/rust-bedrock/Cargo.toml | head -n 1)"
-          release jvm-bedrock "$(sed -n 's/^version = "\(.*\)"$/\1/p' packages/jvm-bedrock/build.gradle.kts)"
-          release swift-bedrock "$(sed -n 's/^let version = "\(.*\)"$/\1/p' packages/swift-bedrock/Sources/SwiftBedrock/Files.swift)"
-          release go-bedrock "$(sed -n 's/^const version = "\(.*\)"$/\1/p' packages/go-bedrock/cmd/go-bedrock/main.go)"
+          bun install --frozen-lockfile
+          bun cli/build.ts
+          gh release create "v$VERSION" dist/* --target "$SHA" --title "bedrock v$VERSION" --generate-notes

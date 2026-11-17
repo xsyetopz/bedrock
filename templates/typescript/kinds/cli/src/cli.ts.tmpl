@@ -1,0 +1,4 @@
+#!/usr/bin/env bun
+import { run } from "./main.ts";
+
+process.exitCode = await run(Bun.argv.slice(2));

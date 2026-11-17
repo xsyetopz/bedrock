@@ -1,0 +1,39 @@
+# Managed by bedrock.
+name: Rust
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Tests may read git history, such as a baseline kept at an older commit.
+          fetch-depth: 0
+          persist-credentials: false
+      - run: rustup toolchain install --no-self-update
+      # kache caches compiled crates and keeps its store in the GitHub Actions cache.
+      - uses: kunobi-ninja/kache-action@ad7317540dcdd71c904f7a60a87b620a0c0e67ed # v1
+        with:
+          version: v2.0.0
+          # The comment needs pull-requests: write; the job summary shows the same.
+          pr-comment: "false"
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          tool: just@1.59.0,cargo-deny@0.20.2
+      - run: just rust::verify

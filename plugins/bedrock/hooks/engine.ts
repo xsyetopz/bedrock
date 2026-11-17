@@ -33,7 +33,7 @@ export interface On {
 	(event: "session.start", hook: Hook<unknown>): unknown;
 	(
 		event: "command.run",
-		matcher: { readonly command: "adopt" },
+		matcher: { readonly command: "adopt" | "bedrock" },
 		hook: Hook<{ readonly args: string }>,
 	): unknown;
 	(
