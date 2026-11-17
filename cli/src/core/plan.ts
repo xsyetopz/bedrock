@@ -7,6 +7,7 @@ import {
 	formatConfig,
 	type LanguageOptions,
 } from "./config.ts";
+import { leftoverNotes, leftovers } from "./dropped.ts";
 import { existing } from "./fs.ts";
 import type { Context, Language } from "./language.ts";
 import { copySteps, sharedSteps, starterSteps } from "./shared.ts";
@@ -109,14 +110,21 @@ const removalNotes = (removed: readonly string[]): string[] =>
 			]
 		: [];
 
+/** How {@link buildPlan} plans. */
+export interface PlanOptions {
+	/** Whether the run starts a project, which adds the starter code. */
+	readonly init: boolean;
+	/** The bedrock release `.bedrock.json` records. */
+	readonly version?: string | undefined;
+	/** Languages whose shared-file blocks and managed files the plan removes. */
+	readonly dropped?: readonly Language[];
+}
+
 /** Plans an adopt of `selected` into `root`, which must already exist. */
 export const buildPlan = async (
 	root: string,
 	selected: readonly Selected[],
-	{
-		init,
-		version = VERSION,
-	}: { readonly init: boolean; readonly version?: string | undefined },
+	{ init, version = VERSION, dropped = [] }: PlanOptions,
 ): Promise<Plan> => {
 	const base: Variables = { name: basename(root), bedrockVersion: version };
 	const parts = await Promise.all(
@@ -130,14 +138,17 @@ export const buildPlan = async (
 	);
 	const config = configOf(selected, version);
 	const removed = await existing(root, REPLACED_BY_BASE);
+	const leftover = await leftovers(root, dropped, base);
 	const starters = parts.flatMap((part) => part.starters);
 	const steps = dedupe([
+		...leftover.files.map((path): Step => ({ kind: "remove", path })),
 		...(await copySteps("base/files", base)),
 		...parts.flatMap((part) => part.steps),
 		...(await sharedSteps(
 			root,
 			selected.map((entry) => entry.language),
 			base,
+			leftover.blocks,
 		)),
 		...removed.map((path): Step => ({ kind: "remove", path })),
 		{ kind: "write", path: CONFIG_PATH, content: formatConfig(config) },
@@ -145,7 +156,11 @@ export const buildPlan = async (
 	]);
 	return {
 		steps: await pending(root, steps),
-		notes: [...removalNotes(removed), ...parts.flatMap((part) => part.notes)],
+		notes: [
+			...removalNotes(removed),
+			...leftoverNotes(leftover),
+			...parts.flatMap((part) => part.notes),
+		],
 		projectFiles: new Set([
 			...parts.flatMap((part) => part.projectFiles),
 			...starters.map((step) => step.path),

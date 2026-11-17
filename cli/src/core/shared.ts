@@ -1,6 +1,12 @@
 import { join } from "node:path";
 
-import { type Block, markers, type Syntax, upsert } from "./blocks.ts";
+import {
+	type Block,
+	markers,
+	removeBlock,
+	type Syntax,
+	upsert,
+} from "./blocks.ts";
 import { isRegularFile, readText } from "./fs.ts";
 import type { Language } from "./language.ts";
 import type { Step } from "./steps.ts";
@@ -62,11 +68,31 @@ const blocksFor = async (
 	});
 };
 
-/** AGENTS.md and its links, and every shared file with its blocks. */
+/** The `languages` whose block is in at least one shared file at `root`. */
+export const withBlocks = async (
+	root: string,
+	languages: readonly Language[],
+): Promise<Language[]> => {
+	const files = Object.values(SHARED_FILES);
+	const texts = await Promise.all(
+		files.map((file) => readText(join(root, file.path))),
+	);
+	return languages.filter((language) =>
+		files.some((file, index) =>
+			(texts[index] ?? "").includes(markers(file.syntax, language.block)[0]),
+		),
+	);
+};
+
+/**
+ * AGENTS.md and its links, and every shared file with its blocks. The blocks
+ * of each `dropped` language are removed.
+ */
 export const sharedSteps = async (
 	root: string,
 	languages: readonly Language[],
 	variables: Variables,
+	dropped: readonly Language[] = [],
 ): Promise<Step[]> => {
 	const files = await Promise.all(
 		Object.entries(SHARED_FILES).map(async ([name, file]): Promise<Step> => {
@@ -83,11 +109,15 @@ export const sharedSteps = async (
 			) {
 				current = await readText(join(root, "CLAUDE.md"));
 			}
+			let kept = current ?? file.header;
+			for (const language of dropped) {
+				kept = removeBlock(kept, file.syntax, language.block);
+			}
 			const blocks = await blocksFor(name, languages, variables);
 			return {
 				kind: "write",
 				path: file.path,
-				content: upsert(current, file.header, file.syntax, blocks),
+				content: upsert(kept, file.header, file.syntax, blocks),
 			};
 		}),
 	);

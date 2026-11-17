@@ -58,10 +58,13 @@ export const removeBlock = (
 	}
 	let end = closeAt + close.length;
 	end += text[end] === "\n" ? 1 : 0;
-	// The blank line that separated the block from the next one goes with it.
+	// The blank line that separated the block from the next one goes with it,
+	// or, for the last block, the one that separated it from the block before.
 	const separated = start === 0 || text.slice(start - 2, start) === "\n\n";
 	end += separated && text[end] === "\n" ? 1 : 0;
-	return `${text.slice(0, start)}${text.slice(end)}`;
+	const from =
+		separated && start > 0 && end === text.length ? start - 1 : start;
+	return `${text.slice(0, from)}${text.slice(end)}`;
 };
 
 /**

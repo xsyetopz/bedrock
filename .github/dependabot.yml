@@ -11,16 +11,6 @@ updates:
         patterns: ["*"]
 # <<< bedrock
 
-# >>> rust-bedrock
-  - package-ecosystem: cargo
-    directory: /
-    schedule:
-      interval: weekly
-    groups:
-      cargo:
-        patterns: ["*"]
-# <<< rust-bedrock
-
 # >>> typescript-bedrock
   - package-ecosystem: bun
     directory: /
@@ -30,23 +20,3 @@ updates:
       bun-dependencies:
         patterns: ["*"]
 # <<< typescript-bedrock
-
-# >>> swift-bedrock
-  - package-ecosystem: swift
-    directory: /
-    schedule:
-      interval: weekly
-    groups:
-      swift:
-        patterns: ["*"]
-# <<< swift-bedrock
-
-# >>> jvm-bedrock
-  - package-ecosystem: gradle
-    directory: /
-    schedule:
-      interval: weekly
-    groups:
-      gradle:
-        patterns: ["*"]
-# <<< jvm-bedrock

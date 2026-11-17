@@ -16,7 +16,7 @@ import {
 } from "../core/plan.ts";
 import { applySteps, describe } from "../core/steps.ts";
 import { removeBackups, reportCleanup } from "./clean.ts";
-import { detect, missingTools, parseNamed, select } from "./select.ts";
+import { detect, dropped, missingTools, parseNamed, select } from "./select.ts";
 import { type Mode, prepare, target, USAGE } from "./target.ts";
 
 const confirm = async (yes: boolean): Promise<boolean> => {
@@ -158,6 +158,18 @@ const OPTIONS = {
 	yes: { type: "boolean", default: false },
 } as const;
 
+/** The plan for `selected`, which also removes what dropped languages left. */
+const planFor = async (
+	root: string,
+	selected: readonly Selected[],
+	init: boolean,
+): Promise<Plan> =>
+	buildPlan(root, selected, {
+		init,
+		version: await versionFor(root),
+		dropped: await dropped(root, selected),
+	});
+
 /** `bedrock adopt`, `bedrock init`, and `bedrock update`. */
 export const adopt = async (
 	mode: Mode,
@@ -179,8 +191,7 @@ export const adopt = async (
 		...(values.group === undefined ? {} : { group: values.group }),
 	});
 	const init = mode === "init";
-	const version = await versionFor(root);
-	const plan = await buildPlan(root, selected, { init, version });
+	const plan = await planFor(root, selected, init);
 	await printPlan(root, plan);
 	if (values["dry-run"]) {
 		return 0;

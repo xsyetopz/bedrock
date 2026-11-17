@@ -73,6 +73,23 @@ export const detect = async (root: string): Promise<Language[]> => {
 	return LANGUAGES.filter((_, index) => found[index] === true);
 };
 
+/**
+ * The languages a run leaves out that no marker file at `root` points to. A
+ * repo that dropped one keeps no block of it in the shared files; one whose
+ * markers remain, such as a repo adopted before it had a .bedrock.json, keeps it.
+ */
+export const dropped = async (
+	root: string,
+	selected: readonly Selected[],
+): Promise<Language[]> => {
+	const found = await detect(root);
+	return LANGUAGES.filter(
+		(language) =>
+			!found.includes(language) &&
+			!selected.some((entry) => entry.language === language),
+	);
+};
+
 /** A Java package name, which the group becomes for the starter code. */
 const GROUP = /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/u;
 

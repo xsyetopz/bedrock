@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { tempRepo } from "../core/testing.ts";
-import { detect, parseNamed, select } from "./select.ts";
+import { detect, dropped, parseNamed, select } from "./select.ts";
 
 const ids = (selected: ReturnType<typeof select>): string[] =>
 	selected.map((entry) => entry.language.id);
@@ -88,5 +88,19 @@ describe("detect", () => {
 
 		// Assert
 		expect(found.map((language) => language.id)).toEqual(["swift"]);
+	});
+});
+
+describe("dropped", () => {
+	test("leaves out the selected languages and those with a marker", async () => {
+		const root = await tempRepo({ "Cargo.toml": "[package]\n" });
+		const selected = select(undefined, [parseNamed("go")]);
+		const languages = await dropped(root, selected);
+		expect(languages.map((language) => language.id)).toEqual([
+			"typescript",
+			"swift",
+			"cpp",
+			"jvm",
+		]);
 	});
 });

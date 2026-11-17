@@ -24,35 +24,9 @@ trim_trailing_whitespace = false
 end_of_line = crlf
 # <<< bedrock
 
-# >>> rust-bedrock
-[*.{rs,toml}]
-indent_style = space
-indent_size = 4
-# <<< rust-bedrock
-
 # >>> typescript-bedrock
 [*.{ts,tsx,js,jsx,mjs,cjs,mts,cts,json,jsonc}]
 indent_style = tab
 indent_size = 2
 max_line_length = 80
 # <<< typescript-bedrock
-
-# >>> swift-bedrock
-[*.swift]
-indent_style = space
-indent_size = 2
-max_line_length = 100
-# <<< swift-bedrock
-
-# >>> swift-bedrock-cxx
-[*.{c,cc,cpp,cxx,h,hh,hpp,hxx,m,mm}]
-indent_style = space
-indent_size = 4
-max_line_length = 100
-# <<< swift-bedrock-cxx
-
-# >>> jvm-bedrock
-[*.{java,kt,kts}]
-indent_style = space
-indent_size = 2
-# <<< jvm-bedrock
