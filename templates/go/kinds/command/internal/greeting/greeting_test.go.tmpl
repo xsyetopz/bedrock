@@ -1,0 +1,17 @@
+package greeting_test
+
+import (
+	"testing"
+
+	"@@module@@/internal/greeting"
+)
+
+func TestMessage(t *testing.T) {
+	t.Parallel()
+
+	got := greeting.Message("world")
+
+	if got != "Hello, world!" {
+		t.Errorf("Message() = %q, want %q", got, "Hello, world!")
+	}
+}

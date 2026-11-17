@@ -1,0 +1,16 @@
+// Command @@name@@ prints a greeting.
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"@@module@@/internal/greeting"
+)
+
+func main() {
+	_, err := fmt.Fprintln(os.Stdout, greeting.Message("world"))
+	if err != nil {
+		os.Exit(1)
+	}
+}

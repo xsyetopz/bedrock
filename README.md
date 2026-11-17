@@ -1,6 +1,6 @@
 # Bedrock
 
-Strict, shared setups for TypeScript (on Bun), Rust, Swift, C++20, and Java and Kotlin repositories. Bedrock is one CLI, `bedrock`, and a Claude Code plugin that runs it. It starts a repo, or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run it the same way, and the repo it sets up depends on no bedrock package.
+Strict, shared setups for TypeScript (on Bun), Rust, Swift, C++20, Java and Kotlin, and Go repositories. Bedrock is one CLI, `bedrock`, and a Claude Code plugin that runs it. It starts a repo, or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run it the same way, and the repo it sets up depends on no bedrock package.
 
 | Language | Kinds | Tooling |
 | --- | --- | --- |
@@ -9,6 +9,7 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C++20, and Java and 
 | `swift` | `library`, `executable`, `app` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config |
 | `cpp` | | C++20 beside Swift, clang-format and clang-tidy, xmake |
 | `jvm` | `java-library`, `java-application`, `java-native`, `kotlin-library`, `kotlin-application`, `kotlin-native`, `kmp`, `cmp`, `android` | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |
+| `go` | `command`, `library` | Go 1.27, golangci-lint 2.15 with a strict config, `go test`, `GOMEMLIMIT`, `-p`, and `run.concurrency` bounds on every recipe |
 
 ## What Every Repo Gets
 
@@ -52,7 +53,7 @@ bedrock adopt <dir> ts rust          # print it, then ask before applying
 bedrock adopt <dir> swift cpp --yes  # apply without asking
 ```
 
-Without a language, adopt takes the ones `.bedrock.json` lists or the repo has. Language names are case-insensitive, and `ts` or `bun`, `cxx` or `c++`, and `java` or `kotlin` work too. Then run `just setup` and `just verify` in the target and fix what they report. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes the ones git already holds, and lists the rest.
+Without a language, adopt takes the ones `.bedrock.json` lists or the repo has. Language names are case-insensitive, and `ts` or `bun`, `cxx` or `c++`, `java` or `kotlin`, and `golang` work too. Then run `just setup` and `just verify` in the target and fix what they report. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes the ones git already holds, and lists the rest.
 
 ## Start a Repo
 
@@ -61,6 +62,7 @@ bedrock init <dir> rust:lib                 # or bin, no-std, ffi, wasm, bun-ffi
 bedrock init <dir> swift:library cpp        # or executable, app
 bedrock init <dir> typescript:cli           # or library, plugin
 bedrock init <dir> jvm:kotlin-library       # see the table for every kind
+bedrock init <dir> go:command               # or library
 ```
 
 `init` takes an empty or missing folder, writes the starter files for each kind, and adopts the result.
@@ -122,6 +124,7 @@ The repo adopts itself from source (`.bedrock.json` pins `"source"`), so `just v
 | File | Content |
 | --- | --- |
 | [docs/adopting.md](docs/adopting.md) | What adopt changes, and how to fix the errors that follow |
+| [docs/go.md](docs/go.md) | How the Go setup works, and its resource bounds |
 | [docs/jvm.md](docs/jvm.md) | How the Java and Kotlin setup works, and Java to Kotlin with J2K |
 | [docs/tsconfig.md](docs/tsconfig.md) | Every TypeScript compiler option and why it's set |
 | [docs/lint-rules.md](docs/lint-rules.md) | How oxlint and markdownlint are set up |

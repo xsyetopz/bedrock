@@ -2,7 +2,7 @@
 
 ## Setup
 
-You need `just` and Bun 1.4.4. The end-to-end tests for each language run its real toolchain, and skip when it is missing: rustup for Rust, Swift 6.4 for Swift and C++ (Xcode on macOS 14 or newer), and a JDK 17 or newer for the JVM, whose Gradle downloads GraalVM Community 25.
+You need `just` and Bun 1.4.4. The end-to-end tests for each language run its real toolchain, and skip when it is missing: rustup for Rust, Swift 6.4 for Swift and C++ (Xcode on macOS 14 or newer), a JDK 17 or newer for the JVM, whose Gradle downloads GraalVM Community 25, and Go 1.27 with golangci-lint 2.15 for Go.
 
 ```bash
 bun install
