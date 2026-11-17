@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { appendFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 
-import { $ } from "bun";
+import { $, Glob } from "bun";
 
 import { inOrder } from "../../core/order.ts";
 import { tempRepo } from "../../core/testing.ts";
@@ -63,13 +63,17 @@ test.skipIf(!hasCargo)(
 		// Arrange
 		const root = await tempRepo();
 		await adoptRust(root, true, { kind: "lib" });
+		// The crate's directory is the repo's name in lower case, so find it.
+		const [manifest = ""] = await Array.fromAsync(
+			new Glob("crates/*/Cargo.toml").scan({ cwd: root }),
+		);
 		await Bun.write(
 			join(root, "crates/unused/Cargo.toml"),
 			'[package]\nname = "unused"\nversion = "0.1.0"\nedition = "2024"\npublish = false\n',
 		);
 		await Bun.write(join(root, "crates/unused/src/lib.rs"), "");
 		await appendFile(
-			join(root, "crates", basename(root), "Cargo.toml"),
+			join(root, manifest),
 			'\n[dependencies]\nunused = { path = "../unused" }\n',
 		);
 
