@@ -126,6 +126,22 @@ test("the root manifest is stable: a second pass changes nothing", () => {
 	expect(twice).toBe(once);
 });
 
+test("release profile keys the repo already sets keep their values", () => {
+	// Arrange
+	const manifest =
+		'[workspace]\nmembers = ["a"]\n\n[profile.release]\npanic = "unwind"\nlto = "fat"\n';
+
+	// Act
+	const once = rootManifest(manifest, managed);
+	const twice = rootManifest(once, managed);
+
+	// Assert
+	expect(Bun.TOML.parse(once)).toMatchObject({
+		profile: { release: { panic: "unwind", lto: "fat" } },
+	});
+	expect(twice).toBe(once);
+});
+
 test("a workspace with its own lint tables gets the managed ones in their place", () => {
 	// Arrange
 	const manifest = `[workspace]
