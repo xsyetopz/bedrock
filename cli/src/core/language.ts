@@ -31,6 +31,8 @@ export type Finding = string;
 
 /** A language-specific subcommand, run as `bedrock <id> <name> [args]`. */
 export interface Subcommand {
+	/** The arguments it takes, as the usage line shows them, such as `[<path>...]`. */
+	readonly args?: string;
 	readonly summary: string;
 	readonly run: (context: Context, args: readonly string[]) => Promise<number>;
 }

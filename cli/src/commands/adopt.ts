@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { readConfig } from "../core/config.ts";
+import { readConfig, SOURCE_VERSION } from "../core/config.ts";
 import { exists } from "../core/fs.ts";
 import { uncommitted } from "../core/git.ts";
 import { inOrder } from "../core/order.ts";
@@ -80,6 +80,12 @@ const selection = async (
 	return selected;
 };
 
+/** A repo that runs bedrock from its own source tree keeps that pin; others get this release. */
+const versionFor = async (root: string): Promise<string | undefined> => {
+	const config = await readConfig(root);
+	return config?.version === SOURCE_VERSION ? SOURCE_VERSION : undefined;
+};
+
 /** Refuses to overwrite files whose current content git does not hold. */
 const checkClean = async (root: string, plan: Plan): Promise<void> => {
 	const present = await Promise.all(
@@ -126,7 +132,8 @@ export const adopt = async (
 	await prepare(mode, root, values["dry-run"]);
 	const selected = await selection(mode, root, names, values.cxx);
 	const init = mode === "init";
-	const plan = await buildPlan(root, selected, { init });
+	const version = await versionFor(root);
+	const plan = await buildPlan(root, selected, { init, version });
 	await printPlan(root, plan);
 	if (values["dry-run"]) {
 		return 0;

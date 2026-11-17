@@ -11,8 +11,8 @@ import { convertXCTest } from "./xctest/convert.ts";
  * and prints what is left for a person.
  */
 export const convertTests: Subcommand = {
-	summary:
-		"Convert XCTest unit tests to Swift Testing: convert-tests [<path>...]",
+	args: "[<path>...]",
+	summary: "Convert XCTest unit tests to Swift Testing.",
 	run: async (context, args) => {
 		const paths = args.length > 0 ? args : await xctestFiles(context.root);
 		const results = await Promise.all(

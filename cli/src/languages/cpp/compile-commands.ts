@@ -171,7 +171,7 @@ const sorted = (entry: unknown): unknown =>
  * xmake project.
  */
 export const compileCommands: Subcommand = {
-	summary: "Write compile_commands.json for clang-tidy and clangd",
+	summary: "Write compile_commands.json for clang-tidy and clangd.",
 	run: async (context) => {
 		const { root } = context;
 		try {

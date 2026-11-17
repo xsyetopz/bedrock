@@ -24,8 +24,8 @@ const gradlew = (
  * downloads IntelliJ IDEA, about 1.5 GB; BEDROCK_IDEA points at an installed one.
  */
 export const j2k: Subcommand = {
-	summary:
-		"Convert Java files to Kotlin with IntelliJ IDEA's J2K: j2k <path>...",
+	args: "<path>...",
+	summary: "Convert Java files to Kotlin with IntelliJ IDEA's J2K.",
 	run: async (context, args) => {
 		if (args.length === 0) {
 			console.error("jvm j2k takes the Java files or directories to convert");

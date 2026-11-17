@@ -116,7 +116,7 @@ export const buildPlan = async (
 	{
 		init,
 		version = VERSION,
-	}: { readonly init: boolean; readonly version?: string },
+	}: { readonly init: boolean; readonly version?: string | undefined },
 ): Promise<Plan> => {
 	const base: Variables = { name: basename(root), bedrockVersion: version };
 	const parts = await Promise.all(
