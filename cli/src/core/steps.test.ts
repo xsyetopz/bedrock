@@ -48,3 +48,36 @@ describe("applySteps", () => {
 		expect(await Bun.file(join(root, "x")).text()).toBe("file\n");
 	});
 });
+
+describe("move and binary steps", () => {
+	test("a move renames the file, and the next plan finds it done", async () => {
+		// Arrange
+		const root = await tempRepo({ "src/foo/mod.rs": "//! Foo.\n" });
+		const move: Step = {
+			kind: "move",
+			path: "src/foo.rs",
+			from: "src/foo/mod.rs",
+		};
+
+		// Act
+		await applySteps(root, [move]);
+
+		// Assert
+		expect(await Bun.file(join(root, "src/foo.rs")).text()).toBe("//! Foo.\n");
+		expect(await pending(root, [move])).toEqual([]);
+	});
+
+	test("a binary write holds its bytes, and the next plan finds it done", async () => {
+		// Arrange
+		const root = await tempRepo();
+		const bytes = new Uint8Array([80, 75, 0, 255]);
+		const write: Step = { kind: "write", path: "a.jar", content: bytes };
+
+		// Act
+		await applySteps(root, [write]);
+
+		// Assert
+		expect(await Bun.file(join(root, "a.jar")).bytes()).toEqual(bytes);
+		expect(await pending(root, [write])).toEqual([]);
+	});
+});

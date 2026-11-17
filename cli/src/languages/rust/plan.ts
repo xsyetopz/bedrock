@@ -71,27 +71,16 @@ const testsPart = async (
 	};
 };
 
-/** `foo/mod.rs` moved to `foo.rs`, as a write and a removal. */
-const movesPart = async (
-	root: string,
-	moves: readonly Move[],
-): Promise<Part> => {
-	const steps = await Promise.all(
-		moves.map(async (move): Promise<Step[]> => [
-			{
-				kind: "write",
-				path: move.to,
-				content: await Bun.file(join(root, move.from)).text(),
-			},
-			{ kind: "remove", path: move.from },
-		]),
-	);
-	return {
-		steps: steps.flat(),
-		notes: [],
-		projectFiles: moves.flatMap((move) => [move.from, move.to]),
-	};
-};
+/** `foo/mod.rs` moved to `foo.rs`. */
+const movesPart = (moves: readonly Move[]): Part => ({
+	steps: moves.map((move): Step => ({
+		kind: "move",
+		path: move.to,
+		from: move.from,
+	})),
+	notes: [],
+	projectFiles: moves.flatMap((move) => [move.from, move.to]),
+});
 
 /** Removes the files whose job a managed file took over. */
 const replacedPart = async (root: string): Promise<Part> => {
@@ -153,7 +142,7 @@ export const planRust = async (context: Context): Promise<LanguagePlan> => {
 			toolchainPart(context, kinds),
 			manifestPart(context, covered, legacy.dropXtask),
 			testsPart(context.root, covered),
-			movesPart(context.root, moves),
+			Promise.resolve(movesPart(moves)),
 			replacedPart(context.root),
 			initPart(context, kinds),
 			Promise.resolve(legacy),

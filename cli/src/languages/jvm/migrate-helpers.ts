@@ -9,7 +9,9 @@ export const rendered = async (
 	const steps = await render(root, migration);
 	return Object.fromEntries(
 		steps.flatMap((step) =>
-			step.kind === "write" ? [[step.path, step.content]] : [],
+			step.kind === "write" && typeof step.content === "string"
+				? [[step.path, step.content]]
+				: [],
 		),
 	);
 };

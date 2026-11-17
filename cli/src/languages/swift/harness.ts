@@ -4,7 +4,7 @@ import { $ } from "bun";
 
 import type { Context } from "../../core/language.ts";
 import { buildPlan, contextFor, type Plan } from "../../core/plan.ts";
-import { applySteps } from "../../core/steps.ts";
+import { applySteps, type Step } from "../../core/steps.ts";
 import { cpp } from "../cpp/index.ts";
 import { swift } from "./index.ts";
 
@@ -48,11 +48,14 @@ export const required = <T>(value: T | undefined, what = "value"): T => {
 };
 
 /** The content the plan writes to `path`. */
-export const written = (
-	steps: readonly { kind: string; path: string; content?: string }[],
-	path: string,
-): string =>
-	required(
-		steps.find((step) => step.kind === "write" && step.path === path)?.content,
+export const written = (steps: readonly Step[], path: string): string => {
+	const step = steps.find(
+		(candidate) => candidate.kind === "write" && candidate.path === path,
+	);
+	return required(
+		step?.kind === "write" && typeof step.content === "string"
+			? step.content
+			: undefined,
 		path,
 	);
+};

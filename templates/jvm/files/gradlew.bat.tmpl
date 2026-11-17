@@ -97,8 +97,6 @@ if exist "%JAVA_EXE%" goto execute
 goto exitWithErrorLevel
 
 :execute
-@rem bedrock: the wrapper jar is binary, so the repo keeps it as text in gradle-wrapper.jar.b64.
-if not exist "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" certutil -f -decode "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar.b64" "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" >nul
 @rem Setup the command line
 
 

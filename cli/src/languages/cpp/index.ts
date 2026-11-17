@@ -10,7 +10,14 @@ export const cpp: Language = {
 	id: "cpp",
 	block: "swift-bedrock-cxx",
 	aliases: ["cpp", "cxx", "c++"],
-	markers: [".just/cpp.just", ".clang-format", ".clang-tidy", ...OLD_CONFIGS],
+	markers: [
+		".just/cpp.just",
+		".clang-format",
+		".clang-tidy",
+		...OLD_CONFIGS,
+		// SwiftPM builds C, C++, and Objective-C targets from the same tree.
+		"Sources/**/*.{c,cc,cpp,cxx,m,mm}",
+	],
 	requires: ["swift"],
 	tools: {},
 	sources: [

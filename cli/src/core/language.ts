@@ -45,7 +45,7 @@ export interface Language {
 	readonly block: string;
 	/** Names accepted on the command line, lower case. */
 	readonly aliases: readonly string[];
-	/** Files whose presence at the root shows the repo uses the language. */
+	/** Paths, or globs such as `Sources/**\/*.cpp`, whose match under the root shows the repo uses the language. */
 	readonly markers: readonly string[];
 	/** Languages adopted with this one, such as `swift` for `cpp`. */
 	readonly requires?: readonly string[];

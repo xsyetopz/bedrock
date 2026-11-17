@@ -72,24 +72,11 @@ const layout = async (context: Context): Promise<Finding[]> => {
 	const own = new Set(plan.projectFiles);
 	const undone = await pending(context.root, plan.steps);
 	const open = undone.filter((step) => own.has(step.path));
-	const renamed = open.filter(
-		(step) => step.kind === "remove" && step.path.endsWith("/mod.rs"),
+	return open.map((step) =>
+		step.kind === "move"
+			? `${step.from}: name it ${step.path}, beside its directory (bedrock update does it)`
+			: `${step.path}: differs from what bedrock writes; run bedrock update`,
 	);
-	const targets = new Set(
-		renamed.map((step) => step.path.replace(/\/mod\.rs$/u, ".rs")),
-	);
-	return [
-		...renamed.map(
-			(step) =>
-				`${step.path}: name it ${step.path.replace(/\/mod\.rs$/u, ".rs")}, beside its directory (bedrock update does it)`,
-		),
-		...open
-			.filter((step) => !renamed.includes(step) && !targets.has(step.path))
-			.map(
-				(step) =>
-					`${step.path}: differs from what bedrock writes; run bedrock update`,
-			),
-	];
 };
 
 /**

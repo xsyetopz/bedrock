@@ -1,14 +1,25 @@
-import { chmod, lstat, mkdir, readlink, rm, symlink } from "node:fs/promises";
+import {
+	chmod,
+	lstat,
+	mkdir,
+	readlink,
+	rename,
+	rm,
+	symlink,
+} from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 /** One change to a repository, relative to its root. */
 export type Step =
 	| { readonly kind: "remove"; readonly path: string }
 	| { readonly kind: "link"; readonly path: string; readonly target: string }
+	/** Renames `from` to `path`, keeping its content and mode. */
+	| { readonly kind: "move"; readonly path: string; readonly from: string }
 	| {
 			readonly kind: "write";
 			readonly path: string;
-			readonly content: string;
+			/** Text, or the bytes of a binary file such as a jar. */
+			readonly content: string | Uint8Array;
 			readonly executable?: boolean;
 	  };
 
@@ -28,9 +39,23 @@ export const describe = async (root: string, step: Step): Promise<string> => {
 	if (step.kind === "remove") {
 		return `remove  ${step.path}`;
 	}
+	if (step.kind === "move") {
+		return `move    ${step.from} -> ${step.path}`;
+	}
 	return (await stats(join(root, step.path))) === null
 		? `create  ${step.path}`
 		: `update  ${step.path}`;
+};
+
+/** Whether the file at `path` holds exactly `content`. */
+const holds = async (
+	path: string,
+	content: string | Uint8Array,
+): Promise<boolean> => {
+	const file = Bun.file(path);
+	return typeof content === "string"
+		? (await file.text()) === content
+		: Bun.deepEquals(await file.bytes(), content);
 };
 
 /** Whether `root` already matches the step. */
@@ -45,9 +70,12 @@ export const isDone = async (root: string, step: Step): Promise<boolean> => {
 			meta?.isSymbolicLink() === true && (await readlink(path)) === step.target
 		);
 	}
+	if (step.kind === "move") {
+		return meta !== null && (await stats(join(root, step.from))) === null;
+	}
 	return (
 		meta?.isFile() === true &&
-		(await Bun.file(path).text()) === step.content &&
+		(await holds(path, step.content)) &&
 		(step.executable !== true || (meta.mode & 0o111) !== 0)
 	);
 };
@@ -69,6 +97,7 @@ export const pending = async (
 const applyStep = async (root: string, step: Step): Promise<void> => {
 	const path = join(root, step.path);
 	const meta = await stats(path);
+	// A write over a file replaces its content in place, keeping its mode.
 	if (step.kind !== "write" || meta?.isFile() !== true) {
 		await rm(path, { recursive: true, force: true });
 	}
@@ -76,6 +105,10 @@ const applyStep = async (root: string, step: Step): Promise<void> => {
 		return;
 	}
 	await mkdir(dirname(path), { recursive: true });
+	if (step.kind === "move") {
+		await rename(join(root, step.from), path);
+		return;
+	}
 	if (step.kind === "link") {
 		await symlink(step.target, path);
 		return;

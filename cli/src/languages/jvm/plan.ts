@@ -9,10 +9,15 @@ import { migrationFor } from "./migration.ts";
 import type { Migration } from "./model.ts";
 import { includes, render } from "./render.ts";
 
-/** What older bedrock releases wrote under gradle/bedrock, which core's drift check replaced. */
+/**
+ * What older bedrock releases wrote: files under gradle/bedrock, which core's
+ * drift check replaced, and the wrapper jar as base64, which bedrock now
+ * writes as the jar itself.
+ */
 const LEGACY = [
 	"gradle/bedrock/managed.sha256",
 	"gradle/bedrock/src/main/kotlin/bedrock/core/Guard.kt",
+	"gradle/wrapper/gradle-wrapper.jar.b64",
 ];
 
 const ROOT_NAME = /rootProject\.name\s*=\s*['"]([^'"]+)['"]/u;

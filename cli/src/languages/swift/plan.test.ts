@@ -12,7 +12,9 @@ const XCTEST =
 const writes = (steps: readonly Step[]): Map<string, string> =>
 	new Map(
 		steps.flatMap((step) =>
-			step.kind === "write" ? [[step.path, step.content] as const] : [],
+			step.kind === "write" && typeof step.content === "string"
+				? [[step.path, step.content] as const]
+				: [],
 		),
 	);
 

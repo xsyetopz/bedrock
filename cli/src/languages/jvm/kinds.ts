@@ -39,7 +39,7 @@ const modulesOf = (paths: readonly string[]): string[] => [
 
 /**
  * The files of each chosen kind that the repo lacks, with `__path__` in
- * directory names replaced by the package path, and the modules to include.
+ * directory names filled with the package path, and the modules to include.
  */
 export const kindSteps = async (
 	context: Context,
@@ -48,15 +48,13 @@ export const kindSteps = async (
 	const parts = await Promise.all(
 		chosenKinds(context).map(async (kind) => {
 			const dir = context.templates(`modules/${kind}`);
-			const paths = await dir.paths();
-			const steps = await Promise.all(
-				paths.map(async (path): Promise<Step> => ({
-					kind: "write",
-					path: path.replaceAll("__path__", variables["path"] ?? ""),
-					content: (await dir.read(path, variables)) ?? "",
-				})),
-			);
-			return { steps, modules: modulesOf(paths) };
+			const files = await dir.files(variables);
+			const steps = files.map((file): Step => ({
+				kind: "write",
+				path: file.path,
+				content: file.content,
+			}));
+			return { steps, modules: modulesOf(files.map((file) => file.path)) };
 		}),
 	);
 	const steps = parts.flatMap((part) => part.steps);

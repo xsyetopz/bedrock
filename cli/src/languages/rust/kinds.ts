@@ -52,15 +52,12 @@ const templateSteps = async (
 	target: (path: string) => string,
 	variables: Variables,
 ): Promise<Step[]> => {
-	const templates = context.templates(dir);
-	const paths = await templates.paths();
-	return Promise.all(
-		paths.map(async (path): Promise<Step> => ({
-			kind: "write",
-			path: target(path),
-			content: (await templates.read(path, variables)) ?? "",
-		})),
-	);
+	const files = await context.templates(dir).files(variables);
+	return files.map((file): Step => ({
+		kind: "write",
+		path: target(file.path),
+		content: file.content,
+	}));
 };
 
 /** The steps for one crate. A `bun-ffi` crate is an `ffi` crate plus its Bun side at `src/<package>.ts`. */
@@ -82,7 +79,7 @@ const crateSteps = async (
 				...(await templateSteps(
 					context,
 					"crates/bun-ffi",
-					(path) => path.replace("__name__", pkg),
+					(path) => path,
 					variables,
 				)),
 			]

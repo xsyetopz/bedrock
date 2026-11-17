@@ -106,16 +106,13 @@ export const copySteps = async (
 	dir: string,
 	variables: Variables,
 ): Promise<Step[]> => {
-	const templates = templateDir(dir);
-	const paths = await templates.paths();
-	return Promise.all(
-		paths.map(async (path): Promise<Step> => ({
-			kind: "write",
-			path,
-			content: (await templates.read(path, variables)) ?? "",
-			executable: isExecutable(path),
-		})),
-	);
+	const files = await templateDir(dir).files(variables);
+	return files.map(({ path, content }): Step => ({
+		kind: "write",
+		path,
+		content,
+		executable: isExecutable(path),
+	}));
 };
 
 /** The templates under `<dir>` that the repo does not have yet. */

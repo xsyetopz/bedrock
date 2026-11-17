@@ -32,23 +32,18 @@ export const packageType = (directory: string): string => {
 	return name;
 };
 
-const fill = (text: string, name: string): string =>
-	text.replaceAll("__Name__", name).replaceAll("__name__", name.toLowerCase());
-
 const treeSteps = async (
 	templates: ReturnType<typeof templateDir>,
 	root: string,
 	name: string,
 ): Promise<Step[]> => {
 	const variables = { typeName: name, lowerName: name.toLowerCase() };
-	const paths = await templates.paths();
-	const steps = await Promise.all(
-		paths.map(async (path): Promise<Step> => ({
-			kind: "write",
-			path: fill(path, name),
-			content: (await templates.read(path, variables)) ?? "",
-		})),
-	);
+	const files = await templates.files(variables);
+	const steps = files.map((file): Step => ({
+		kind: "write",
+		path: file.path,
+		content: file.content,
+	}));
 	const present = await Promise.all(
 		steps.map((step) => Bun.file(join(root, step.path)).exists()),
 	);
