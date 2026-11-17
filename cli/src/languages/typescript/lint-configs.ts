@@ -1,7 +1,11 @@
 import { join } from "node:path";
 
 import type { Context } from "../../core/language.ts";
-import { IGNORE_KEYS, mergeIgnoreList } from "./ignore-lists.ts";
+import {
+	droppedEntries,
+	IGNORE_KEYS,
+	mergeIgnoreList,
+} from "./ignore-lists.ts";
 import { asRecord, type Json, readJsonc } from "./json.ts";
 import { extendsLegacy } from "./legacy.ts";
 import type { Part } from "./part.ts";
@@ -37,6 +41,19 @@ export const planIgnoreLists = async (context: Context): Promise<Part> => {
 			const template = (await templates("files").read(path)) ?? "";
 			const current = await readJsonc(join(root, path));
 			const dropped = droppedKeys(asRecord(current), template, key);
+			const restored = droppedEntries(template, current, key);
+			const notes = [
+				...(dropped.length > 0 || extendsLegacy(current)
+					? [
+							`${path}: now the full bedrock config, without \`extends\`${dropped.length > 0 ? `; its own ${dropped.map((name) => `"${name}"`).join(", ")} were not carried over, git has them` : ""}.`,
+						]
+					: []),
+				...(restored.length > 0
+					? [
+							`${path}: puts back ${restored.map((entry) => `"${entry}"`).join(", ")} in "${key}"; bedrock owns its own entries, and yours go after them.`,
+						]
+					: []),
+			];
 			return {
 				steps: [
 					{
@@ -45,12 +62,7 @@ export const planIgnoreLists = async (context: Context): Promise<Part> => {
 						content: mergeIgnoreList(template, current, key),
 					},
 				],
-				notes:
-					dropped.length > 0 || extendsLegacy(current)
-						? [
-								`${path}: now the full bedrock config, without \`extends\`${dropped.length > 0 ? `; its own ${dropped.map((name) => `"${name}"`).join(", ")} were not carried over, git has them` : ""}.`,
-							]
-						: [],
+				notes,
 			};
 		}),
 	);

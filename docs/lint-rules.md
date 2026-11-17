@@ -7,7 +7,7 @@ just lint        # report problems
 just lint-fix    # fix what can be fixed, then report the rest
 ```
 
-Bedrock writes `.oxlintrc.json` and `.markdownlint-cli2.jsonc` into each repo as full configs, from `templates/typescript/files/` in this repo, and `bedrock update` rewrites them with a newer release. A repo's own entries in their ignore lists stay; any other change gives way to the template, with a note. To add or change a rule, edit the template here, set it to `"error"`, and fix what it reports.
+Bedrock writes `.oxlintrc.json` and `.markdownlint-cli2.jsonc` into each repo as full configs, from `templates/typescript/files/` in this repo, and `bedrock update` rewrites them with a newer release. A repo's own entries in their ignore lists stay, after the template's. Any other change gives way to the template, with a note, and that includes removing one of the template's own ignore entries: bedrock owns those, so adopt puts them back, and the drift check reports the file until then. To add or change a rule, edit the template here, set it to `"error"`, and fix what it reports.
 
 ## How `oxlint` Is Set Up
 

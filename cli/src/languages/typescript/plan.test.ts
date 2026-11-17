@@ -188,3 +188,20 @@ describe("installDependencies", () => {
 		expect(await textOf(root, "index.ts")).toBe("export const a = { b: 1 };\n");
 	}, 60_000);
 });
+
+test("a lint config that dropped a bedrock ignore gets it back, with a note", async () => {
+	// Arrange
+	const root = await tempRepo({
+		"package.json": "{}\n",
+		".oxlintrc.json": JSON.stringify({ ignorePatterns: ["vendor/**"] }),
+	});
+
+	// Act
+	const plan = await adoptTypescript(root);
+
+	// Assert
+	expect(await textOf(root, ".oxlintrc.json")).toContain('"openspec/**"');
+	expect(plan.notes.join("\n")).toContain(
+		'"openspec/**" in "ignorePatterns"; bedrock owns its own entries',
+	);
+});
