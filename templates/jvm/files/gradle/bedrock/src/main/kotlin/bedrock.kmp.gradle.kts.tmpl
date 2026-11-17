@@ -11,6 +11,13 @@ plugins {
   id("com.diffplug.spotless")
 }
 
+// Lint runs on the toolchain the code compiles with: the Android and JVM targets each have a lint,
+// and on the Gradle daemon's JVM each fails whenever that is older.
+fun JavaToolchainSpec.lintToolchain() {
+  languageVersion = JavaLanguageVersion.of(version("jdk"))
+  vendor = JvmVendorSpec.GRAAL_VM
+}
+
 kotlin {
   explicitApi()
   compilerOptions { strict() }
@@ -28,6 +35,7 @@ kotlin {
     minSdk = version("android-min-sdk").toInt()
     compilerOptions { java8() }
     withHostTest {}
+    lint { toolchain { lintToolchain() } }
   }
   iosArm64()
   iosSimulatorArm64()
@@ -35,6 +43,7 @@ kotlin {
 }
 
 lint {
+  toolchain { lintToolchain() }
   warningsAsErrors = true
   checkDependencies = true
   // New releases would fail a build that did not change; Dependabot bumps the catalog instead.

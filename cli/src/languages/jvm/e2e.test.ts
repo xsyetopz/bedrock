@@ -8,14 +8,16 @@ import { KINDS } from "./kinds.ts";
 
 const jdk = await findJdk();
 const TASKS = ["spotlessCheck", "bedrockCompile", "bedrockLint", "bedrockTest"];
-// Native images need GraalVM, Android and Compose need the Android SDK, and
-// Kotlin/Native and multiplatform download toolchains: those kinds stop at the guard.
-const BUILT = [
-	"java-library",
-	"kotlin-library",
-	"java-application",
-	"kotlin-application",
-];
+// Android, Compose, and multiplatform build an Android target, which needs the SDK.
+const NEEDS_ANDROID_SDK = new Set(["android", "cmp", "kmp"]);
+const hasAndroidSdk = [
+	process.env["ANDROID_HOME"],
+	process.env["ANDROID_SDK_ROOT"],
+].some((dir) => dir !== undefined && dir !== "");
+const BUILT = KINDS.filter(
+	(kind) => hasAndroidSdk || !NEEDS_ANDROID_SDK.has(kind),
+);
+const UNBUILT = KINDS.filter((kind) => !BUILT.includes(kind));
 
 test.each([...KINDS])(
 	"init %s writes a repo that passes the guard",
@@ -49,3 +51,8 @@ test.skipIf(jdk === undefined).each(BUILT)(
 	},
 	600_000,
 );
+
+// Listed as skipped, so a run without the Android SDK shows which kinds it left out.
+test.skip.each(UNBUILT)("init %s builds (needs ANDROID_HOME)", () => {
+	expect(process.env["ANDROID_HOME"]).toBeDefined();
+});
