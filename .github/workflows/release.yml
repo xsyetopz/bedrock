@@ -5,7 +5,7 @@ name: Release
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: [Base, TypeScript]
+    workflows: [Base, TypeScript, E2E]
     types: [completed]
     branches: [main]
 
@@ -33,7 +33,7 @@ jobs:
         run: |
           passed=$(gh run list --commit "$SHA" --event push --json workflowName,conclusion \
             --jq '[.[] | select(.conclusion == "success") | .workflowName] | unique | join(" ")')
-          if [[ "$passed" == "Base TypeScript" ]]; then
+          if [[ "$passed" == "Base E2E TypeScript" ]]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
           else
             echo "Only [$passed] passed on $SHA so far; the last check to pass releases it."
