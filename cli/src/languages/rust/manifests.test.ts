@@ -181,7 +181,7 @@ test("a single-package root becomes a workspace that uses its own lints", () => 
 
 test("the toolchain keeps the targets the project added and adds the new ones once", () => {
 	// Arrange
-	const template = '[toolchain]\nchannel = "1.99.1"\n';
+	const template = '[toolchain]\nchannel = "1.100.0"\n';
 	const current =
 		'[toolchain]\nchannel = "1.80"\ntargets = ["aarch64-apple-ios"]\n';
 
@@ -194,7 +194,7 @@ test("the toolchain keeps the targets the project added and adds the new ones on
 	// Assert
 	expect(Bun.TOML.parse(result)).toEqual({
 		toolchain: {
-			channel: "1.99.1",
+			channel: "1.100.0",
 			targets: ["aarch64-apple-ios", "wasm32-unknown-unknown"],
 		},
 	});

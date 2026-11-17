@@ -1,4 +1,6 @@
 import { expect, test } from "bun:test";
+import { appendFile } from "node:fs/promises";
+import { basename, join } from "node:path";
 
 import { $ } from "bun";
 
@@ -54,3 +56,29 @@ for (const kind of KINDS) {
 		300_000,
 	);
 }
+
+test.skipIf(!hasCargo)(
+	"a dependency the crate never uses fails cargo check",
+	async () => {
+		// Arrange
+		const root = await tempRepo();
+		await adoptRust(root, true, { kind: "lib" });
+		await Bun.write(
+			join(root, "crates/unused/Cargo.toml"),
+			'[package]\nname = "unused"\nversion = "0.1.0"\nedition = "2024"\npublish = false\n',
+		);
+		await Bun.write(join(root, "crates/unused/src/lib.rs"), "");
+		await appendFile(
+			join(root, "crates", basename(root), "Cargo.toml"),
+			'\n[dependencies]\nunused = { path = "../unused" }\n',
+		);
+
+		// Act
+		const result = await run(root, ["cargo", "check", "--workspace"]);
+
+		// Assert
+		expect(result.code).not.toBe(0);
+		expect(result.output).toContain("cargo::unused_dependencies");
+	},
+	300_000,
+);
