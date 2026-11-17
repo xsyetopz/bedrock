@@ -103,6 +103,23 @@ describe("planTypescript on a fresh repo", () => {
 		expect(await textOf(root, "bunfig.toml")).toContain("[install]");
 	});
 
+	test("bounds the type-aware checks that resolve every callback signature", async () => {
+		// Arrange
+		const root = await tempRepo();
+
+		// Act
+		await adoptTypescript(root);
+		const config = asRecord(await readJsonc(join(root, ".oxlintrc.json")));
+		const rules = asRecord(config["rules"]);
+
+		// Assert
+		expect(rules["typescript/no-misused-promises"]).toEqual([
+			"error",
+			{ checksVoidReturn: { arguments: false } },
+		]);
+		expect(rules["typescript/strict-void-return"]).toBe("off");
+	});
+
 	test("lists package.json, tsconfig.json, and bunfig.toml as the project's", async () => {
 		const root = await tempRepo();
 		const plan = await adoptTypescript(root);
