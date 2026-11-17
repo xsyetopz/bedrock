@@ -176,3 +176,24 @@ describe("init", () => {
 		expect(outcome).toBeInstanceOf(Error);
 	});
 });
+
+describe("the Swift workflow", () => {
+	test("sets up C++ through just and runs a project-setup action first", async () => {
+		const root = await tempRepo({ "Package.swift": "let package = 1\n" });
+
+		const plan = await adoptSwift(root, { cxx: true });
+
+		const workflow = written(plan.steps, ".github/workflows/swift.yml");
+		const lines = workflow.split("\n").map((line) => line.trim());
+		const setup = lines.indexOf("uses: ./.github/actions/project-setup");
+		const cpp = lines.indexOf(
+			"- run: if [[ -f .just/cpp.just ]]; then just cpp::setup; fi",
+		);
+		expect(setup).toBeGreaterThan(-1);
+		expect(cpp).toBeGreaterThan(setup);
+		expect(lines).toContain(
+			"- if: hashFiles('.github/actions/project-setup/action.yml') != ''",
+		);
+		expect(workflow).not.toContain("brew install llvm");
+	});
+});
