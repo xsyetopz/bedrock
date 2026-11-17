@@ -70,6 +70,9 @@ describe("migrateManifest", () => {
 		expect(notes.join("\n")).toContain(
 			'Replaced script "typecheck" ("bun check --cwd packages/app")',
 		);
+		expect(notes.join("\n")).toContain(
+			"into a `project-typecheck` recipe in project.just, which `just typecheck` runs.",
+		);
 	});
 
 	test("merges pnpm-workspace.yaml into workspaces", () => {
@@ -130,6 +133,21 @@ describe("migrateManifest", () => {
 			Object.keys(asRecord(asRecord(manifest["workspaces"])["catalog"])),
 		).toEqual(["oxlint", "react"]);
 		expect(notes.join("\n")).toContain("typescript-bedrock");
+	});
+
+	test("drops a machine-local file: path to typescript-bedrock", () => {
+		// Arrange
+		const stale =
+			"file:/home/dev/.claude/plugins/cache/xsyetopz/bedrock/0.1.4/.bedrock/packages/typescript-bedrock";
+
+		// Act
+		const { manifest } = migrateManifest(
+			{ name: "app", devDependencies: { "typescript-bedrock": stale } },
+			template,
+		);
+
+		// Assert
+		expect(JSON.stringify(manifest)).not.toContain("typescript-bedrock");
 	});
 
 	test("merges overrides: the template wins a conflict, the target keeps the rest", () => {
