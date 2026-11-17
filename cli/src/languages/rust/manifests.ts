@@ -133,8 +133,8 @@ const rootSatisfied = (doc: Table, managed: Managed): boolean =>
 	(doc["package"] === undefined || packageSatisfied(doc)) &&
 	at(doc, "workspace", "resolver") === "3" &&
 	Bun.deepEquals(at(doc, "workspace", "lints"), managed.lintValues) &&
-	Object.entries(managed.release).every(([key, value]) =>
-		Bun.deepEquals(at(doc, "profile", "release", key), value),
+	Object.keys(managed.release).every(
+		(key) => at(doc, "profile", "release", key) !== undefined,
 	);
 
 const withResolver = (sections: readonly Section[]): Section[] => {
@@ -160,7 +160,9 @@ const withManagedLints = (
 	return rest.toSpliced(place, 0, ...managed.lints);
 };
 
+/** Adds the managed release keys the repo has not set; its own values stay. */
 const withReleaseProfile = (
+	doc: Table,
 	sections: readonly Section[],
 	managed: Managed,
 ): Section[] => {
@@ -168,7 +170,9 @@ const withReleaseProfile = (
 	const base = found ?? makeSection("profile.release", []);
 	let release = base;
 	for (const [key, value] of Object.entries(managed.release)) {
-		release = withKey(release, key, JSON.stringify(value));
+		if (at(doc, "profile", "release", key) === undefined) {
+			release = withKey(release, key, JSON.stringify(value));
+		}
 	}
 	return upsertSection(sections, release);
 };
@@ -191,7 +195,7 @@ export const rootManifest = (text: string, managed: Managed): string => {
 			? sections
 			: withDeclaredEdition(doc, useWorkspaceLints(sections));
 	sections = withManagedLints(withResolver(sections), managed);
-	return renderSections(tidy(withReleaseProfile(sections, managed)));
+	return renderSections(tidy(withReleaseProfile(doc, sections, managed)));
 };
 
 /** The editions a manifest declares, at the package and workspace level. */

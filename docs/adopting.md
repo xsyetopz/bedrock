@@ -113,14 +113,14 @@ Work through them on a branch, in this order:
 - pins `rust-toolchain.toml` to Rust 1.99.1 with Clippy and rustfmt, keeping the targets the repo lists and adding `wasm32-unknown-unknown` for a `wasm` crate;
 - gives the root `Cargo.toml` the managed workspace lints, resolver, and release profile, turning a single package into a workspace, and points each member at the workspace lints in place of its own;
 - removes `cargo-husky`;
-- moves each `foo/mod.rs` to `foo.rs`, and starts each integration test in `tests/` with `#![cfg(test)]`, and gives it a `//!` crate doc when it has none, since `missing_docs` checks each test crate;
+- moves each `foo/mod.rs` to `foo.rs`, prefixing its relative `#[path]` and `include!` paths with `foo/` so they reach the same files, and leaving a file whose paths it cannot rewrite safely where it is, with a note; starts each integration test in `tests/` with `#![cfg(test)]`, and gives it a `//!` crate doc when it has none, since `missing_docs` checks each test crate;
 - removes the `xtask` crate, its workspace member, the `bedrock` alias in `.cargo/config.toml`, and the `deny.toml` `allow-git` entry that rust-bedrock releases before 0.2 wrote, then runs `cargo fetch`.
 
 After applying, adopt migrates each manifest that declares an edition before 2024: it runs `cargo fix --edition` and raises the edition one step at a time, up to 2024. A package that declares no edition, which Cargo reads as 2015, gets `edition = "2015"` written in first, so it migrates too; a package that inherits its edition from the workspace moves with the workspace manifest. When a step fails, adopt stops with cargo's error, and the manifests keep the edition that step started from, with the earlier steps applied: fix the errors and run `bedrock update` to go on, or `git checkout` the change to undo it. `--no-run` skips the migration, and the plan lists it as skipped. A later `bedrock update` runs it even when nothing else changes, as long as a manifest still declares an older edition.
 
 `just setup` installs the pinned toolchain, cargo-deny, and [kache](https://github.com/kunobi-ninja/kache), and runs `kache init --yes --no-shell`, which makes kache Cargo's compiler wrapper for your user. CI caches through `kache-action`.
 
-To fix the errors, run `just lint-fix`, which moves test modules from `tests.rs` files inline (`bedrock guard rust --fix`) and applies Clippy's fixes to every target, tests included, then work through `just lint` one lint at a time. Silence a lint only with `#[expect(lint, reason = "…")]`, and document each public item, with `# Panics` and `# Errors` sections where they apply.
+To fix the errors, run `just lint-fix`, which moves each inline `#[cfg(test)] mod tests { … }` to a `tests.rs` file beside the file it tests (`bedrock guard rust --fix`), and applies Clippy's fixes to every target, tests included, then work through `just lint` one lint at a time. Silence a lint only with `#[expect(lint, reason = "…")]`, and document each public item, with `# Panics` and `# Errors` sections where they apply.
 
 ## Swift and C++
 

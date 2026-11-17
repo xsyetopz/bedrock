@@ -12,12 +12,4 @@ pub extern "C" fn fibonacci(n: u32) -> u64 {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn counts_and_saturates() {
-        assert_eq!(fibonacci(10), 55);
-        assert_eq!(fibonacci(200), u64::MAX);
-    }
-}
+mod tests;

@@ -1,18 +1,11 @@
 import { expect, test } from "bun:test";
-import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
-import { exists } from "../../core/fs.ts";
 import { tempRepo } from "../../core/testing.ts";
-import {
-	childFile,
-	declarations,
-	inlineTests,
-	type OutOfLine,
-} from "./modules.ts";
+import { childFile, type Module, moduleDirectory, modules } from "./modules.ts";
 
 const summary = (source: string): [string, boolean][] =>
-	declarations(source).map((found) => [found.name, found.testOnly]);
+	modules(source).map((found) => [found.name, found.testOnly]);
 
 test("finds test modules behind attributes and visibility", () => {
 	// Arrange
@@ -20,7 +13,7 @@ test("finds test modules behind attributes and visibility", () => {
 		"#[cfg(test)]\n#[allow(dead_code)]\npub(crate) mod tests;\nmod util;\n";
 
 	// Act
-	const found = declarations(source);
+	const found = modules(source);
 
 	// Assert
 	expect(summary(source)).toEqual([
@@ -43,16 +36,15 @@ test("reads compound cfg predicates", () => {
 	];
 
 	// Act
-	const results = cases.map(([source]) => declarations(source)[0]?.testOnly);
+	const results = cases.map(([source]) => modules(source)[0]?.testOnly);
 
 	// Assert
 	expect(results).toEqual(cases.map(([, expected]) => expected));
 });
 
-test("inline modules, comments, strings, and raw strings declare nothing", () => {
+test("comments, strings, and raw strings declare nothing", () => {
 	// Arrange
 	const source = [
-		"#[cfg(test)] mod tests { }",
 		"// #[cfg(test)] mod x;",
 		"/* #[cfg(test)] mod z; */",
 		'const S: &str = "#[cfg(test)] mod y;";',
@@ -60,7 +52,7 @@ test("inline modules, comments, strings, and raw strings declare nothing", () =>
 	].join("\n");
 
 	// Act
-	const found = declarations(source);
+	const found = modules(source);
 
 	// Assert
 	expect(found).toEqual([]);
@@ -68,11 +60,36 @@ test("inline modules, comments, strings, and raw strings declare nothing", () =>
 
 test("reads the path attribute", () => {
 	// Arrange / Act
-	const found = declarations('#[cfg(test)]\n#[path = "checks.rs"]\nmod tests;');
+	const found = modules('#[cfg(test)]\n#[path = "checks.rs"]\nmod tests;');
 
 	// Assert
 	expect(found[0]?.path).toBe("checks.rs");
 });
+
+test("an inline module has its body range and the depth it sits at", () => {
+	// Arrange
+	const source = "#[cfg(test)]\nmod tests {\n    mod inner { }\n}\nmod last;\n";
+
+	// Act
+	const [outer, inner, last] = modules(source);
+
+	// Assert
+	expect(outer?.body).toEqual([source.indexOf("{"), source.indexOf("}\nmod")]);
+	expect([outer?.depth, inner?.depth, last?.depth]).toEqual([0, 1, 0]);
+	expect(last?.body).toBeUndefined();
+	expect(outer?.start).toBe(source.indexOf("mod tests"));
+});
+
+const declaration: Module = {
+	name: "tests",
+	line: 1,
+	path: undefined,
+	pathAttribute: undefined,
+	testOnly: true,
+	start: 0,
+	body: undefined,
+	depth: 0,
+};
 
 test("finds the child file for both module layouts", async () => {
 	// Arrange
@@ -80,15 +97,6 @@ test("finds the child file for both module layouts", async () => {
 		"src/parser/tests.rs": "",
 		"src/tests.rs": "",
 	});
-	const declaration: OutOfLine = {
-		name: "tests",
-		written: "tests",
-		line: 1,
-		path: undefined,
-		pathAttribute: undefined,
-		testOnly: true,
-		span: [0, 0],
-	};
 
 	// Act
 	const beside = await childFile(join(root, "src/parser.rs"), declaration);
@@ -99,85 +107,40 @@ test("finds the child file for both module layouts", async () => {
 	expect(crateRoot).toBe(join(root, "src/tests.rs"));
 });
 
-test("moves the tests inline at the end of the file and removes their file", async () => {
+test("a file in a target directory of a package owns its directory", async () => {
 	// Arrange
-	const body =
-		'use super::f;\n\n#[test]\nfn raw() {\n    let _ = r"\n  kept\n";\n    let _ = "}{";\n}\n';
 	const root = await tempRepo({
-		"src/parser.rs": "fn f() {}\n\n#[cfg(test)]\nmod tests;\n",
-		"src/parser/tests.rs": body,
+		"Cargo.toml": '[package]\nname = "a"\n',
+		"src/bin/x.rs": "",
+		"tests/it.rs": "",
+		"src/tests/y.rs": "",
 	});
 
 	// Act
-	const problems = await inlineTests(join(root, "src/parser.rs"));
-
-	// Assert
-	expect(problems).toEqual([]);
-	expect(await Bun.file(join(root, "src/parser.rs")).text()).toBe(
-		`fn f() {}\n\n#[cfg(test)]\nmod tests {\n${body.trimEnd()}\n}\n`,
+	const directories = await Promise.all(
+		["src/bin/x.rs", "tests/it.rs", "src/tests/y.rs"].map((path) =>
+			moduleDirectory(join(root, path)),
+		),
 	);
-	expect(await exists(join(root, "src/parser"))).toBe(false);
-});
-
-test("drops the path attribute of an inlined module", async () => {
-	// Arrange
-	const root = await tempRepo({
-		"src/parser.rs": '#[cfg(test)]\n#[path = "checks.rs"]\nmod tests;\n',
-		"src/checks.rs": "#[test]\nfn t() {}\n",
-	});
-
-	// Act
-	await inlineTests(join(root, "src/parser.rs"));
 
 	// Assert
-	expect(await Bun.file(join(root, "src/parser.rs")).text()).toBe(
-		"#[cfg(test)]\nmod tests {\n#[test]\nfn t() {}\n}\n",
-	);
-	expect(await exists(join(root, "src/checks.rs"))).toBe(false);
+	expect(directories).toEqual([
+		join(root, "src/bin"),
+		join(root, "tests"),
+		join(root, "src/tests/y"),
+	]);
 });
 
-test("inlines several test modules without shifting each other", async () => {
+test("a path attribute names a file beside the declaring file", async () => {
 	// Arrange
-	const root = await tempRepo({
-		"src/lib.rs": "#[cfg(test)]\nmod a;\nfn mid() {}\n#[cfg(test)]\nmod b;\n",
-		"src/a.rs": "fn a() {}\n",
-		"src/b.rs": "fn b() {}\n",
-	});
+	const root = await tempRepo({ "src/checks.rs": "" });
 
 	// Act
-	await inlineTests(join(root, "src/lib.rs"));
-
-	// Assert
-	expect(await Bun.file(join(root, "src/lib.rs")).text()).toBe(
-		"#[cfg(test)]\nmod a {\nfn a() {}\n}\nfn mid() {}\n#[cfg(test)]\nmod b {\nfn b() {}\n}\n",
-	);
-});
-
-test("refuses a child with its own out-of-line modules", async () => {
-	// Arrange
-	const root = await tempRepo({
-		"src/parser.rs": "#[cfg(test)]\nmod tests;\n",
-		"src/parser/tests.rs": "mod fixtures;\n",
+	const found = await childFile(join(root, "src/lib.rs"), {
+		...declaration,
+		path: "checks.rs",
 	});
 
-	// Act
-	const problems = await inlineTests(join(root, "src/parser.rs"));
-
 	// Assert
-	expect(problems).toHaveLength(1);
-	expect(await exists(join(root, "src/parser/tests.rs"))).toBe(true);
-});
-
-test("reports a test module whose file is missing", async () => {
-	// Arrange
-	const root = await tempRepo({
-		"src/parser.rs": "#[cfg(test)]\nmod tests;\n",
-	});
-	await mkdir(join(root, "src/parser"), { recursive: true });
-
-	// Act
-	const problems = await inlineTests(join(root, "src/parser.rs"));
-
-	// Assert
-	expect(problems[0]).toContain("cannot find the file for mod tests");
+	expect(found).toBe(join(root, "src/checks.rs"));
 });
