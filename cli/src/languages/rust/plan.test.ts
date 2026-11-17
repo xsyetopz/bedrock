@@ -165,3 +165,53 @@ test("a Cargo.toml that is not TOML is left as it is, with a note", async () => 
 	expect(plan.steps.map((step) => step.path)).not.toContain("Cargo.toml");
 	expect(plan.notes.join("\n")).toContain("Cargo.toml: not valid TOML");
 });
+
+const MODULE_CRATE = {
+	"Cargo.toml": '[workspace]\nmembers = ["crates/*"]\n',
+	"crates/a/Cargo.toml":
+		'[package]\nname = "a"\nversion = "0.1.0"\n\n[lints]\nworkspace = true\n',
+	"crates/a/src/lib.rs": "//! A.\n",
+};
+
+test("renaming foo/mod.rs to foo.rs keeps its #[path] and include! targets", async () => {
+	// Arrange
+	const root = await tempRepo({
+		...MODULE_CRATE,
+		"crates/a/src/session/mod.rs":
+			'#[cfg(test)]\n#[path = "matrix/tests.rs"]\nmod matrix;\ninclude!("data.rs");\n',
+		"crates/a/src/session/matrix/tests.rs": "",
+		"crates/a/src/session/data.rs": "",
+	});
+
+	// Act
+	await adoptRust(root);
+
+	// Assert
+	expect(await exists(join(root, "crates/a/src/session/mod.rs"))).toBe(false);
+	expect(await readText(join(root, "crates/a/src/session.rs"))).toBe(
+		'#[cfg(test)]\n#[path = "session/matrix/tests.rs"]\nmod matrix;\ninclude!("session/data.rs");\n',
+	);
+	const again = await adoptRust(root);
+	expect(again.steps.filter((step) => step.path.includes("session"))).toEqual(
+		[],
+	);
+});
+
+test("a foo/mod.rs whose paths cannot be rewritten stays, with a note", async () => {
+	// Arrange
+	const root = await tempRepo({
+		...MODULE_CRATE,
+		"crates/a/src/odd/mod.rs": 'include!(concat!(env!("OUT_DIR"), "/x.rs"));\n',
+	});
+
+	// Act
+	await adoptRust(root);
+	const plan = await planRust(contextIn(root));
+
+	// Assert
+	expect(await exists(join(root, "crates/a/src/odd/mod.rs"))).toBe(true);
+	expect(await exists(join(root, "crates/a/src/odd.rs"))).toBe(false);
+	expect(plan.notes.join("\n")).toContain(
+		"crates/a/src/odd/mod.rs: not renamed",
+	);
+});

@@ -1,9 +1,10 @@
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import { Glob } from "bun";
 
 import { exists, listFiles, readText } from "../../core/fs.ts";
 import { at, isTable, parseToml } from "./manifests.ts";
+import { prefixPaths } from "./mod-paths.ts";
 
 /** One `Cargo.toml` of the repository. */
 export interface Manifest {
@@ -22,6 +23,15 @@ export interface Manifest {
 export interface Move {
 	readonly from: string;
 	readonly to: string;
+	/** The new text, when the rename changes what its relative paths mean. */
+	readonly content?: string;
+}
+
+/** The renames to make and the files left in place because a rename would break them. */
+export interface Moves {
+	readonly moves: Move[];
+	/** Paths of `mod.rs` files whose `#[path]` or `include!` cannot be rewritten safely. */
+	readonly kept: string[];
 }
 
 const MANIFESTS = new Glob("**/Cargo.toml");
@@ -63,11 +73,16 @@ export const manifests = async (root: string): Promise<Manifest[]> => {
 	);
 };
 
-/** Every `foo/mod.rs` under a `src/` directory whose `foo.rs` does not exist yet. */
+/**
+ * Every `foo/mod.rs` under a `src/` directory whose `foo.rs` does not exist
+ * yet. Moving the file up a directory changes what its relative `#[path]`
+ * and `include!` paths reach, so those gain a `foo/` prefix; a file whose
+ * paths cannot be rewritten safely stays where it is.
+ */
 export const moduleMoves = async (
 	root: string,
 	found: readonly Manifest[],
-): Promise<Move[]> => {
+): Promise<Moves> => {
 	const sources = found.map((manifest) =>
 		manifest.dir === "." ? "src/" : `${manifest.dir}/src/`,
 	);
@@ -77,12 +92,27 @@ export const moduleMoves = async (
 			(source) => path.startsWith(source) && path !== `${source}mod.rs`,
 		),
 	);
-	const moves = candidates.map((from) => ({
-		from,
-		to: `${from.slice(0, -"/mod.rs".length)}.rs`,
-	}));
-	const taken = await Promise.all(
-		moves.map((move) => exists(join(root, move.to))),
+	const free = await Promise.all(
+		candidates.map(async (from) => {
+			const to = `${from.slice(0, -"/mod.rs".length)}.rs`;
+			return (await exists(join(root, to))) ? undefined : { from, to };
+		}),
 	);
-	return moves.filter((_, index) => taken[index] !== true);
+	const wanted = free.filter((move) => move !== undefined);
+	const planned = await Promise.all(
+		wanted.map(async (move): Promise<Move | undefined> => {
+			const text = await Bun.file(join(root, move.from)).text();
+			const prefixed = prefixPaths(text, `${basename(dirname(move.from))}/`);
+			if (prefixed === undefined) {
+				return undefined;
+			}
+			return prefixed === text ? move : { ...move, content: prefixed };
+		}),
+	);
+	return {
+		moves: planned.filter((move) => move !== undefined),
+		kept: wanted
+			.filter((_, index) => planned[index] === undefined)
+			.map((move) => move.from),
+	};
 };

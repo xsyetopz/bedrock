@@ -12,7 +12,7 @@ import {
 	type Manifest,
 	manifests,
 	moduleMoves,
-	type Move,
+	type Moves,
 	rustFiles,
 } from "./project.ts";
 
@@ -71,14 +71,23 @@ const testsPart = async (
 	};
 };
 
-/** `foo/mod.rs` moved to `foo.rs`. */
-const movesPart = (moves: readonly Move[]): Part => ({
-	steps: moves.map((move): Step => ({
-		kind: "move",
-		path: move.to,
-		from: move.from,
-	})),
-	notes: [],
+/**
+ * `foo/mod.rs` moved to `foo.rs`. A rename that rewrites paths is a write of
+ * the new text plus a removal of the old file.
+ */
+const movesPart = ({ moves, kept }: Moves): Part => ({
+	steps: moves.flatMap((move): Step[] =>
+		move.content === undefined
+			? [{ kind: "move", path: move.to, from: move.from }]
+			: [
+					{ kind: "write", path: move.to, content: move.content },
+					{ kind: "remove", path: move.from },
+				],
+	),
+	notes: kept.map(
+		(path) =>
+			`${path}: not renamed, because a #[path] or include! in it cannot be rewritten safely; move it by hand.`,
+	),
 	projectFiles: moves.flatMap((move) => [move.from, move.to]),
 });
 
