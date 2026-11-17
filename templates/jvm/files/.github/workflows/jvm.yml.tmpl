@@ -16,7 +16,7 @@ concurrency:
 jobs:
   jvm:
     # The runner's JDK starts Gradle, and its Android SDK builds the Android targets. Gradle
-    # fetches GraalVM Community for the compilers.
+    # fetches the JDK 25 its daemon runs on and GraalVM Community for the compilers.
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

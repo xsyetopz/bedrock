@@ -2,9 +2,12 @@ import { expect, test } from "bun:test";
 import { join } from "node:path";
 
 import { exists } from "../../core/fs.ts";
+import { buildPlan } from "../../core/plan.ts";
+import { applySteps } from "../../core/steps.ts";
 import { tempRepo } from "../../core/testing.ts";
 import { guardJvm } from "./guard.ts";
 import { adoptJvm, textOf } from "./harness.ts";
+import { jvm } from "./index.ts";
 
 const OLD_SETTINGS = `// >>> jvm-bedrock
 pluginManagement { includeBuild("gradle/bedrock") }
@@ -124,4 +127,26 @@ test("a second adopt changes nothing in the project's own files", async () => {
 
 	// Assert
 	expect(again.steps).toEqual([]);
+});
+
+test("the group option replaces the group gradle.properties held, with a note", async () => {
+	// Arrange
+	const root = await tempRepo({
+		"settings.gradle.kts": "",
+		"gradle.properties": "group=org.old\n",
+	});
+
+	// Act
+	const plan = await buildPlan(
+		root,
+		[{ language: jvm, options: { kind: "", group: "org.chosen" } }],
+		{ init: false },
+	);
+	await applySteps(root, plan.steps);
+
+	// Assert
+	const properties = await textOf(root, "gradle.properties");
+	expect(properties).toContain("group=org.chosen\n");
+	expect(properties).not.toContain("org.old");
+	expect(plan.notes.join("\n")).toContain("group org.old becomes org.chosen");
 });

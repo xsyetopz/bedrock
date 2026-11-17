@@ -88,8 +88,10 @@ const propertiesStep = async (
 		{ name: BLOCK, content: block ?? "" },
 	]);
 	const notes: string[] = [];
-	if (!/^group\s*=/mu.test(text)) {
-		const chosen = groupOf(context) ?? migration?.group ?? fallback;
+	const option = groupOf(context);
+	const declared = /^group\s*=\s*(.*?)\s*$/mu.exec(text);
+	if (declared === null) {
+		const chosen = option ?? migration?.group ?? fallback;
 		if (chosen === undefined) {
 			notes.push(
 				"gradle.properties: set group= to the package the code lives in; NullAway checks it and Android derives namespaces from it",
@@ -97,6 +99,12 @@ const propertiesStep = async (
 		} else {
 			text += `group=${chosen}\n`;
 		}
+	} else if (option !== undefined && declared[1] !== option) {
+		// The group option, kept in .bedrock.json, is what the user chose last.
+		text = text.replace(declared[0], `group=${option}`);
+		notes.push(
+			`gradle.properties: group ${declared[1] ?? ""} becomes ${option}, the jvm group in .bedrock.json; NullAway and the Android namespaces follow it.`,
+		);
 	}
 	return {
 		step: { kind: "write", path: "gradle.properties", content: text },

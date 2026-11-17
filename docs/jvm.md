@@ -6,7 +6,7 @@ How bedrock sets up Java and Kotlin, and why. The pins live in `gradle/bedrock.v
 
 Gradle 9.9 runs the build, and the foojay resolver downloads GraalVM Community 25, the free GraalVM, as the toolchain for every module. Main code compiles to Java 8 bytecode: javac with `--release 8`, which also rejects newer JDK APIs, and Kotlin 2.4 with JVM target 1.8. Tests compile and run on Java 25, so they can use its APIs. Android apps run their debug unit tests; the release ones test the same code.
 
-Gradle itself needs a JDK 17 or newer to start. The `gradle` recipe in `.just/jvm.just` finds one, in this order: a valid `JAVA_HOME`, a `java` that runs, macOS's `java_home`, then Homebrew and `/usr/lib/jvm`. It exports `JAVA_HOME` for Gradle, and stops with an install hint when none runs; `bedrock adopt` and `bedrock jvm j2k` search the same way. A build that applies `bedrock.android` or `bedrock.cmp` also needs the Android SDK, through `ANDROID_HOME` or `sdk.dir` in `local.properties`.
+Gradle itself needs a JDK 17 or newer to start. Its daemon then runs on JDK 25, which `gradle/gradle-daemon-jvm.properties` asks for and Gradle downloads when none is installed, since Spotless runs google-java-format in the daemon and its releases need JDK 21 or newer. The `gradle` recipe in `.just/jvm.just` finds one, in this order: a valid `JAVA_HOME`, a `java` that runs, macOS's `java_home`, then Homebrew and `/usr/lib/jvm`. It exports `JAVA_HOME` for Gradle, and stops with an install hint when none runs; `bedrock adopt` and `bedrock jvm j2k` search the same way. A build that applies `bedrock.android` or `bedrock.cmp` also needs the Android SDK, through `ANDROID_HOME` or `sdk.dir` in `local.properties`.
 
 Every compiler warning is an error. On top of the compilers:
 
@@ -29,7 +29,7 @@ Every compiler warning is an error. On top of the compilers:
 | `cmp` | `bedrock.cmp` and `bedrock.android` | Compose Multiplatform UI in a shared module for Android and iOS, and the Android app |
 | `android` | `bedrock.android` | An Android app in Compose |
 
-A new project's `group` is `com.example.<directory name>` unless `gradle.properties` already names one or `--group <package>` sets it, such as `bedrock init app jvm:kotlin-library --group org.acme.app`. `.bedrock.json` keeps the group, so `bedrock update` uses it again, and the starter sources sit under its package path.
+A new project's `group` is `com.example.<directory name>` unless `gradle.properties` already names one or `--group <package>` sets it, such as `bedrock init app jvm:kotlin-library --group org.acme.app`. `.bedrock.json` keeps the group, so `bedrock update` uses it again, and the starter sources sit under its package path. A `--group` wins over the `group` in `gradle.properties`: adopt rewrites that line, notes the change, and leaves the code in its old package for you to move.
 
 ## Shrinking
 

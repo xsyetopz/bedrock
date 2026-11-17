@@ -49,7 +49,9 @@ test.skipIf(jdk === undefined).each(BUILT)(
 		expect(result.output).toContain("BUILD SUCCESSFUL");
 		expect(result.code).toBe(0);
 	},
-	600_000,
+	// The first build on a fresh machine downloads Gradle, the JDK 25 daemon, GraalVM, and the
+	// Android and Compose artifacts; a cold cmp build took 9 minutes on an emulated x64 runner.
+	1_200_000,
 );
 
 // Listed as skipped, so a run without the Android SDK shows which kinds it left out.
