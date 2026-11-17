@@ -1,47 +1,51 @@
-import { join } from "node:path";
+import { join, relative } from "node:path";
 
 import { exists } from "../../core/fs.ts";
 import type { Context, Finding } from "../../core/language.ts";
 import { inOrder } from "../../core/order.ts";
 import { pending } from "../../core/steps.ts";
 import { gated, isIntegrationTest } from "./gating.ts";
-import { declarations, inlineTests } from "./modules.ts";
 import { planRust } from "./plan.ts";
 import { rustFiles } from "./project.ts";
 import { suppressionProblems } from "./suppressions.ts";
+import { inlineTests, moveOut, pathTests, testsFile } from "./test-modules.ts";
 
-/** Whether the path is a `tests.rs` or a `tests/` inside `src/`, which holds unit tests apart from the code they test. */
-export const isTestFileInSrc = (path: string): boolean => {
-	const parts = path.split("/");
-	const src = parts.indexOf("src");
-	return (
-		src !== -1 &&
-		parts.slice(src + 1).some((part) => part === "tests" || part === "tests.rs")
-	);
+/** One finding per test module that keeps its body in the file or sets its file with `#[path]`. */
+const misplaced = async (
+	root: string,
+	file: string,
+	source: string,
+): Promise<Finding[]> => {
+	const destination = relative(root, await testsFile(join(root, file)));
+	return [
+		...inlineTests(source).map(
+			(found) =>
+				`${file}:${found.line}: mod ${found.name} keeps its tests in this file; move them to ${destination} and declare \`#[cfg(test)] mod tests;\` (just lint-fix does it)`,
+		),
+		...pathTests(source).map(
+			(found) =>
+				`${file}:${found.line}: mod ${found.name} sets its file with #[path]; drop the attribute and keep the tests in ${destination} (just lint-fix does it)`,
+		),
+	];
 };
 
-/** One finding per `mod name;` whose `#[cfg(test)]` body sits in another file. */
-const unmoved = (file: string, source: string): Finding[] =>
-	declarations(source)
-		.filter((found) => found.testOnly)
-		.map(
-			(found) =>
-				`${file}:${found.line}: mod ${found.name} keeps its tests in another file; move them here as \`mod ${found.name} { … }\` (just lint-fix does it)`,
-		);
-
-/** With `fix`: moves out-of-line test modules inline and gates integration tests; returns what it could not move. */
+/** With `fix`: moves test modules to `tests.rs` and gates integration tests; returns what it could not move. */
 const repair = async (root: string, file: string): Promise<Finding[]> => {
 	const path = join(root, file);
-	// Inlining an earlier file can delete a later one in the list.
+	// Moving an earlier file's tests can remove a later one in the list.
 	if (!(await exists(path))) {
 		return [];
 	}
-	const problems = await inlineTests(path);
-	if (isIntegrationTest(file)) {
-		const content = gated(await Bun.file(path).text());
-		if (content !== undefined) {
-			await Bun.write(path, content);
+	const problems = await moveOut(path);
+	try {
+		if (isIntegrationTest(file)) {
+			const content = gated(await Bun.file(path).text());
+			if (content !== undefined) {
+				await Bun.write(path, content);
+			}
 		}
+	} catch (error) {
+		problems.push(`${path}: cannot gate: ${String(error)}`);
 	}
 	return problems.map((problem) => problem.replaceAll(`${root}/`, ""));
 };
@@ -50,15 +54,10 @@ const repair = async (root: string, file: string): Promise<Finding[]> => {
 const checkFile = async (root: string, file: string): Promise<Finding[]> => {
 	const source = await Bun.file(join(root, file)).text();
 	return [
-		...unmoved(file, source),
+		...(await misplaced(root, file, source)),
 		...suppressionProblems(source).map(
 			({ line, message }) => `${file}:${line}: ${message}`,
 		),
-		...(isTestFileInSrc(file)
-			? [
-					`${file}: unit tests belong inline in the file they test, in #[cfg(test)] mod tests { … }`,
-				]
-			: []),
 	];
 };
 
@@ -72,20 +71,38 @@ const layout = async (context: Context): Promise<Finding[]> => {
 	const own = new Set(plan.projectFiles);
 	const undone = await pending(context.root, plan.steps);
 	const open = undone.filter((step) => own.has(step.path));
-	return open.map((step) =>
-		step.kind === "move"
-			? `${step.from}: name it ${step.path}, beside its directory (bedrock update does it)`
-			: `${step.path}: differs from what bedrock writes; run bedrock update`,
+	// A rename that rewrites paths is a write of `foo.rs` plus a removal of `foo/mod.rs`.
+	const renamed = (path: string): string | undefined => {
+		const target = `${path.slice(0, -"/mod.rs".length)}.rs`;
+		return path.endsWith("/mod.rs") &&
+			plan.steps.some((step) => step.kind === "write" && step.path === target)
+			? target
+			: undefined;
+	};
+	const targets = new Set(
+		open.flatMap((step) =>
+			step.kind === "remove" ? [renamed(step.path)] : [],
+		),
 	);
+	return open
+		.filter((step) => !targets.has(step.path))
+		.map((step) => {
+			const to = step.kind === "move" ? step.path : renamed(step.path);
+			const from = step.kind === "move" ? step.from : step.path;
+			return to !== undefined &&
+				(step.kind === "move" || step.kind === "remove")
+				? `${from}: name it ${to}, beside its directory (bedrock update does it)`
+				: `${step.path}: differs from what bedrock writes; run bedrock update`;
+		});
 };
 
 /**
- * What Clippy cannot see: test modules in other files, unit tests under
- * `src/tests`, lint suppressions that skip `#[expect(…, reason)]`, and files
+ * What Clippy cannot see: unit tests that sit in the file they test or behind
+ * `#[path]`, lint suppressions that skip `#[expect(…, reason)]`, and files
  * that differ from what adopt writes, such as a member that skips the
  * workspace lints, `foo/mod.rs`, or an integration test without
- * `#![cfg(test)]`. With `fix`, moves test modules inline and gates integration
- * tests first.
+ * `#![cfg(test)]`. With `fix`, moves test modules to `tests.rs` and gates
+ * integration tests first.
  */
 export const guardRust = async (
 	context: Context,

@@ -1,25 +1,25 @@
-import { readdir, rmdir, unlink } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
 
 import { exists } from "../../core/fs.ts";
-import { inOrder } from "../../core/order.ts";
 import { type Token, tokens } from "./lexer.ts";
 
-/** A `mod name;` declaration, whose body lives in another file. */
-export interface OutOfLine {
+/** A `mod name;` or `mod name { … }` declaration. */
+export interface Module {
 	/** The module name without any `r#` prefix. */
 	readonly name: string;
-	/** The module name as written. */
-	readonly written: string;
 	readonly line: number;
 	/** The `#[path = "…"]` value, if the declaration has one. */
 	readonly path: string | undefined;
-	/** Offsets of that `#[path = "…"]` attribute, which an inline module drops. */
+	/** Offsets of that `#[path = "…"]` attribute. */
 	readonly pathAttribute: readonly [number, number] | undefined;
 	/** Whether a `#[cfg(test)]`-style attribute gates it. */
 	readonly testOnly: boolean;
-	/** Offsets from `mod` through `;`. */
-	readonly span: readonly [number, number];
+	/** Offset of `mod`. */
+	readonly start: number;
+	/** Offsets of the `{` and `}` of an inline body, or `undefined` for `mod name;`. */
+	readonly body: readonly [number, number] | undefined;
+	/** How many braces enclose the declaration. */
+	readonly depth: number;
 }
 
 /** The index of the bracket that closes the `[` or `(` at `openAt`. */
@@ -104,7 +104,7 @@ const pathValue = (inner: readonly Token[]): string | undefined => {
 const attributes = (
 	all: readonly Token[],
 	from: number,
-): Pick<OutOfLine, "testOnly" | "path" | "pathAttribute"> & {
+): Pick<Module, "testOnly" | "path" | "pathAttribute"> & {
 	next: number;
 } => {
 	let testOnly = false;
@@ -141,28 +141,61 @@ const skipModifiers = (all: readonly Token[], from: number): number => {
 	return all[cursor]?.text === "unsafe" ? cursor + 1 : cursor;
 };
 
-/** Every `mod name;` in `source`, outside comments and strings. */
-export const declarations = (source: string): OutOfLine[] => {
+/** The index of the `}` that closes the `{` at `openAt`. */
+const bracesEnd = (
+	all: readonly Token[],
+	openAt: number,
+): number | undefined => {
+	let depth = 0;
+	for (let index = openAt; index < all.length; index += 1) {
+		const text = all[index]?.text;
+		depth += text === "{" ? 1 : 0;
+		depth -= text === "}" ? 1 : 0;
+		if (depth === 0) {
+			return index;
+		}
+	}
+	return undefined;
+};
+
+/** How many braces enclose each token. */
+const depths = (all: readonly Token[]): number[] => {
+	let depth = 0;
+	return all.map((token) => {
+		depth = token.text === "}" ? Math.max(0, depth - 1) : depth;
+		const here = depth;
+		depth += token.text === "{" ? 1 : 0;
+		return here;
+	});
+};
+
+/** Every `mod name;` and `mod name { … }` in `source`, in order, outside comments and strings. */
+export const modules = (source: string): Module[] => {
 	const all = tokens(source);
-	const found: OutOfLine[] = [];
+	const enclosing = depths(all);
+	const found: Module[] = [];
 	let at = 0;
 	while (at < all.length) {
 		const attrs = attributes(all, at);
 		const cursor = skipModifiers(all, attrs.next);
-		const [keyword, name, semicolon] = all.slice(cursor, cursor + 3);
+		const [keyword, name, after] = all.slice(cursor, cursor + 3);
+		const end = after?.text === "{" ? bracesEnd(all, cursor + 2) : undefined;
+		const close = end === undefined ? undefined : all[end];
+		const isMod = keyword?.text === "mod" && name?.kind === "ident";
 		if (
-			keyword?.text === "mod" &&
-			name?.kind === "ident" &&
-			semicolon?.text === ";"
+			isMod &&
+			after !== undefined &&
+			(after.text === ";" || close !== undefined)
 		) {
 			found.push({
 				name: name.text.replace(/^r#/u, ""),
-				written: name.text,
 				line: keyword.line,
 				path: attrs.path,
 				pathAttribute: attrs.pathAttribute,
 				testOnly: attrs.testOnly,
-				span: [keyword.start, semicolon.end],
+				start: keyword.start,
+				body: close === undefined ? undefined : [after.start, close.start],
+				depth: enclosing[cursor] ?? 0,
 			});
 			at = cursor + 3;
 		} else {
@@ -174,116 +207,50 @@ export const declarations = (source: string): OutOfLine[] => {
 
 /**
  * Whether `file` is a crate root or a `mod.rs`, whose child modules sit beside
- * it rather than in a directory named after it.
+ * it rather than in a directory named after it. A target root counts too:
+ * `tests/x.rs`, `examples/x.rs`, `benches/x.rs`, or `src/bin/x.rs` in a
+ * package. A directory merely named `tests` inside `src/` is an ordinary
+ * module directory.
  */
-const ownsDirectory = (file: string): boolean =>
-	["lib.rs", "main.rs", "mod.rs", "build.rs"].includes(basename(file)) ||
-	["bin", "tests", "examples", "benches"].includes(basename(dirname(file)));
+const ownsDirectory = async (file: string): Promise<boolean> => {
+	if (["lib.rs", "main.rs", "mod.rs", "build.rs"].includes(basename(file))) {
+		return true;
+	}
+	const parent = dirname(file);
+	const kind = basename(parent);
+	const targets: Record<string, string> = {
+		tests: dirname(parent),
+		examples: dirname(parent),
+		benches: dirname(parent),
+		bin: dirname(dirname(parent)),
+	};
+	const owner = targets[kind];
+	return owner !== undefined && (await exists(join(owner, "Cargo.toml")));
+};
+
+/**
+ * The directory where the child modules of `file` sit: beside a `mod.rs`,
+ * `lib.rs`, or `main.rs`, and in a directory named for the file otherwise.
+ */
+export const moduleDirectory = async (file: string): Promise<string> =>
+	(await ownsDirectory(file))
+		? dirname(file)
+		: join(dirname(file), basename(file, extname(file)));
 
 /** The file that holds the body of `declaration`, declared in `file`. */
 export const childFile = async (
 	file: string,
-	declaration: OutOfLine,
+	declaration: Module,
 ): Promise<string | undefined> => {
-	const directory = dirname(file);
 	if (declaration.path !== undefined) {
-		const candidate = join(directory, declaration.path);
+		const candidate = join(dirname(file), declaration.path);
 		return (await exists(candidate)) ? candidate : undefined;
 	}
-	const nested = join(directory, basename(file, extname(file)));
-	const bases = ownsDirectory(file) ? [directory, nested] : [nested, directory];
-	const candidates = bases.flatMap((base) => [
+	const base = await moduleDirectory(file);
+	const candidates = [
 		join(base, `${declaration.name}.rs`),
 		join(base, declaration.name, "mod.rs"),
-	]);
+	];
 	const present = await Promise.all(candidates.map((path) => exists(path)));
 	return candidates.find((_, index) => present[index] === true);
-};
-
-/** Drops the `#[path]` attribute of a module that now has its body inline. */
-const dropPathAttribute = (
-	source: string,
-	[start, end]: readonly [number, number],
-): string => {
-	const tail = source.slice(end);
-	const blanks = /^[^\S\n]*\n?/u.exec(tail)?.[0].length ?? 0;
-	return source.slice(0, start) + source.slice(end + blanks);
-};
-
-const removeWithEmptyParent = async (file: string): Promise<void> => {
-	await unlink(file);
-	const parent = dirname(file);
-	const left = await readdir(parent);
-	if (left.length === 0) {
-		await rmdir(parent);
-	}
-};
-
-/** A test module with the file that holds its body, or why it has none. */
-type Loaded =
-	| {
-			readonly declaration: OutOfLine;
-			readonly child: string;
-			readonly body: string;
-	  }
-	| { readonly declaration: OutOfLine; readonly problem: string };
-
-const load = async (file: string, declaration: OutOfLine): Promise<Loaded> => {
-	const place = `${file}:${declaration.line}`;
-	const child = await childFile(file, declaration);
-	if (child === undefined) {
-		return {
-			declaration,
-			problem: `${place}: cannot find the file for mod ${declaration.name}`,
-		};
-	}
-	const body = await Bun.file(child).text();
-	return declarations(body).length > 0
-		? {
-				declaration,
-				problem: `${place}: ${child} declares its own out-of-line modules; move them first`,
-			}
-		: { declaration, child, body };
-};
-
-/** `source` with the module's body in place of its `mod name;`. */
-const spliceInline = (
-	source: string,
-	found: OutOfLine,
-	body: string,
-): string => {
-	const [from, to] = found.span;
-	const inline = `mod ${found.written} {\n${body.trimEnd()}\n}`;
-	const spliced = source.slice(0, from) + inline + source.slice(to);
-	return found.pathAttribute === undefined
-		? spliced
-		: dropPathAttribute(spliced, found.pathAttribute);
-};
-
-/**
- * Moves every out-of-line test module of `file` inline as
- * `mod name { … }`, and deletes the files that held the bodies. Returns one
- * message per module it could not move.
- */
-export const inlineTests = async (file: string): Promise<string[]> => {
-	const original = await Bun.file(file).text();
-	const wanted = declarations(original).filter((found) => found.testOnly);
-	const loaded = await Promise.all(wanted.map((found) => load(file, found)));
-	let source = original;
-	const moved: string[] = [];
-	const problems: string[] = [];
-	// Last first, so the offsets of the earlier modules stay valid.
-	for (const entry of loaded.toReversed()) {
-		if ("problem" in entry) {
-			problems.push(entry.problem);
-		} else {
-			source = spliceInline(source, entry.declaration, entry.body);
-			moved.push(entry.child);
-		}
-	}
-	if (moved.length > 0) {
-		await Bun.write(file, source);
-		await inOrder(moved, removeWithEmptyParent);
-	}
-	return problems.toReversed();
 };
