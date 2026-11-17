@@ -57,7 +57,11 @@ pre-commit: (bedrock "guard" "base")
     #!/usr/bin/env bash
     set -euo pipefail
     staged="$(git diff --cached --name-only --diff-filter=ACMR)"
-    if grep -q '\.md$' <<<"$staged"; then {{ just_executable() }} lint-markdown; fi
+    # Only the staged Markdown: an untracked draft must not block the commit. The
+    # leading ":" makes each a literal path, and --no-globs drops the config's **/*.md.
+    markdown=()
+    while IFS= read -r path; do markdown+=(":$path"); done < <(grep '\.md$' <<<"$staged" || true)
+    if (( ${#markdown[@]} > 0 )); then {{ just_executable() }} lint-markdown --no-globs "${markdown[@]}"; fi
     if grep -q '^\.githooks/' <<<"$staged"; then {{ just_executable() }} lint-hooks; fi
     for language in $({{ just_executable() }} bedrock languages --staged); do
         if [[ -f ".just/$language.just" ]]; then
@@ -114,13 +118,14 @@ each recipe:
     done
 
 [private]
+[positional-arguments]
 lint-markdown *args:
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ -x node_modules/.bin/markdownlint-cli2 ]]; then
-        exec bun run markdownlint-cli2 {{ args }}
+        exec bun run markdownlint-cli2 "$@"
     elif command -v markdownlint-cli2 >/dev/null; then
-        exec markdownlint-cli2 {{ args }}
+        exec markdownlint-cli2 "$@"
     elif [[ -n "${CI:-}" ]]; then
         echo "markdownlint-cli2 is not installed" >&2
         exit 1
