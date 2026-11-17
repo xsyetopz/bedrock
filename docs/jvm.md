@@ -1,21 +1,23 @@
 # Java and Kotlin
 
-How `jvm-bedrock` sets up Java and Kotlin, and why. The pins live in `gradle/bedrock.versions.toml`.
+How bedrock sets up Java and Kotlin, and why. The pins live in `gradle/bedrock.versions.toml`.
 
 ## Toolchain
 
 Gradle 9.9 runs the build, and the foojay resolver downloads GraalVM Community 25, the free GraalVM, as the toolchain for every module. Main code compiles to Java 8 bytecode: javac with `--release 8`, which also rejects newer JDK APIs, and Kotlin 2.4 with JVM target 1.8. Tests compile and run on Java 25, so they can use its APIs. Android apps run their debug unit tests; the release ones test the same code.
+
+Gradle itself needs a JDK 17 or newer to start. The `gradle` recipe in `.just/jvm.just` finds one, in this order: a valid `JAVA_HOME`, a `java` that runs, macOS's `java_home`, then Homebrew and `/usr/lib/jvm`. It exports `JAVA_HOME` for Gradle, and stops with an install hint when none runs; `bedrock adopt` and `bedrock jvm j2k` search the same way. A build that applies `bedrock.android` or `bedrock.cmp` also needs the Android SDK, through `ANDROID_HOME` or `sdk.dir` in `local.properties`.
 
 Every compiler warning is an error. On top of the compilers:
 
 - Error Prone runs on Java, and NullAway treats each package under `group` in `gradle.properties` as non-null, so set `group` to the package the code lives in. Mark nullable Java types with JSpecify's `@Nullable`.
 - Kotlin library modules use explicit API mode, which needs a visibility and return type on each public declaration. Applications skip it, since no other code calls them.
 - Android Lint checks Android and KMP modules, and rejects APIs above Android 5.
-- Spotless formats Java with google-java-format and Kotlin with ktfmt, both in Google style.
+- Spotless formats Java with google-java-format and Kotlin with ktfmt's kotlinlang style, which indents by four spaces, as the Kotlin coding conventions do.
 
 ## Kinds
 
-`jvm-bedrock new <dir> --kind <kind>` starts one of these:
+`bedrock init <dir> jvm:<kind>` starts one of these:
 
 | Kind | Plugins | Output |
 | --- | --- | --- |
@@ -26,6 +28,8 @@ Every compiler warning is an error. On top of the compilers:
 | `kmp` | `bedrock.kmp` | A Kotlin Multiplatform library for the JVM, Android, and iOS |
 | `cmp` | `bedrock.cmp` and `bedrock.android` | Compose Multiplatform UI in a shared module for Android and iOS, and the Android app |
 | `android` | `bedrock.android` | An Android app in Compose |
+
+A new project's `group` is `com.example.<directory name>` unless `gradle.properties` already names one.
 
 ## Shrinking
 
@@ -39,7 +43,7 @@ iOS targets start at 15.0, Kotlin/Native's minimum. Kotlin 2.2 still builds for 
 
 ## Java to Kotlin
 
-`just jvm::j2k <path>…` converts Java files, or directories of them, with IntelliJ IDEA's J2K converter, then formats the result. It runs IntelliJ IDEA 2026.3 headless, and the free tier is enough. The first run downloads IDEA, about 1.5 GB, into `~/.gradle/caches/bedrock/idea`; set `BEDROCK_IDEA` to an installed IDEA 2026.3 to skip it. The IDE runs with a 2 GB heap.
+`just jvm::j2k <path>…`, or `bedrock jvm j2k <path>...`, converts Java files, or directories of them, with IntelliJ IDEA's J2K converter, then formats the result. It runs IntelliJ IDEA 2026.3 headless, and the free tier is enough. The first run downloads IDEA, about 1.5 GB, into `~/.gradle/caches/bedrock/idea`; set `BEDROCK_IDEA` to an installed IDEA 2026.3 to skip it. The IDE runs with a 2 GB heap.
 
 J2K replaces each `.java` file and moves the result from `src/<set>/java` to `src/<set>/kotlin`, so the task stops when a file has uncommitted changes, and when the module doesn't apply `bedrock.kotlin` yet. Its output compiles in most cases but not all. Run `just verify`, then fix what it reports, the `!!` J2K adds, and nullable types the Java never meant.
 

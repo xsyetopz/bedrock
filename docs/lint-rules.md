@@ -3,11 +3,11 @@
 oxlint checks the code and markdownlint-cli2 checks the Markdown. Both run with:
 
 ```bash
-bun run lint        # report problems
-bun run lint:fix    # fix what can be fixed, then report the rest
+just lint        # report problems
+just lint-fix    # fix what can be fixed, then report the rest
 ```
 
-The rules live in `typescript-bedrock`, in `oxlintrc.json` and `markdownlint.jsonc`. A repo's `.oxlintrc.json` and `.markdownlint-cli2.jsonc` extend those files, so a new `typescript-bedrock` version updates the rules everywhere. To add or change a rule, edit `packages/typescript-bedrock/oxlintrc.json`, set it to `"error"`, and fix what it reports.
+Bedrock writes `.oxlintrc.json` and `.markdownlint-cli2.jsonc` into each repo as full configs, from `templates/typescript/files/` in this repo, and `bedrock update` rewrites them with a newer release. A repo's own entries in their ignore lists stay; any other change gives way to the template, with a note. To add or change a rule, edit the template here, set it to `"error"`, and fix what it reports.
 
 ## How `oxlint` Is Set Up
 
@@ -15,7 +15,7 @@ Every rule in the `correctness`, `suspicious`, `pedantic`, and `perf` categories
 
 oxlint loads its eslint, typescript, unicorn, oxc, import, promise, node, and jest plugins, and it runs type-aware rules through `oxlint-tsgolint`, which brings its own copy of TypeScript. `bunfig.toml` sets `[run] bun = true`, so oxlint runs on Bun even where Node.js is installed.
 
-Each repo keeps its own `ignorePatterns` (`coverage`, `dist`, `node_modules`, `*.gen.*`), because oxlint does not inherit them through `extends`.
+`ignorePatterns` leaves out dependencies, build and coverage output, generated `*.gen.*` files, agent worktrees in `.claude`, and OpenSpec proposals in `openspec`.
 
 ## Suppression Comments
 
@@ -83,12 +83,12 @@ TypeScript covers some Biome rules itself: `erasableSyntaxOnly` rejects enums, m
 
 ## Markdown
 
-`bun fmt` pads Markdown tables and has no setting to stop it, so `bunfig.toml` leaves `*.md` out and markdownlint-cli2 checks Markdown in its place. `typescript-bedrock/markdownlint.jsonc` turns on every default rule except `line-length`, and adds two:
+`bun fmt` pads Markdown tables and has no setting to stop it, so `bunfig.toml` leaves `*.md` out and markdownlint-cli2 checks Markdown in its place. `.markdownlint-cli2.jsonc` turns on every default rule except `line-length`, and adds two:
 
 - `table-column-style` set to `compact`: one space around each cell, and `| --- |` separators;
 - `title-case-style` from [`markdownlint-rule-title-case-style`](https://github.com/greyscaled/markdownlint-rule-title-case-style), set to `title`. Put identifiers in a heading in backticks, and the rule skips them.
 
-`bun run lint:fix` fixes both. `.github/.markdownlint-cli2.jsonc` turns `first-line-heading` off for the pull request template, which GitHub shows as a form body.
+`just lint-fix` fixes both. `.github/.markdownlint-cli2.jsonc` turns `first-line-heading` off for the pull request template, which GitHub shows as a form body.
 
 ## `bun lint`
 
