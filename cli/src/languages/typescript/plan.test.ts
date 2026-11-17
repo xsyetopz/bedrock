@@ -103,6 +103,23 @@ describe("planTypescript on a fresh repo", () => {
 		expect(await textOf(root, "bunfig.toml")).toContain("[install]");
 	});
 
+	test("runs a project-setup action before the workflow's setup, when the repo has one", async () => {
+		// Arrange
+		const root = await tempRepo();
+
+		// Act
+		await adoptTypescript(root);
+		const workflow = await textOf(root, ".github/workflows/typescript.yml");
+
+		// Assert
+		expect(workflow).toContain(
+			"if: hashFiles('.github/actions/project-setup/action.yml') != ''",
+		);
+		expect(
+			workflow.indexOf("uses: ./.github/actions/project-setup"),
+		).toBeLessThan(workflow.indexOf("just typescript::setup"));
+	});
+
 	test("bounds the type-aware checks that resolve every callback signature", async () => {
 		// Arrange
 		const root = await tempRepo();
