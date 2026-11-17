@@ -14,12 +14,18 @@ import? "project.just"
 
 languages := "typescript rust swift cpp jvm"
 
+# The bedrock release .bedrock.json pins; "source" runs the CLI from this checkout.
+bedrock_version := `sed -n 's/^[[:space:]]*"version": "\(.*\)",$/\1/p' .bedrock.json 2>/dev/null || true`
+bedrock_asset := "bedrock-" + replace(os(), "macos", "darwin") + "-" + replace(replace(arch(), "aarch64", "arm64"), "x86_64", "x64")
+# One copy per release, shared by every checkout and worktree.
+bedrock_bin := cache_directory() / "bedrock" / bedrock_version / bedrock_asset
+
 # List the recipes.
 default:
     @just --list --list-submodules
 
-# Install the pinned tools and point git at .githooks.
-setup: (each "setup")
+# Install bedrock and the pinned tools, and point git at .githooks.
+setup: install-bedrock (each "setup")
     @if [[ -z "${CI:-}" ]]; then git config core.hooksPath .githooks; fi
 
 # Format every file in place.
@@ -41,13 +47,61 @@ lint-fix: lint-markdown-fix (each "lint-fix")
 test: (each "test")
 
 # Report what the linters cannot see: suppressions, foreign tools, and drift.
-guard: guard-base (each "guard")
+guard: (bedrock "guard")
 
 # Run every check CI runs.
-verify: guard-base lint-markdown lint-hooks (each "verify")
+verify: (bedrock "guard" "base") lint-markdown lint-hooks (each "verify")
 
-# The checks the pre-commit hook runs.
-pre-commit: guard-base (each "pre-commit")
+# The checks the pre-commit hook runs, for the languages the commit touches.
+pre-commit: (bedrock "guard" "base")
+    #!/usr/bin/env bash
+    set -euo pipefail
+    staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+    if grep -q '\.md$' <<<"$staged"; then {{ just_executable() }} lint-markdown; fi
+    if grep -q '^\.githooks/' <<<"$staged"; then {{ just_executable() }} lint-hooks; fi
+    for language in $({{ just_executable() }} bedrock languages --staged); do
+        if [[ -f ".just/$language.just" ]]; then
+            {{ just_executable() }} "$language::pre-commit"
+        fi
+    done
+
+# Run the bedrock CLI this repo pins, such as `just bedrock update`.
+[positional-arguments]
+bedrock *args: install-bedrock
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "{{ bedrock_version }}" == source ]]; then
+        exec bun cli/src/main.ts "$@"
+    fi
+    exec "{{ bedrock_bin }}" "$@"
+
+[private]
+install-bedrock:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version="{{ bedrock_version }}"
+    if [[ -z "$version" ]]; then
+        echo ".bedrock.json has no version. Run bedrock adopt." >&2
+        exit 1
+    fi
+    if [[ "$version" == source || -x "{{ bedrock_bin }}" ]]; then exit 0; fi
+    url="https://github.com/xsyetopz/bedrock/releases/download/v$version"
+    dir="$(dirname "{{ bedrock_bin }}")"
+    mkdir -p "$dir"
+    tmp="$(mktemp "$dir/.download.XXXXXX")"
+    trap 'rm -f "$tmp" "$tmp.sums"' EXIT
+    echo "Downloading bedrock $version ({{ bedrock_asset }})" >&2
+    curl --fail --silent --show-error --location --retry 3 -o "$tmp" "$url/{{ bedrock_asset }}"
+    curl --fail --silent --show-error --location --retry 3 -o "$tmp.sums" "$url/SHA256SUMS"
+    expected="$(awk -v asset="{{ bedrock_asset }}" '$2 == asset { print $1 }' "$tmp.sums")"
+    actual="$(shasum -a 256 "$tmp" | cut -d ' ' -f 1)"
+    if [[ -z "$expected" || "$expected" != "$actual" ]]; then
+        echo "bedrock $version: checksum mismatch for {{ bedrock_asset }}" >&2
+        exit 1
+    fi
+    chmod +x "$tmp"
+    # A rename is atomic, so parallel worktrees never run a half-written binary.
+    mv -f "$tmp" "{{ bedrock_bin }}"
 
 [private]
 each recipe:
@@ -87,26 +141,3 @@ lint-hooks:
         exit 1
     fi
     echo "Skipped hooks: shellcheck is not installed. CI runs it."
-
-[private]
-guard-base:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    status=0
-    for agent in CLAUDE.md GEMINI.md; do
-        if [[ "$(readlink "$agent" || true)" != AGENTS.md ]]; then
-            echo "$agent: make it a symlink to AGENTS.md" >&2
-            status=1
-        fi
-    done
-    for path in .husky .lefthook.yml .pre-commit-config.yaml .simple-git-hooks.json lefthook.yaml lefthook.yml Makefile; do
-        if [[ -e "$path" ]]; then
-            echo "$path: replaced by justfile and .githooks; move what it still does into project.just" >&2
-            status=1
-        fi
-    done
-    if [[ -z "${CI:-}" && "$(git config core.hooksPath || true)" != .githooks ]]; then
-        echo "git hooks are off: run just setup" >&2
-        status=1
-    fi
-    exit "$status"

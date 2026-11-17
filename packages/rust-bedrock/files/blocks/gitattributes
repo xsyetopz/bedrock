@@ -1,2 +1,0 @@
-*.rs diff=rust
-Cargo.lock text linguist-generated

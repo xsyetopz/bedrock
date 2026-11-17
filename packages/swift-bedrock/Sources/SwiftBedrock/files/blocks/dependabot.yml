@@ -1,7 +1,0 @@
-  - package-ecosystem: swift
-    directory: /
-    schedule:
-      interval: weekly
-    groups:
-      swift:
-        patterns: ["*"]

@@ -1,5 +1,0 @@
-*.pbxproj text linguist-generated
-Package.resolved text linguist-generated
-*.xcscheme text
-*.m diff=objc
-*.mm diff=objc

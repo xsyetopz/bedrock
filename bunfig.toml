@@ -25,8 +25,8 @@ coverageSkipTestFiles = true
 # The threshold is enforced only while the `text` reporter is on.
 coverageReporter = ["text", "lcov"]
 coverageThreshold = { lines = 0, functions = 0 }
-# Starter files whose placeholders rust-bedrock new fills in.
-pathIgnorePatterns = ["packages/rust-bedrock/files/**"]
+# Agent worktrees and spec drafts hold copies of the tests.
+pathIgnorePatterns = [".claude/**", "openspec/**", "packages/rust-bedrock/files/**"]
 
 [fmt]
 useTabs = true
@@ -41,7 +41,6 @@ sortPackageJson = { sortScripts = true }
 ignorePatterns = [
 	# bedrock keeps its marked blocks at one indent, which the YAML formatter moves.
 	".github/dependabot.yml",
-	"**/blocks/dependabot.yml",
 	"**/coverage/",
 	"**/dist/",
 	"**/*.gen.*",
@@ -50,6 +49,9 @@ ignorePatterns = [
 	# Cargo.toml and friends follow rustfmt's style in a repo that also has Rust.
 	"**/*.toml",
 	"**/target/",
+	".claude/",
+	"openspec/",
+	"**/blocks/dependabot.yml",
 ]
 
 # YAML cannot use tabs. Markdown is left to markdownlint, which keeps tables compact.

@@ -1,7 +1,0 @@
-{
-	"oxc.enable.oxlint": true,
-	"oxc.enable.oxfmt": false,
-	"editor.codeActionsOnSave": {
-		"source.fixAll.oxc": "explicit"
-	}
-}
