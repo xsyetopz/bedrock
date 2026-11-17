@@ -9,6 +9,8 @@ set working-directory := ".."
 # `BEDROCK_LINT_MEMORY=8GiB just lint`.
 lint_memory := env("BEDROCK_LINT_MEMORY", "4GiB")
 lint_threads := env("BEDROCK_LINT_THREADS", "4")
+# The lock every lint run on the machine shares; a test points it elsewhere.
+lint_lock := env("BEDROCK_LINT_LOCK", "/tmp/bedrock-lint.lock")
 
 # Install the dependencies. CI must not change bun.lock.
 setup:
@@ -62,7 +64,7 @@ format-staged:
 oxlint *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    lock=/tmp/bedrock-lint.lock
+    lock="{{ lint_lock }}"
     waited=
     until mkdir "$lock" 2>/dev/null; do
         holder="$(cat "$lock/pid" 2>/dev/null || true)"
