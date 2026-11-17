@@ -1,6 +1,6 @@
 {
 	"name": "bedrock",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"private": true,
 	"description": "One CLI and Claude Code plugin that sets up and checks TypeScript (Bun), Rust, Swift, C++, and JVM repos.",
 	"license": "MIT",
