@@ -13,7 +13,7 @@ bedrock adopt <target> ts rust
 
 The target must be a git repository, and git is the backup: adopt refuses to change a file with uncommitted work unless you pass `--allow-dirty`, and it leaves no `.bak` files. Review the change with `git diff`, and move what a removed Makefile or hook manager did into `project.just`. When it finishes, run `just setup`, then `just verify`, in the target. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes those whose content git holds, and lists the rest for `bedrock clean --force`.
 
-Project checks that `just verify` should run, such as a build or a repo-specific script, go in `project.just` as recipes named `project-<task>`: `project-verify`, `project-test`, `project-lint`, and so on. The shared `justfile` runs the matching one after each language's `<task>`.
+Project checks that `just verify` should run, such as a build or a repo-specific script, go in `project.just` as recipes named `project-<task>`: `project-verify`, `project-test`, `project-lint`, and so on. The shared `justfile` runs the matching one after each language's `<task>`. `project-pre-typecheck` is the one that runs before a language's task: the TypeScript `typecheck` runs it before `bun check`, so generated files the types import exist in CI and in the pre-commit hook. A tool those checks need on the CI runner, such as a compiler a test calls, goes in a composite action at `.github/actions/project-setup/action.yml`; the TypeScript and Swift workflows run it, when it exists, before their setup steps.
 
 ## What Every Language Changes
 
