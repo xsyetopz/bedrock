@@ -72,9 +72,9 @@ It adds the tools bedrock configures: oxlint, oxlint-tsgolint, markdownlint-cli2
 
 `bunfig.toml` is written as a full copy of the template, with its `[fmt]` style. Adopt keeps what the repo's copy adds to the template, with the comments right above it: each key a table lacks, each entry a template array lacks, and each table or `[[fmt.overrides]]` element the template lacks. Where the repo changes a value the template sets, the template's value wins, and adopt prints a note with the repo's value. A copy that is not valid TOML is replaced, with a note. The test runs print coverage but set no minimum, because Bun fails the run when any one file falls under the threshold. The template also turns off `.env` loading and install-on-run, and runs scripts on Bun.
 
-Every adopted repo uses the one format style: adopt removes Prettier and oxfmt configs and the `prettier` field of `package.json`. Adopt does not run the formatter, so run `just format` after it and expect that first commit to touch most files.
+Every adopted repo uses the one format style: adopt removes Prettier and oxfmt configs and the `prettier` field of `package.json`. After installing, adopt runs `bun fmt`, so expect that first commit to touch most files. `--no-run` skips the install and the format; run `just format` yourself then.
 
-`bunfig.toml`, `package.json`, `tsconfig.json`, and the two lint configs stay yours after the first write, so the drift guard skips them. `.vscode/extensions.json` and `.vscode/settings.json` are written only when the repo has none, so a tuned copy stays.
+`bunfig.toml`, `package.json`, and `tsconfig.json` stay yours after the first write, so the drift guard skips them. The two lint configs keep only the repo's ignore entries: each adopt rewrites them from the template plus those entries, so the drift guard reports a changed rule but not an added ignore. `.vscode/extensions.json` and `.vscode/settings.json` are written only when the repo has none, so a tuned copy stays.
 
 ### Fixing the Errors
 
@@ -89,7 +89,7 @@ A legacy repo goes straight to the full strict config, so the first `just verify
 
 Work through them on a branch, in this order:
 
-1. Run `just format`, then `just lint-fix`. Both rewrite files, so review the diff.
+1. Run `just lint-fix`, which rewrites files, so review the diff.
 2. Run `bun check` and fix one flag at a time:
    - `strict`: add the missing types, and narrow `null`, `undefined`, and caught values (`instanceof Error`).
    - `noUncheckedIndexedAccess`: an indexed read can be `undefined`, so check it before use.
@@ -114,7 +114,7 @@ Work through them on a branch, in this order:
 - moves each `foo/mod.rs` to `foo.rs`, and starts each integration test in `tests/` with `#![cfg(test)]`, and gives it a `//!` crate doc when it has none, since `missing_docs` checks each test crate;
 - removes the `xtask` crate, its workspace member, the `bedrock` alias in `.cargo/config.toml`, and the `deny.toml` `allow-git` entry that rust-bedrock releases before 0.2 wrote, then runs `cargo fetch`.
 
-Bedrock does not migrate editions. When a manifest declares one before 2024, adopt prints a note: run `cargo fix --edition` yourself, then raise it to 2024.
+After applying, adopt migrates each manifest that declares an edition before 2024: it runs `cargo fix --edition` and raises the edition one step at a time, up to 2024, and stops with cargo's error when a step fails. `--no-run` skips it, and a package that inherits its edition from the workspace moves with the workspace manifest.
 
 `just setup` installs the pinned toolchain, cargo-deny, and [kache](https://github.com/kunobi-ninja/kache), and runs `kache init --yes --no-shell`, which makes kache Cargo's compiler wrapper for your user. CI caches through `kache-action`.
 
@@ -129,7 +129,7 @@ To fix the errors, run `just lint-fix`, which moves test modules from `tests.rs`
 - runs `swift package migrate` for the upcoming features it can rewrite code for. InternalImportsByDefault and ImmutableWeakCaptures need a person;
 - sets `Config/Bedrock.xcconfig` as the base configuration of each Xcode project's build configurations;
 - removes the `BuildTools` package that swift-bedrock releases before 0.2 wrote, and notes each `project.just`, `.gitignore`, `.just/*.just`, or workflow file that still mentions it;
-- with C++, adds the `// >>> swift-bedrock-cxx` block to `Package.swift`, which sets C++20 and turns on C++ interop for each Swift target, writes `.clang-format` and `.clang-tidy` in place of `_clang-format` and `_clang-tidy`, and writes `.just/cpp.just`. clang-tidy reads the compile database that `bedrock cpp compile-commands` writes from the SwiftPM targets and each xmake project, and `just setup` installs xmake when the repo tracks an `xmake.lua`.
+- with C++, adds the `// >>> swift-bedrock-cxx` block to `Package.swift`, which sets C++20 and turns on C++ interop for each Swift target, writes `.clang-format` and `.clang-tidy` in place of `_clang-format` and `_clang-tidy`, and writes `.just/cpp.just`. Adopt detects C++ from those configs or from a C, C++, or Objective-C file under `Sources/`. clang-tidy reads the compile database that `bedrock cpp compile-commands` writes from the SwiftPM targets and each xmake project, and `just setup` installs xmake when the repo tracks an `xmake.lua`.
 
 The Swift recipes run SwiftPM with `--disable-sandbox`, so a build inside an outer sandbox, such as a coding agent's or a git hook's, does not fail on SwiftPM's nested one. On macOS, outside CI and without C++, they also cache compiler output across checkouts.
 
@@ -137,7 +137,7 @@ To fix the errors, run `just lint-fix`, which also converts XCTest files to Swif
 
 ## Java and Kotlin
 
-`bedrock adopt` writes the Gradle wrapper, `gradle/bedrock/` with the convention plugins, `gradle/bedrock.versions.toml`, and the ProGuard rules, and adds its blocks to `settings.gradle.kts` and `gradle.properties`. When `gradle.properties` names no `group`, adopt takes it from the migrated build, or uses `com.example.<directory name>` for a new project, and otherwise prints a note asking you to set it; NullAway checks that package. Scala or Groovy sources get a note to port them first, since bedrock compiles Java and Kotlin only.
+`bedrock adopt` writes the Gradle wrapper, `gradle/bedrock/` with the convention plugins, `gradle/bedrock.versions.toml`, and the ProGuard rules, and adds its blocks to `settings.gradle.kts` and `gradle.properties`. When `gradle.properties` names no `group`, adopt takes it from `--group`, then from the migrated build, or uses `com.example.<directory name>` for a new project, and otherwise prints a note asking you to set it; NullAway checks that package. Scala or Groovy sources get a note to port them first, since bedrock compiles Java and Kotlin only.
 
 It then migrates the build it finds, in this order, to one `build.gradle.kts` per module that applies a `bedrock.*` plugin, with the dependencies in `gradle/libs.versions.toml`:
 
@@ -154,6 +154,6 @@ To fix the errors, run `just lint-fix`, then work through `just verify`: code th
 
 ## Commit the Migration
 
-The pre-commit hook runs the checks of each language the commit touches, over the whole repo, so it accepts a commit once every error in those languages is fixed. Plan the migration as one branch that you commit when `just verify` passes.
+The pre-commit hook runs the checks of each language the commit touches, over the whole repo, so it accepts a commit once every error in those languages is fixed. Markdown is the exception: the hook lints only the staged `.md` files, as they are in the working tree, so an untracked draft does not block a commit. Plan the migration as one branch that you commit when `just verify` passes.
 
 When an agent does the work, have it fix each error at its cause and keep every rule, compiler flag, and severity as bedrock sets them. The guards reject suppression comments.

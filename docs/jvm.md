@@ -29,7 +29,7 @@ Every compiler warning is an error. On top of the compilers:
 | `cmp` | `bedrock.cmp` and `bedrock.android` | Compose Multiplatform UI in a shared module for Android and iOS, and the Android app |
 | `android` | `bedrock.android` | An Android app in Compose |
 
-A new project's `group` is `com.example.<directory name>` unless `gradle.properties` already names one.
+A new project's `group` is `com.example.<directory name>` unless `gradle.properties` already names one or `--group <package>` sets it, such as `bedrock init app jvm:kotlin-library --group org.acme.app`. `.bedrock.json` keeps the group, so `bedrock update` uses it again, and the starter sources sit under its package path.
 
 ## Shrinking
 
