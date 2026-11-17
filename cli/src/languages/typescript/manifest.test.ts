@@ -70,6 +70,9 @@ describe("migrateManifest", () => {
 		expect(notes.join("\n")).toContain(
 			'Replaced script "typecheck" ("bun check --cwd packages/app")',
 		);
+		expect(notes.join("\n")).toContain(
+			"into a `project-typecheck` recipe in project.just, which `just typecheck` runs.",
+		);
 	});
 
 	test("merges pnpm-workspace.yaml into workspaces", () => {
@@ -94,6 +97,24 @@ describe("migrateManifest", () => {
 		expect(manifest["trustedDependencies"]).toEqual(["esbuild"]);
 	});
 
+	test("drops trusted entries for the packages it removed", () => {
+		// Arrange
+		const trusted = {
+			name: "app",
+			devDependencies: { "@biomejs/biome": "2.0.0" },
+			trustedDependencies: ["@biomejs/biome", "esbuild"],
+		};
+		const only = { name: "app", trustedDependencies: ["@biomejs/biome"] };
+
+		// Act
+		const { manifest } = migrateManifest(trusted, template);
+		const { manifest: emptied } = migrateManifest(only, template);
+
+		// Assert
+		expect(manifest["trustedDependencies"]).toEqual(["esbuild"]);
+		expect("trustedDependencies" in emptied).toBe(false);
+	});
+
 	test("drops the typescript-bedrock dependency and catalog pin", () => {
 		const { manifest, notes } = migrateManifest(
 			{
@@ -112,6 +133,21 @@ describe("migrateManifest", () => {
 			Object.keys(asRecord(asRecord(manifest["workspaces"])["catalog"])),
 		).toEqual(["oxlint", "react"]);
 		expect(notes.join("\n")).toContain("typescript-bedrock");
+	});
+
+	test("drops a machine-local file: path to typescript-bedrock", () => {
+		// Arrange
+		const stale =
+			"file:/home/dev/.claude/plugins/cache/xsyetopz/bedrock/0.1.4/.bedrock/packages/typescript-bedrock";
+
+		// Act
+		const { manifest } = migrateManifest(
+			{ name: "app", devDependencies: { "typescript-bedrock": stale } },
+			template,
+		);
+
+		// Assert
+		expect(JSON.stringify(manifest)).not.toContain("typescript-bedrock");
 	});
 
 	test("merges overrides: the template wins a conflict, the target keeps the rest", () => {

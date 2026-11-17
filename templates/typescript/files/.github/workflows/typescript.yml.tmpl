@@ -27,4 +27,7 @@ jobs:
       - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: just@1.59.0
+      # A repo whose checks need more on the runner, such as a compiler a test calls, adds those steps in this composite action.
+      - if: hashFiles('.github/actions/project-setup/action.yml') != ''
+        uses: ./.github/actions/project-setup
       - run: just typescript::setup typescript::verify

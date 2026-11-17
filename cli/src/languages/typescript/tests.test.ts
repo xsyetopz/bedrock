@@ -32,6 +32,25 @@ describe("migrateTestFile", () => {
 		).toStartWith('import { describe, expect, it } from "bun:test";\n\n');
 	});
 
+	test("adds only the globals the file does not already import or declare", () => {
+		// Arrange
+		const partial =
+			'import { expect, it, mockHost } from "./runtime.ts";\n\nit("x", () => expect(mockHost()).toBe(1));\ntest("y", () => {});\n';
+		const bound =
+			'import { expect as it } from "./runtime.ts";\nimport test from "./t.ts";\nit("x", () => {});\ntest("y", () => {});\n';
+		const local = "const expect = () => 1;\nexpect(2);\n";
+
+		// Act
+		const migrated = migrateTestFile(partial);
+
+		// Assert
+		expect(migrated).toStartWith(
+			'import { test } from "bun:test";\n\nimport { expect, it, mockHost }',
+		);
+		expect(migrateTestFile(bound)).toBe(bound);
+		expect(migrateTestFile(local)).toBe(local);
+	});
+
 	test("leaves a bun:test file and a file without tests alone", () => {
 		const bun = 'import { test } from "bun:test";\ntest("x", () => {});\n';
 		expect(migrateTestFile(bun)).toBe(bun);

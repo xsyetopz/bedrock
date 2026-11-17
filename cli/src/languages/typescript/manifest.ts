@@ -57,21 +57,23 @@ const migrateScripts = (
 	for (const [name, command] of Object.entries(tools)) {
 		if (kept[name] !== undefined && kept[name] !== command) {
 			notes.push(
-				`Replaced script "${name}" (${JSON.stringify(kept[name])}) with ${JSON.stringify(command)}. Move any step it still needs, such as a build, into "${name}".`,
+				`Replaced script "${name}" (${JSON.stringify(kept[name])}) with ${JSON.stringify(command)}. Move any step it still needs, such as a build, into a \`project-${name}\` recipe in project.just, which \`just ${name}\` runs.`,
 			);
 		}
 	}
 	return { scripts: { ...kept, test: kept["test"] ?? test, ...tools }, notes };
 };
 
+const isRemoved = (name: string, template: Json): boolean =>
+	name === LEGACY_PACKAGE ||
+	(REMOVED_PACKAGES.test(name) && !(name in template));
+
 /** Drops the packages Bun and the bedrock tools replace, except the ones the template ships. */
 const removePackages = (
 	deps: unknown,
 	template: Json,
 ): { deps: Json; removed: string[] } => {
-	const removes = (name: string): boolean =>
-		name === LEGACY_PACKAGE ||
-		(REMOVED_PACKAGES.test(name) && !(name in template));
+	const removes = (name: string): boolean => isRemoved(name, template);
 	const entries = Object.entries(asRecord(deps));
 	return {
 		deps: Object.fromEntries(entries.filter(([name]) => !removes(name))),
@@ -135,12 +137,24 @@ const migrateOverrides = (manifest: Json, template: Json): Json => {
 };
 
 /** Bun runs no install scripts unless the package is trusted. */
-const trustedDependencies = (manifest: Json, pnpm?: Json): string[] => [
-	...new Set([
-		...asStrings(asRecord(manifest["pnpm"])["onlyBuiltDependencies"]),
-		...asStrings(pnpm?.["onlyBuiltDependencies"]),
-	]),
+const trustedDependencies = (
+	manifest: Json,
+	template: Json,
+	pnpm?: Json,
+): string[] => [
+	...new Set(
+		[
+			...asStrings(manifest["trustedDependencies"]),
+			...asStrings(asRecord(manifest["pnpm"])["onlyBuiltDependencies"]),
+			...asStrings(pnpm?.["onlyBuiltDependencies"]),
+		].filter((name) => !isRemoved(name, template)),
+	),
 ];
+
+const removedKeyNotes = (next: Json): string[] =>
+	REMOVED_KEYS.filter((name) => name in next).map(
+		(key) => `Removed the "${key}" field from package.json.`,
+	);
 
 /**
  * Moves a package.json onto the template: Bun and bedrock's tools in, the
@@ -163,9 +177,11 @@ export const migrateManifest = (
 		asRecord(manifest["scripts"]),
 		asRecord(template["scripts"]),
 	);
-	const trusted = trustedDependencies(manifest, pnpm);
+	const trusted = trustedDependencies(manifest, shipped, pnpm);
 	const next: Json = {
-		...manifest,
+		...Object.fromEntries(
+			Object.entries(manifest).filter(([key]) => key !== "trustedDependencies"),
+		),
 		...(Object.keys(prod.deps).length > 0 ||
 		manifest["dependencies"] !== undefined
 			? { dependencies: prod.deps }
@@ -185,13 +201,10 @@ export const migrateManifest = (
 		...migrateOverrides(manifest, template),
 		...(trusted.length > 0 ? { trustedDependencies: trusted } : {}),
 	};
-	for (const key of REMOVED_KEYS.filter((name) => name in next)) {
-		notes.push(`Removed the "${key}" field from package.json.`);
-	}
 	return {
 		manifest: Object.fromEntries(
 			Object.entries(next).filter(([key]) => !REMOVED_KEYS.includes(key)),
 		),
-		notes: [...notes, ...scripts.notes],
+		notes: [...notes, ...removedKeyNotes(next), ...scripts.notes],
 	};
 };

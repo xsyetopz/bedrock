@@ -103,6 +103,40 @@ describe("planTypescript on a fresh repo", () => {
 		expect(await textOf(root, "bunfig.toml")).toContain("[install]");
 	});
 
+	test("runs a project-setup action before the workflow's setup, when the repo has one", async () => {
+		// Arrange
+		const root = await tempRepo();
+
+		// Act
+		await adoptTypescript(root);
+		const workflow = await textOf(root, ".github/workflows/typescript.yml");
+
+		// Assert
+		expect(workflow).toContain(
+			"if: hashFiles('.github/actions/project-setup/action.yml') != ''",
+		);
+		expect(
+			workflow.indexOf("uses: ./.github/actions/project-setup"),
+		).toBeLessThan(workflow.indexOf("just typescript::setup"));
+	});
+
+	test("bounds the type-aware checks that resolve every callback signature", async () => {
+		// Arrange
+		const root = await tempRepo();
+
+		// Act
+		await adoptTypescript(root);
+		const config = asRecord(await readJsonc(join(root, ".oxlintrc.json")));
+		const rules = asRecord(config["rules"]);
+
+		// Assert
+		expect(rules["typescript/no-misused-promises"]).toEqual([
+			"error",
+			{ checksVoidReturn: { arguments: false } },
+		]);
+		expect(rules["typescript/strict-void-return"]).toBe("off");
+	});
+
 	test("lists package.json, tsconfig.json, and bunfig.toml as the project's", async () => {
 		const root = await tempRepo();
 		const plan = await adoptTypescript(root);
