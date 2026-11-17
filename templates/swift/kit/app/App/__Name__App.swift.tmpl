@@ -1,0 +1,13 @@
+import SwiftUI
+import @@typeName@@
+
+@main
+struct @@typeName@@App: App {
+  var body: some Scene {
+    WindowGroup {
+      Text(greeting(for: ""))
+        .accessibilityIdentifier("greeting")
+        .padding()
+    }
+  }
+}

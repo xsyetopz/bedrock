@@ -1,0 +1,78 @@
+import XCTest
+
+@testable import Legacy
+
+final class StackTests: XCTestCase {
+  var stack = Stack<Int>()
+
+  override func setUp() {
+    super.setUp()
+    stack = Stack<Int>()
+    stack.push(1)
+  }
+
+  override func tearDown() {
+    stack = Stack<Int>()
+    super.tearDown()
+  }
+
+  func testPushIncreasesCount() {
+    stack.push(2)
+    XCTAssertEqual(stack.count, 2, "count after push")
+    XCTAssertFalse(stack.isEmpty)
+    XCTAssertGreaterThan(stack.count + 1, 2)
+  }
+
+  func testPopReturnsLast() throws {
+    let value = try XCTUnwrap(stack.pop())
+    XCTAssertEqual(value, 1)
+    XCTAssertNil(stack.pop())
+    XCTAssertTrue(stack.isEmpty, "should be empty")
+  }
+
+  func testTopLooksLikeCode() {
+    let text = "XCTAssertEqual(a, b)"
+    XCTAssertEqual(text.count, 20)
+    XCTAssertNotNil(stack.top)
+  }
+
+  func testCount() {
+    XCTAssertEqual(
+      stack.count,
+      1,
+      "multi-line, with a comma: \(stack.count), \([1, 2].map { $0 + 1 })"
+    )
+  }
+}
+
+class CalculatorTests: XCTestCase {
+  let calculator = Calculator()
+
+  override func setUp() async throws {
+    try await super.setUp()
+    calculator.add(10)
+    try calculator.divide(1)
+    _ = await calculator.fetchTotal()
+  }
+
+  func testDivideByZeroThrows() {
+    XCTAssertThrowsError(try calculator.divide(0))
+    XCTAssertNoThrow(try calculator.divide(2))
+    XCTAssertEqual(calculator.total, 5.0, accuracy: 0.001)
+  }
+
+  func testFetchTotal() async {
+    let total = await calculator.fetchTotal()
+    XCTAssertEqual(total, 10)
+    XCTAssertNotEqual(total, 11)
+    XCTAssertLessThanOrEqual(min(total, 20), 10)
+    if total > 100 { XCTFail("too big") }
+  }
+
+  func testCalculator() {
+    let alias = calculator
+    XCTAssertIdentical(calculator, alias)
+    XCTAssertNotIdentical(calculator, Calculator())
+    XCTAssertEqual(calculator.total - 1, 9 + 0, accuracy: 0.5)
+  }
+}

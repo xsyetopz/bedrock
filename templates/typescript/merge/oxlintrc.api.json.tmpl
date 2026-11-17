@@ -1,0 +1,23 @@
+{
+	"plugins": [],
+	"jsPlugins": [{ "name": "jsdoc-js", "specifier": "eslint-plugin-jsdoc" }],
+	"categories": {
+		"correctness": "off"
+	},
+	"rules": {
+		"jsdoc-js/require-jsdoc": [
+			"error",
+			{
+				"publicOnly": true,
+				"require": { "ClassDeclaration": true, "FunctionDeclaration": true },
+				"contexts": [
+					"ExportDefaultDeclaration > ArrowFunctionExpression",
+					"ExportNamedDeclaration > VariableDeclaration",
+					"TSEnumDeclaration",
+					"TSInterfaceDeclaration",
+					"TSTypeAliasDeclaration"
+				]
+			}
+		]
+	}
+}

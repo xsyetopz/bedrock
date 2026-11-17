@@ -1,0 +1,11 @@
+/**
+ * Runs the command line with `args`, the arguments after the program name.
+ *
+ * @param args The command-line arguments.
+ * @returns The process exit code.
+ */
+export const run = (args: readonly string[]): Promise<number> => {
+	const [name = "world"] = args;
+	process.stdout.write(`Hello, ${name}!\n`);
+	return Promise.resolve(0);
+};

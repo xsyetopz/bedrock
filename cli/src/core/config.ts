@@ -63,6 +63,14 @@ export const readConfig = async (root: string): Promise<Config | undefined> => {
 	return { version, languages };
 };
 
+/** One language's options on one line, spaced as `bun fmt` writes them. */
+const inline = (options: LanguageOptions): string => {
+	const entries = Object.entries(options).map(
+		([key, value]) => `${JSON.stringify(key)}: ${JSON.stringify(value)}`,
+	);
+	return entries.length === 0 ? "{}" : `{ ${entries.join(", ")} }`;
+};
+
 /**
  * The text of `.bedrock.json`. `version` comes first on its own line, since
  * the justfile reads it with sed to find the binary before bedrock runs.
@@ -72,7 +80,7 @@ export const formatConfig = (config: Config): string => {
 		.toSorted()
 		.map(
 			(id) =>
-				`\t\t${JSON.stringify(id)}: ${JSON.stringify(config.languages[id])}`,
+				`\t\t${JSON.stringify(id)}: ${inline(config.languages[id] ?? {})}`,
 		);
 	return [
 		"{",

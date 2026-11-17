@@ -1,0 +1,20 @@
+import { dlopen, FFIType, ptr, suffix } from "bun:ffi";
+
+// `cargo build --package @@package@@` writes the library here.
+const library = new URL(
+	`../target/debug/lib@@crate@@.${suffix}`,
+	import.meta.url,
+);
+
+const { symbols } = dlopen(library, {
+	@@crate@@_add: { args: [FFIType.i32, FFIType.i32], returns: FFIType.i32 },
+	@@crate@@_sum: { args: [FFIType.ptr, FFIType.u64], returns: FFIType.i64 },
+});
+
+/** Adds two 32-bit integers, wrapping on overflow. */
+export const add = (left: number, right: number): number =>
+	symbols.@@crate@@_add(left, right);
+
+/** Sums the values in Rust. */
+export const sum = (values: Int32Array): bigint =>
+	values.length === 0 ? 0n : symbols.@@crate@@_sum(ptr(values), values.length);

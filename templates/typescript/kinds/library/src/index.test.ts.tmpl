@@ -1,0 +1,9 @@
+import { expect, test } from "bun:test";
+
+import { greet } from "./index.ts";
+
+test("greet names the person", () => {
+	const text = greet("Ada");
+
+	expect(text).toBe("Hello, Ada!");
+});

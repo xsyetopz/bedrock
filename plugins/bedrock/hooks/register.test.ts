@@ -1,142 +1,212 @@
 import { describe, expect, test } from "bun:test";
 
+import cli from "../../../package.json" with { type: "json" };
 import type { Engine, Next, On, ProcessResult } from "./engine.ts";
 import {
-	adoptCommand,
 	announce,
 	answerAdopt,
+	answerBedrock,
+	bedrockArgs,
 	blockForeign,
 	foreignPackageManager,
-	parseArgs,
 	register,
-	runAdopt,
+	runBedrock,
 } from "./register.ts";
+import { assetName, findBedrock, VERSION } from "./runner.ts";
 
-const ROOT = "/src/bedrock/plugins/bedrock";
-const SOURCE = "/src/bedrock";
+const CHECKOUT = "/src/bedrock";
+const ROOT = `${CHECKOUT}/plugins/bedrock`;
+const INSTALLED = "/home/me/.claude/plugins/cache/bedrock";
+const MAIN = `${CHECKOUT}/cli/src/main.ts`;
+
+const OK: ProcessResult = { exitCode: 0, stdout: "", stderr: "" };
 
 interface Fake {
-	readonly results?: readonly ProcessResult[];
+	readonly root?: string;
 	readonly files?: readonly string[];
 	readonly calls?: string[][];
-	readonly root?: string;
-	/** The tools `command -v` does not find. */
-	readonly missing?: readonly string[];
+	/** Answers one process call; the default succeeds with no output. */
+	readonly answer?: (argv: readonly string[]) => ProcessResult;
 }
 
 const engine = ({
-	results = [OK],
-	files = [`${SOURCE}/packages/typescript-bedrock/package.json`],
-	calls = [],
 	root = ROOT,
-	missing = [],
-}: Fake = {}): Engine => {
-	let run = 0;
-	return {
-		plugin: { name: "bedrock", root },
-		command: { register: () => Promise.resolve({}) },
-		fs: { exists: (path) => Promise.resolve(files.includes(path)) },
-		process: {
-			run: (argv) => {
-				const tool = argv[2] === 'command -v "$1"' ? argv.at(-1) : undefined;
-				if (tool !== undefined) {
-					const exitCode = missing.includes(tool) ? 1 : 0;
-					return Promise.resolve({ exitCode, stdout: "", stderr: "" });
-				}
-				calls.push([...argv]);
-				const result = results[Math.min(run, results.length - 1)] ?? OK;
-				run += 1;
-				return Promise.resolve(result);
-			},
+	files = [MAIN],
+	calls = [],
+	answer = () => OK,
+}: Fake = {}): Engine => ({
+	plugin: { name: "bedrock", root },
+	command: { register: () => Promise.resolve({}) },
+	fs: { exists: (path) => Promise.resolve(files.includes(path)) },
+	process: {
+		run: (argv) => {
+			calls.push([...argv]);
+			return Promise.resolve(answer(argv));
 		},
-		session: { cwd: () => Promise.resolve("/work") },
-	};
-};
+	},
+	session: { cwd: () => Promise.resolve("/work") },
+});
 
 const next =
 	<E>(): Next<E> =>
 	() =>
 		Promise.resolve("ran");
 
-const OK: ProcessResult = { exitCode: 0, stdout: "plan\n", stderr: "" };
+/** The machine and PATH a plugin installed alone sees. */
+const machine =
+	(onPath: string) =>
+	(argv: readonly string[]): ProcessResult => {
+		const replies: Record<string, string> = {
+			"bedrock version": onPath,
+			"uname -m": "arm64",
+			"uname -s": "Darwin",
+		};
+		return { ...OK, stdout: replies[argv.join(" ")] ?? "" };
+	};
 
-describe("parseArgs", () => {
-	test("reads languages case-insensitively, in bedrock order", () => {
-		expect(parseArgs("Swift TS rust app --yes")).toEqual({
-			languages: ["typescript", "rust", "swift"],
-			target: "app",
-			cxx: false,
-			apply: true,
-		});
+/** A machine where the release download fails with `stderr`. */
+const offline =
+	(stderr: string) =>
+	(argv: readonly string[]): ProcessResult =>
+		argv[0] === "sh" ? { exitCode: 1, stdout: "", stderr } : machine("")(argv);
+
+describe("version", () => {
+	test("the plugin runs the release the CLI builds", () => {
+		expect(VERSION).toBe(cli.version);
+	});
+});
+
+describe("bedrockArgs", () => {
+	test.each([
+		["adopt", ["adopt", "--dry-run"]],
+		["init app typescript", ["init", "app", "typescript", "--dry-run"]],
+		["update .", ["update", ".", "--dry-run"]],
+	])("previews %j", (input, args) => {
+		expect(bedrockArgs(input)).toEqual(args);
 	});
 
-	test("reads the JVM names as one language, after the others", () => {
-		expect(parseArgs("Kotlin java rust gradle kt")).toMatchObject({
-			languages: ["rust", "jvm"],
-		});
+	test.each([
+		["adopt --yes", ["adopt", "--yes"]],
+		["adopt --dry-run", ["adopt", "--dry-run"]],
+		["guard  base", ["guard", "base"]],
+		["", ["help"]],
+	])("passes %j through", (input, args) => {
+		expect(bedrockArgs(input)).toEqual(args);
+	});
+});
+
+describe("assetName", () => {
+	test.each([
+		["Darwin", "arm64", "bedrock-darwin-arm64"],
+		["Linux", "aarch64", "bedrock-linux-arm64"],
+		["Linux", "x86_64", "bedrock-linux-x64"],
+	])("names the %s %s asset", (system, arch, asset) => {
+		expect(assetName(system, arch)).toBe(asset);
+	});
+});
+
+describe("findBedrock", () => {
+	test("runs the source tree when the plugin sits in a bedrock checkout", async () => {
+		expect(await findBedrock(engine())).toEqual(["bun", MAIN]);
 	});
 
-	test.each(["cpp", "C++", "cxx", "ObjC"])(
-		"%j means Swift with C++",
-		(name) => {
-			expect(parseArgs(name)).toMatchObject({
-				languages: ["swift"],
-				target: ".",
-				cxx: true,
-			});
-		},
-	);
+	test("runs bedrock on PATH when its version matches", async () => {
+		const $ = engine({ root: INSTALLED, files: [], answer: machine(VERSION) });
+		expect(await findBedrock($)).toEqual(["bedrock"]);
+	});
 
-	test("rejects unknown options and a second target", () => {
-		expect(parseArgs("bun --force")).toStartWith("Unknown option --force.");
-		expect(parseArgs("python app")).toStartWith(
-			"Name one target, not python, app.",
+	test("downloads the pinned release once", async () => {
+		const calls: string[][] = [];
+		const $ = engine({
+			root: INSTALLED,
+			files: [],
+			calls,
+			answer: machine("0.0.1"),
+		});
+		const binary = `${INSTALLED}/.bedrock/${VERSION}/bedrock-darwin-arm64`;
+
+		expect(await findBedrock($)).toEqual([binary]);
+		expect(calls.at(-1)?.slice(3)).toEqual([
+			"sh",
+			binary,
+			`https://github.com/xsyetopz/bedrock/releases/download/v${VERSION}`,
+			"bedrock-darwin-arm64",
+		]);
+	});
+
+	test("reuses a downloaded release", async () => {
+		const calls: string[][] = [];
+		const binary = `${INSTALLED}/.bedrock/${VERSION}/bedrock-darwin-arm64`;
+		const $ = engine({
+			root: INSTALLED,
+			files: [binary],
+			calls,
+			answer: machine(""),
+		});
+
+		expect(await findBedrock($)).toEqual([binary]);
+		expect(calls.map((argv) => argv[0])).toEqual(["bedrock", "uname", "uname"]);
+	});
+
+	test("reports a failed download", async () => {
+		const $ = engine({ root: INSTALLED, files: [], answer: offline("404\n") });
+
+		const failure = await findBedrock($).catch((error: unknown) => error);
+
+		expect(failure).toHaveProperty(
+			"message",
+			`Downloading bedrock ${VERSION} (bedrock-darwin-arm64) failed: 404`,
 		);
 	});
 });
 
-describe("adoptCommand", () => {
-	const request = parseArgs("/work/app --cxx");
-	if (typeof request === "string") {
-		throw new TypeError(request);
-	}
+describe("runBedrock", () => {
+	test("runs bedrock in the session folder and says how to apply a plan", async () => {
+		const calls: string[][] = [];
+		const $ = engine({ calls, answer: () => ({ ...OK, stdout: "plan\n" }) });
 
-	test("runs each bedrock from the checkout", () => {
-		expect(adoptCommand(SOURCE, "typescript", request)).toEqual([
-			"bun",
-			`${SOURCE}/packages/typescript-bedrock/src/cli.ts`,
-			"adopt",
-			"/work/app",
-			"--package",
-			`file:${SOURCE}/packages/typescript-bedrock`,
-			"--dry-run",
+		const result = await runBedrock($, "adopt rust");
+
+		expect(calls).toEqual([
+			[
+				"sh",
+				"-c",
+				'cd "$1" && shift && exec "$@"',
+				"sh",
+				"/work",
+				"bun",
+				MAIN,
+				"adopt",
+				"rust",
+				"--dry-run",
+			],
 		]);
-		expect(adoptCommand(SOURCE, "rust", request)).toEqual([
-			"cargo",
-			"run",
-			"--quiet",
-			"--manifest-path",
-			`${SOURCE}/packages/rust-bedrock/Cargo.toml`,
-			"--",
-			"adopt",
-			"/work/app",
-			"--dry-run",
-		]);
-		expect(adoptCommand(SOURCE, "swift", { ...request, apply: true })).toEqual([
-			"swift",
-			"run",
-			"--quiet",
-			"--package-path",
-			SOURCE,
-			"swift-bedrock",
-			"adopt",
-			"/work/app",
-			"--cxx",
-			"--yes",
-		]);
-		const jvm = adoptCommand(SOURCE, "jvm", request);
-		expect(jvm.slice(0, 2)).toEqual(["sh", "-c"]);
-		expect(jvm.slice(3)).toEqual([SOURCE, "adopt", "/work/app", "--dry-run"]);
+		expect(result.text).toBe(
+			"plan\n\nTo apply this plan, run /bedrock adopt rust --yes",
+		);
+	});
+
+	test("reports the exit code of a failed run", async () => {
+		const $ = engine({
+			answer: () => ({ exitCode: 2, stdout: "", stderr: "no\n" }),
+		});
+
+		const { text } = await runBedrock($, "guard");
+
+		expect(text).toBe("no\n(bedrock exited 2)");
+	});
+
+	test("reports a runner it cannot find", async () => {
+		const $ = engine({
+			root: INSTALLED,
+			files: [],
+			answer: offline("offline"),
+		});
+
+		expect(await runBedrock($, "guard")).toEqual({
+			text: `Downloading bedrock ${VERSION} (bedrock-darwin-arm64) failed: offline`,
+			context: [],
+		});
 	});
 });
 
@@ -162,97 +232,8 @@ describe("foreignPackageManager", () => {
 	});
 });
 
-describe("runAdopt", () => {
-	test("detects the languages and says how to apply the plan", async () => {
-		const calls: string[][] = [];
-		const files = [
-			`${SOURCE}/packages/typescript-bedrock/package.json`,
-			"/work/app/Package.swift",
-			"/work/app/package.json",
-			"/work/app/pom.xml",
-		];
-		const result = await runAdopt(engine({ calls, files }), "app");
-		expect(calls.map(([tool]) => tool)).toEqual(["bun", "swift", "sh"]);
-		expect(calls.map((argv) => argv.includes("/work/app"))).toEqual([
-			true,
-			true,
-			true,
-		]);
-		expect(result.text).toBe(
-			"typescript-bedrock:\nplan\n\nswift-bedrock:\nplan\n\njvm-bedrock:\nplan\n\nTo apply this plan, run /adopt typescript swift jvm app --yes",
-		);
-	});
-
-	test("asks for languages when it finds none", async () => {
-		const calls: string[][] = [];
-		const result = await runAdopt(engine({ calls }), "");
-		expect(result.text).toStartWith(". has no package.json");
-		expect(calls).toEqual([]);
-	});
-
-	test("prints the parse error", async () => {
-		const result = await runAdopt(engine(), "--force");
-		expect(result.text).toStartWith("Unknown option --force.");
-		expect(result.context).toEqual([]);
-	});
-
-	test("names the missing tools and runs nothing", async () => {
-		const calls: string[][] = [];
-		const result = await runAdopt(
-			engine({ calls, missing: ["just", "cargo"] }),
-			"rust",
-		);
-		expect(result.text).toBe(
-			"Install these, then run /adopt again:\n- cargo: rustup from https://rustup.rs\n- just: brew install just, or cargo install --locked just",
-		);
-		expect(result.context).toEqual([`/adopt rust:\n${result.text}`]);
-		expect(calls).toEqual([]);
-	});
-
-	test("stops at the first failure", async () => {
-		const calls: string[][] = [];
-		const failed = { exitCode: 1, stdout: "", stderr: "no Cargo.toml\n" };
-		const result = await runAdopt(
-			engine({ calls, results: [OK, failed] }),
-			"rust bun /x --yes",
-		);
-		expect(calls.map(([tool]) => tool)).toEqual(["bun", "cargo"]);
-		expect(result.text).toBe(
-			"typescript-bedrock:\nplan\n\nrust-bedrock (exited 1):\nno Cargo.toml",
-		);
-	});
-
-	test("clones the repository when the plugin was installed alone", async () => {
-		const calls: string[][] = [];
-		const root = "/cache/bedrock";
-		await runAdopt(engine({ calls, files: [], root }), "rust");
-		expect(calls[0]).toEqual([
-			"git",
-			"clone",
-			"--quiet",
-			"--depth",
-			"1",
-			"https://github.com/xsyetopz/bedrock",
-			`${root}/.bedrock`,
-		]);
-		expect(calls[1]).toContain(
-			`${root}/.bedrock/packages/rust-bedrock/Cargo.toml`,
-		);
-	});
-
-	test("reports a failed clone", async () => {
-		const failed = { exitCode: 128, stdout: "", stderr: "offline\n" };
-		const error = await runAdopt(
-			engine({ files: [], results: [failed], root: "/c" }),
-			"rust",
-		).catch((error_: unknown) => error_);
-		expect(error).toBeInstanceOf(Error);
-		expect(String(error)).toContain("failed: offline");
-	});
-});
-
 describe("hooks", () => {
-	test("announce registers /adopt, then continues", async () => {
+	test("announce registers /bedrock and /adopt, then continues", async () => {
 		const registered: unknown[] = [];
 		const $: Engine = {
 			...engine(),
@@ -263,14 +244,24 @@ describe("hooks", () => {
 				},
 			},
 		};
+
 		expect(await announce($, {}, next())).toBe("ran");
-		expect(registered).toEqual([expect.objectContaining({ name: "adopt" })]);
+		expect(registered).toEqual([
+			expect.objectContaining({ name: "bedrock" }),
+			expect.objectContaining({ name: "adopt" }),
+		]);
 	});
 
-	test("answerAdopt runs adopt with the typed arguments", async () => {
+	test("answerBedrock passes the typed command through", async () => {
+		const calls: string[][] = [];
+		await answerBedrock(engine({ calls }), { args: "clean" }, next());
+		expect(calls[0]?.slice(5)).toEqual(["bun", MAIN, "clean"]);
+	});
+
+	test("answerAdopt previews adopt with the typed arguments", async () => {
 		const calls: string[][] = [];
 		await answerAdopt(engine({ calls }), { args: "rust" }, next());
-		expect(calls.map(([tool]) => tool)).toEqual(["cargo"]);
+		expect(calls[0]?.slice(7)).toEqual(["adopt", "rust", "--dry-run"]);
 	});
 
 	test("blockForeign denies npm in a Bun repo only", async () => {
@@ -292,6 +283,7 @@ describe("hooks", () => {
 		register(on);
 		expect(wired).toEqual([
 			["session.start", announce],
+			["command.run", { command: "bedrock" }, answerBedrock],
 			["command.run", { command: "adopt" }, answerAdopt],
 			["tool.call", { tool: "Bash" }, blockForeign],
 		]);

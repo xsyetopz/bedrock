@@ -53,7 +53,7 @@ export const existing = async (
 	return paths.filter((_, index) => found[index] === true);
 };
 
-/** Directories no check reads: dependencies, build output, and agent worktrees. */
+/** Directories no check reads: dependencies, build output, agent worktrees, and OpenSpec proposals. */
 const SKIPPED = new Set([
 	".build",
 	".claude",
@@ -61,6 +61,7 @@ const SKIPPED = new Set([
 	".gradle",
 	"build",
 	"node_modules",
+	"openspec",
 	"target",
 ]);
 

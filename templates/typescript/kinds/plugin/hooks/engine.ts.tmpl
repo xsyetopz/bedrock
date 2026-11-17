@@ -1,0 +1,15 @@
+// Claude Code writes its plugin API types only beside a loaded plugin, so this module declares the part the hooks use, and `claude plugin validate` checks the calls against the real API.
+export interface Engine {
+	readonly plugin: { readonly name: string; readonly root: string };
+	readonly command: {
+		readonly register: (command: {
+			readonly name: string;
+			readonly description: string;
+		}) => Promise<unknown>;
+	};
+}
+
+export type Next<E> = (e: E) => Promise<unknown>;
+export type Hook<E> = ($: Engine, e: E, next: Next<E>) => unknown;
+
+export type On = (event: "session.start", hook: Hook<unknown>) => unknown;

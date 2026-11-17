@@ -7,7 +7,7 @@
 		{
 			"name": "bedrock",
 			"source": "./plugins/bedrock",
-			"description": "Adds /adopt to set a repo up with the bedrocks for Bun, Rust, Swift, and C++, and keeps Claude on bun in Bun repos.",
+			"description": "Adds /bedrock and /adopt, which run the bedrock CLI to set a repo up for TypeScript (Bun), Rust, Swift, C++, and JVM, and keeps Claude on bun in Bun repos.",
 			"category": "development"
 		},
 		{
