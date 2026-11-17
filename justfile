@@ -57,11 +57,22 @@ pre-commit: (bedrock "guard" "base")
     #!/usr/bin/env bash
     set -euo pipefail
     staged="$(git diff --cached --name-only --diff-filter=ACMR)"
-    # Only the staged Markdown: an untracked draft must not block the commit. The
-    # leading ":" makes each a literal path, and --no-globs drops the config's **/*.md.
+    # Lint the Markdown the commit holds: the staged copies and the staged configs, checked
+    # out into a scratch tree, so neither an untracked draft nor an unstaged edit decides
+    # the result. The leading ":" makes each a literal path, and --no-globs drops the
+    # config's **/*.md.
     markdown=()
-    while IFS= read -r path; do markdown+=(":$path"); done < <(grep '\.md$' <<<"$staged" || true)
-    if (( ${#markdown[@]} > 0 )); then {{ just_executable() }} lint-markdown --no-globs "${markdown[@]}"; fi
+    while IFS= read -r path; do markdown+=("$path"); done < <(grep '\.md$' <<<"$staged" || true)
+    if (( ${#markdown[@]} > 0 )); then
+        scratch="$(mktemp -d)"
+        trap 'rm -rf "$scratch"' EXIT
+        configs=()
+        while IFS= read -r path; do configs+=("$path"); done < <(git ls-files -- ':(glob)**/.markdownlint*')
+        git checkout-index --prefix="$scratch/" -- ${configs[@]+"${configs[@]}"} "${markdown[@]}"
+        if [[ -d node_modules ]]; then ln -s "$PWD/node_modules" "$scratch/node_modules"; fi
+        {{ just_executable() }} --justfile "$PWD/justfile" --working-directory "$scratch" \
+            lint-markdown --no-globs "${markdown[@]/#/:}"
+    fi
     if grep -q '^\.githooks/' <<<"$staged"; then {{ just_executable() }} lint-hooks; fi
     for language in $({{ just_executable() }} bedrock languages --staged); do
         if [[ -f ".just/$language.just" ]]; then
