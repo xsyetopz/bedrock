@@ -42,3 +42,27 @@ test.skipIf(!hasCargo)(
 	},
 	240_000,
 );
+
+test.skipIf(!hasCargo)(
+	"a failed migration names the edition the manifests still declare",
+	async () => {
+		// Arrange
+		const root = await tempRepo({
+			"Cargo.toml":
+				'[package]\nname = "broken"\nversion = "0.1.0"\nedition = "2021"\n',
+			"src/lib.rs": "pub fn f() -> u8 { missing }\n",
+		});
+
+		// Act
+		const failure = await migrateEditions(root).catch(
+			(error: unknown) => error,
+		);
+
+		// Assert
+		expect(String(failure)).toContain(
+			"failed moving from edition 2021, which the manifests still declare",
+		);
+		expect(await textOf(root, "Cargo.toml")).toContain('edition = "2021"');
+	},
+	240_000,
+);

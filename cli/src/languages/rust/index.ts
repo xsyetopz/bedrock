@@ -1,5 +1,5 @@
 import type { Language } from "../../core/language.ts";
-import { migrateEditions } from "./editions.ts";
+import { editionPending, migrateEditions } from "./editions.ts";
 import { guardRust } from "./guard.ts";
 import { crateVariables, KINDS, packageName } from "./kinds.ts";
 import { planRust } from "./plan.ts";
@@ -33,5 +33,8 @@ export const rust: Language = {
 			await Bun.$`cargo fetch`.cwd(context.root).nothrow();
 		}
 	},
+	runs: "cargo fix --edition for each edition older than 2024, then cargo fetch",
+	runPending: async (context) =>
+		Bun.which("cargo") !== null && (await editionPending(context.root)),
 	guard: guardRust,
 };

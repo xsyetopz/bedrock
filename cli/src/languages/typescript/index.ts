@@ -29,5 +29,6 @@ export const typescript: Language = {
 	variables,
 	plan: planTypescript,
 	afterApply: installDependencies,
+	runs: "bun install, then bun fmt",
 	guard: (context) => guardTypescript(context),
 };

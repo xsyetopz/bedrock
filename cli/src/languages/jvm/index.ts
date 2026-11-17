@@ -69,6 +69,7 @@ export const jvm: Language = {
 	},
 	plan: planJvm,
 	afterApply,
+	runs: "./gradlew --version, which fetches Gradle",
 	guard: (context) => guardJvm(context.root),
 	subcommands: { j2k },
 };

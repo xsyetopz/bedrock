@@ -19,6 +19,7 @@ test("a member with its own lints points at the workspace lints", () => {
 	// Arrange
 	const manifest = `[package]
 name = "a"
+edition = "2024"
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -33,6 +34,7 @@ serde = "1"
 	// Assert
 	expect(result).toBe(`[package]
 name = "a"
+edition = "2024"
 
 [lints]
 workspace = true
@@ -44,7 +46,8 @@ serde = "1"
 
 test("a member that already uses the workspace lints is returned unchanged", () => {
 	// Arrange
-	const manifest = '[package]\nname = "a"\n[lints]\nworkspace   =  true # ok\n';
+	const manifest =
+		'[package]\nname = "a"\nedition = "2024"\n[lints]\nworkspace   =  true # ok\n';
 
 	// Act
 	const result = memberManifest(manifest);
@@ -55,19 +58,22 @@ test("a member that already uses the workspace lints is returned unchanged", () 
 
 test("a member without lints gains them", () => {
 	// Arrange
-	const manifest = '[package]\nname = "a"\n';
+	const manifest = '[package]\nname = "a"\nedition = "2024"\n';
 
 	// Act
 	const result = memberManifest(manifest);
 
 	// Assert
-	expect(result).toBe('[package]\nname = "a"\n\n[lints]\nworkspace = true\n');
+	expect(result).toBe(
+		'[package]\nname = "a"\nedition = "2024"\n\n[lints]\nworkspace = true\n',
+	);
 });
 
 test("drops the cargo-husky dev-dependency the hooks replace", () => {
 	// Arrange
 	const manifest = `[package]
 name = "a"
+edition = "2024"
 
 [dev-dependencies]
 cargo-husky = { version = "1", features = ["user-hooks"] }
@@ -77,7 +83,9 @@ cargo-husky = { version = "1", features = ["user-hooks"] }
 	const result = memberManifest(manifest);
 
 	// Assert
-	expect(result).toBe('[package]\nname = "a"\n\n[lints]\nworkspace = true\n');
+	expect(result).toBe(
+		'[package]\nname = "a"\nedition = "2024"\n\n[lints]\nworkspace = true\n',
+	);
 });
 
 test("a member manifest that is not TOML is an error", () => {
@@ -186,4 +194,29 @@ test("lists the editions a manifest declares", () => {
 
 	// Assert
 	expect(editions).toEqual(["2021", "2024"]);
+});
+
+test("a package without an edition names the 2015 that Cargo reads", () => {
+	// Arrange
+	const manifest = '[package]\nname = "a"\n\n[lints]\nworkspace = true\n';
+
+	// Act
+	const result = memberManifest(manifest);
+
+	// Assert
+	expect(result).toBe(
+		'[package]\nname = "a"\nedition = "2015"\n\n[lints]\nworkspace = true\n',
+	);
+});
+
+test("a package that inherits its edition keeps it", () => {
+	// Arrange
+	const manifest =
+		'[package]\nname = "a"\nedition.workspace = true\n\n[lints]\nworkspace = true\n';
+
+	// Act
+	const result = memberManifest(manifest);
+
+	// Assert
+	expect(result).toBe(manifest);
 });

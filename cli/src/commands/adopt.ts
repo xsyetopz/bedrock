@@ -109,6 +109,45 @@ const checkClean = async (root: string, plan: Plan): Promise<void> => {
 	}
 };
 
+/**
+ * The languages whose after-run goes with this apply: all of them when there
+ * are steps, else those that a skipped or failed run left work for.
+ */
+const toRun = async (
+	root: string,
+	selected: readonly Selected[],
+	plan: Plan,
+	init: boolean,
+): Promise<Selected[]> => {
+	const runnable = selected.filter(
+		({ language }) => language.afterApply !== undefined,
+	);
+	if (plan.steps.length > 0) {
+		return runnable;
+	}
+	const pending = await Promise.all(
+		runnable.map(
+			({ language, options }) =>
+				language.runPending?.(
+					contextFor(root, selected, language, options, init),
+				) ?? Promise.resolve(false),
+		),
+	);
+	return runnable.filter((_, index) => pending[index] === true);
+};
+
+/** One plan line per after-run, which `--no-run` turns into a reminder of what it skipped. */
+const printRuns = (runs: readonly Selected[], skipped: boolean): void => {
+	for (const { language } of runs) {
+		const what = language.runs ?? "its setup";
+		console.info(
+			skipped
+				? `  skip    ${language.id}: ${what} (--no-run)`
+				: `  run     ${language.id}: ${what}`,
+		);
+	}
+};
+
 const OPTIONS = {
 	"allow-dirty": { type: "boolean", default: false },
 	cxx: { type: "boolean", default: false },
@@ -146,8 +185,10 @@ export const adopt = async (
 	if (values["dry-run"]) {
 		return 0;
 	}
-	if (plan.steps.length > 0) {
-		if (!init && !values["allow-dirty"]) {
+	const runs = await toRun(root, selected, plan, init);
+	printRuns(runs, values["no-run"]);
+	if (plan.steps.length > 0 || (runs.length > 0 && !values["no-run"])) {
+		if (plan.steps.length > 0 && !init && !values["allow-dirty"]) {
 			await checkClean(root, plan);
 		}
 		if (!(await confirm(values.yes))) {
@@ -155,7 +196,7 @@ export const adopt = async (
 		}
 		await applySteps(root, plan.steps);
 		if (!values["no-run"]) {
-			await inOrder(selected, async ({ language, options }) => {
+			await inOrder(runs, async ({ language, options }) => {
 				await language.afterApply?.(
 					contextFor(root, selected, language, options, init),
 				);

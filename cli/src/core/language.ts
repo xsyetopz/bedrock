@@ -64,6 +64,14 @@ export interface Language {
 	readonly plan: (context: Context) => Promise<LanguagePlan>;
 	/** Runs after the steps apply, such as `bun install`; skipped with `--no-run`. */
 	readonly afterApply?: (context: Context) => Promise<void>;
+	/** What {@link afterApply} does, as the plan lists it, such as `bun install, bun fmt`. */
+	readonly runs?: string;
+	/**
+	 * Whether {@link afterApply} has work that a skipped or failed run left,
+	 * such as an unfinished edition migration, so a plan with no steps still
+	 * runs it.
+	 */
+	readonly runPending?: (context: Context) => Promise<boolean>;
 	/** Reports what the linters cannot see. With `fix`, repairs what it can first. */
 	readonly guard: (context: Context, fix: boolean) => Promise<Finding[]>;
 	/** Extra commands, such as `swift compile-commands` or `jvm j2k`. */

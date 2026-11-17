@@ -95,20 +95,38 @@ const useWorkspaceLints = (sections: readonly Section[]): Section[] => {
 };
 
 const packageSatisfied = (doc: Table): boolean =>
+	at(doc, "package", "edition") !== undefined &&
 	Bun.deepEquals(doc["lints"], { workspace: true }) &&
 	REPLACED_DEV_DEPENDENCIES.every(
 		(dep) => at(doc, "dev-dependencies", dep) === undefined,
 	);
 
-/** The member manifest with the workspace lints in place of its own. */
+/**
+ * Names the edition of a package that declares none. Cargo reads that as
+ * 2015, so `edition = "2015"` keeps the meaning and lets the edition
+ * migration take the package to 2024. An `edition.workspace` counts as one.
+ */
+const withDeclaredEdition = (
+	doc: Table,
+	sections: readonly Section[],
+): Section[] => {
+	const found = findSection(sections, "package");
+	return found === undefined || at(doc, "package", "edition") !== undefined
+		? [...sections]
+		: upsertSection(sections, withKey(found, "edition", '"2015"'));
+};
+
+/** The member manifest with a declared edition and the workspace lints in place of its own. */
 export const memberManifest = (text: string): string => {
 	const doc = parseToml(text);
 	if (doc === undefined) {
 		throw new Error("not valid TOML");
 	}
-	return packageSatisfied(doc)
-		? text
-		: renderSections(tidy(useWorkspaceLints(parseSections(text))));
+	if (packageSatisfied(doc)) {
+		return text;
+	}
+	const sections = useWorkspaceLints(parseSections(text));
+	return renderSections(tidy(withDeclaredEdition(doc, sections)));
 };
 
 const rootSatisfied = (doc: Table, managed: Managed): boolean =>
@@ -169,7 +187,9 @@ export const rootManifest = (text: string, managed: Managed): string => {
 	}
 	let sections = parseSections(text);
 	sections =
-		doc["package"] === undefined ? sections : useWorkspaceLints(sections);
+		doc["package"] === undefined
+			? sections
+			: withDeclaredEdition(doc, useWorkspaceLints(sections));
 	sections = withManagedLints(withResolver(sections), managed);
 	return renderSections(tidy(withReleaseProfile(sections, managed)));
 };

@@ -2,7 +2,8 @@ import { join } from "node:path";
 
 import { $ } from "bun";
 
-import { manifests } from "./project.ts";
+import { editionsOf } from "./manifests.ts";
+import { type Manifest, manifests } from "./project.ts";
 
 /** Each edition `cargo fix --edition` migrates code from, with the one it migrates to. */
 const NEXT: Readonly<Record<string, string>> = {
@@ -21,20 +22,31 @@ export const raisedEdition = (text: string): string =>
 		(_, key: string, year: string) => `${key}"${NEXT[year] ?? year}"`,
 	);
 
+/** The manifests that still declare an edition older than 2024. */
+const oldManifests = async (root: string): Promise<Manifest[]> => {
+	const found = await manifests(root);
+	return found.filter(
+		(manifest) => raisedEdition(manifest.text) !== manifest.text,
+	);
+};
+
+/** Whether a manifest still declares an edition older than 2024, as a skipped or failed migration leaves it. */
+export const editionPending = async (root: string): Promise<boolean> => {
+	const old = await oldManifests(root);
+	return old.length > 0;
+};
+
 /**
  * Migrates the workspace to edition 2024 one edition at a time: `cargo fix
  * --edition` rewrites the code for the next edition, then the manifests
- * declare it. Three rounds take 2015 to 2024. A package that declares no
- * edition stays out, since Cargo reads that as 2015 and the plan notes it.
+ * declare it. Three rounds take 2015 to 2024. The plan has already named
+ * the edition of each package that declared none, so those move as 2015.
  */
 export const migrateEditions = async (
 	root: string,
 	round = 1,
 ): Promise<void> => {
-	const found = await manifests(root);
-	const old = found.filter(
-		(manifest) => raisedEdition(manifest.text) !== manifest.text,
-	);
+	const old = await oldManifests(root);
 	if (old.length === 0 || round > 3) {
 		return;
 	}
@@ -43,8 +55,15 @@ export const migrateEditions = async (
 			.cwd(root)
 			.nothrow();
 	if (fix.exitCode !== 0) {
+		const declared = new Set(
+			old.flatMap((manifest) => editionsOf(manifest.text)),
+		);
+		declared.delete("2024");
 		throw new Error(
-			`cargo fix --edition failed in round ${round}; fix the errors it printed, then run bedrock adopt again.`,
+			[
+				`cargo fix --edition failed moving from edition ${[...declared].join(", ")}, which the manifests still declare.`,
+				"Fix the errors it printed, then run bedrock update to go on from there; git checkout undoes the rounds before it.",
+			].join("\n"),
 		);
 	}
 	await Promise.all(

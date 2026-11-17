@@ -30,7 +30,7 @@ const edited = (
 		const content = edit(text);
 		return {
 			steps: [{ kind: "write", path, content }],
-			notes: editionNotes(path, content),
+			notes: editionNotes(path, text, content),
 			projectFiles: [path],
 		};
 	} catch (error) {
@@ -40,12 +40,20 @@ const edited = (
 };
 
 /** One note when the manifest declares an edition older than 2024, which the steps' after-run migrates. */
-const editionNotes = (path: string, text: string): string[] => {
-	const old = editionsOf(text).filter((edition) => edition !== "2024");
+const editionNotes = (
+	path: string,
+	before: string,
+	after: string,
+): string[] => {
+	const old = editionsOf(after).filter((edition) => edition !== "2024");
+	const named = editionsOf(before).length < editionsOf(after).length;
+	const what = named
+		? "declares no edition, which Cargo reads as 2015, so adopt names it"
+		: `edition ${old.join(", ")}`;
 	return old.length === 0
 		? []
 		: [
-				`${path}: edition ${old.join(", ")}; after applying, cargo fix --edition migrates it to 2024 (skipped with --no-run).`,
+				`${path}: ${what}; after applying, cargo fix --edition migrates it to 2024 (skipped with --no-run).`,
 			];
 };
 

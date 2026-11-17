@@ -114,7 +114,7 @@ Work through them on a branch, in this order:
 - moves each `foo/mod.rs` to `foo.rs`, and starts each integration test in `tests/` with `#![cfg(test)]`, and gives it a `//!` crate doc when it has none, since `missing_docs` checks each test crate;
 - removes the `xtask` crate, its workspace member, the `bedrock` alias in `.cargo/config.toml`, and the `deny.toml` `allow-git` entry that rust-bedrock releases before 0.2 wrote, then runs `cargo fetch`.
 
-After applying, adopt migrates each manifest that declares an edition before 2024: it runs `cargo fix --edition` and raises the edition one step at a time, up to 2024, and stops with cargo's error when a step fails. `--no-run` skips it, and a package that inherits its edition from the workspace moves with the workspace manifest.
+After applying, adopt migrates each manifest that declares an edition before 2024: it runs `cargo fix --edition` and raises the edition one step at a time, up to 2024. A package that declares no edition, which Cargo reads as 2015, gets `edition = "2015"` written in first, so it migrates too; a package that inherits its edition from the workspace moves with the workspace manifest. When a step fails, adopt stops with cargo's error, and the manifests keep the edition that step started from, with the earlier steps applied: fix the errors and run `bedrock update` to go on, or `git checkout` the change to undo it. `--no-run` skips the migration, and the plan lists it as skipped. A later `bedrock update` runs it even when nothing else changes, as long as a manifest still declares an older edition.
 
 `just setup` installs the pinned toolchain, cargo-deny, and [kache](https://github.com/kunobi-ninja/kache), and runs `kache init --yes --no-shell`, which makes kache Cargo's compiler wrapper for your user. CI caches through `kache-action`.
 
@@ -137,7 +137,7 @@ To fix the errors, run `just lint-fix`, which also converts XCTest files to Swif
 
 ## Java and Kotlin
 
-`bedrock adopt` writes the Gradle wrapper, `gradle/bedrock/` with the convention plugins, `gradle/bedrock.versions.toml`, and the ProGuard rules, and adds its blocks to `settings.gradle.kts` and `gradle.properties`. When `gradle.properties` names no `group`, adopt takes it from `--group`, then from the migrated build, or uses `com.example.<directory name>` for a new project, and otherwise prints a note asking you to set it; NullAway checks that package. Scala or Groovy sources get a note to port them first, since bedrock compiles Java and Kotlin only.
+`bedrock adopt` writes the Gradle wrapper, `gradle/bedrock/` with the convention plugins, `gradle/bedrock.versions.toml`, and the ProGuard rules, and adds its blocks to `settings.gradle.kts` and `gradle.properties`. When `gradle.properties` names no `group`, adopt takes it from `--group`, then from the migrated build, or uses `com.example.<directory name>` for a new project, and otherwise prints a note asking you to set it; NullAway checks that package. A `--group`, kept in `.bedrock.json`, also replaces a different `group` that `gradle.properties` already names, with a note; the code stays where it is. Scala or Groovy sources get a note to port them first, since bedrock compiles Java and Kotlin only.
 
 It then migrates the build it finds, in this order, to one `build.gradle.kts` per module that applies a `bedrock.*` plugin, with the dependencies in `gradle/libs.versions.toml`:
 
@@ -154,6 +154,6 @@ To fix the errors, run `just lint-fix`, then work through `just verify`: code th
 
 ## Commit the Migration
 
-The pre-commit hook runs the checks of each language the commit touches, over the whole repo, so it accepts a commit once every error in those languages is fixed. Markdown is the exception: the hook lints only the staged `.md` files, as they are in the working tree, so an untracked draft does not block a commit. Plan the migration as one branch that you commit when `just verify` passes.
+The pre-commit hook runs the checks of each language the commit touches, over the whole repo, so it accepts a commit once every error in those languages is fixed. Markdown is the exception: the hook lints only the staged `.md` files, as they are staged, with the staged Markdown configs, so neither an untracked draft nor an unstaged edit decides the result. Plan the migration as one branch that you commit when `just verify` passes.
 
 When an agent does the work, have it fix each error at its cause and keep every rule, compiler flag, and severity as bedrock sets them. The guards reject suppression comments.

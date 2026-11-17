@@ -52,6 +52,7 @@ export const swift: Language = {
 	},
 	plan: planSwift,
 	afterApply,
+	runs: "swift package resolve",
 	guard: guardSwift,
 	subcommands: { "convert-tests": convertTests },
 };
