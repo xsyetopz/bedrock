@@ -94,6 +94,24 @@ describe("migrateManifest", () => {
 		expect(manifest["trustedDependencies"]).toEqual(["esbuild"]);
 	});
 
+	test("drops trusted entries for the packages it removed", () => {
+		// Arrange
+		const trusted = {
+			name: "app",
+			devDependencies: { "@biomejs/biome": "2.0.0" },
+			trustedDependencies: ["@biomejs/biome", "esbuild"],
+		};
+		const only = { name: "app", trustedDependencies: ["@biomejs/biome"] };
+
+		// Act
+		const { manifest } = migrateManifest(trusted, template);
+		const { manifest: emptied } = migrateManifest(only, template);
+
+		// Assert
+		expect(manifest["trustedDependencies"]).toEqual(["esbuild"]);
+		expect("trustedDependencies" in emptied).toBe(false);
+	});
+
 	test("drops the typescript-bedrock dependency and catalog pin", () => {
 		const { manifest, notes } = migrateManifest(
 			{
