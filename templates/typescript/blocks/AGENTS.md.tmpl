@@ -1,5 +1,5 @@
 - Install with `bun install`, and run one-off tools with `bunx`.
-- Check each change with the narrowest command: `bun test <file>`, `bun check`, `just typescript::lint <path>`, or `bun fmt`. A lint run starts type-aware tsgolint, which holds the whole program in memory, so run it through `just` (one run per repo at a time) and not as a bare `bunx oxlint`.
+- Check each change with the narrowest command: `bun test <file>`, `bun check`, `just typescript::lint <path>`, or `bun fmt`. A lint run starts type-aware tsgolint, which holds the whole program in memory, so run it through `just` (one run on the machine at a time) and not as a bare `bunx oxlint`.
 - Fix the cause of each lint or type error in the code, and keep the lint and `tsconfig` settings as they are.
 - Pin each dependency version once, in `workspaces.catalog`, and reference it as `catalog:`.
 - Give a JSDoc comment to each declaration a package exports from its `exports`, `main`, or `module` entry; internal code needs none.

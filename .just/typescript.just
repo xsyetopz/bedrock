@@ -26,7 +26,7 @@ format-check:
 typecheck:
     bun check
 
-# Run oxlint on the repo, or on the given paths. One run per repo at a time; the base justfile lints Markdown.
+# Run oxlint on the repo, or on the given paths. One run on the machine at a time; the base justfile lints Markdown.
 lint *paths: (oxlint paths)
 
 # Apply oxlint's fixes, under the same lock and bounds as lint.
@@ -50,22 +50,28 @@ pre-commit: format-staged typecheck lint guard
 format-staged:
     bun fmt --staged
 
-# A second run in the same repo waits for the first instead of starting its own tsgolint.
-# The lock is a directory because `mkdir` is atomic on every platform, and a dead holder's lock is taken over.
+# A second run anywhere on the machine waits for the first instead of starting its own tsgolint:
+# each holds a whole program in memory, and repos, worktrees, and sessions lint at once.
+# The lock sits in /tmp, which every user and sandbox shares, unlike $TMPDIR.
+# The lock is a directory because `mkdir` is atomic on every platform, and a dead holder's lock is
+# taken over; a holder kill cannot signal belongs to another user and still counts as alive.
+# Nested configs stay off, so a worktree's own .oxlintrc.json under an ignored path, such as
+# .claude/worktrees, does not stop the run.
 [private]
 oxlint *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    lock="${TMPDIR:-/tmp}/bedrock-lint-$(pwd -P | cksum | cut -d ' ' -f 1)"
+    lock=/tmp/bedrock-lint.lock
     waited=
     until mkdir "$lock" 2>/dev/null; do
         holder="$(cat "$lock/pid" 2>/dev/null || true)"
-        if [[ -n "$holder" ]] && ! kill -0 "$holder" 2>/dev/null; then
+        signal="$(kill -0 "$holder" 2>&1 || true)"
+        if [[ -n "$holder" && "$signal" == *"No such process"* ]]; then
             rm -rf "$lock"
             continue
         fi
         if [[ -z "$waited" ]]; then
-            echo "Another lint run holds this repo's lock (pid ${holder:-unknown}); waiting for it." >&2
+            echo "Another lint run holds the machine's lint lock (pid ${holder:-unknown}); waiting for it." >&2
             waited=1
         fi
         sleep 1
@@ -73,4 +79,4 @@ oxlint *args:
     trap 'rm -rf "$lock"' EXIT
     echo $$ >"$lock/pid"
     export GOMEMLIMIT="{{ lint_memory }}" GOMAXPROCS="{{ lint_threads }}"
-    bun run oxlint --threads={{ lint_threads }} {{ args }}
+    bun run oxlint --threads={{ lint_threads }} --disable-nested-config {{ args }}
