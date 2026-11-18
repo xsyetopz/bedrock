@@ -18,9 +18,11 @@ const hasGate = (source: string): boolean =>
 
 /**
  * The integration test with `#![cfg(test)]` after its leading `//!` lines, so
- * Clippy treats the whole file as test code. A file without those lines gets
- * one, since `missing_docs` checks each test file as its own crate. Undefined
- * when the file already has the attribute.
+ * Clippy treats the whole file as test code. Clippy 1.100 extends
+ * `allow-unwrap-in-tests` to integration tests, but `tests_outside_test_module`
+ * still rejects each `#[test]` outside a `#[cfg(test)]` module. A file
+ * without those lines gets one, since `missing_docs` checks each test file as
+ * its own crate. Undefined when the file already has the attribute.
  */
 export const gated = (source: string): string | undefined => {
 	if (hasGate(source)) {

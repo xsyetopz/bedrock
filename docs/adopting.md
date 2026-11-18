@@ -111,8 +111,8 @@ Work through them on a branch, in this order:
 `bedrock adopt` needs a `Cargo.toml`; for a new repo, run `bedrock init <dir> rust:lib` (or `rust:bin`, `rust:no-std`, `rust:ffi`, `rust:wasm`, `rust:bun-ffi`). A `bun-ffi` crate is an `ffi` crate plus its Bun side in `src/`, so adopt `typescript` too. Adopt:
 
 - writes `rustfmt.toml` and `clippy.toml`, writes `deny.toml` when the repo has none, and removes `.rustfmt.toml`, `.clippy.toml`, `rust-toolchain`, and `.cargo/config`;
-- pins `rust-toolchain.toml` to Rust 1.99.1 with Clippy and rustfmt, keeping the targets the repo lists and adding `wasm32-unknown-unknown` for a `wasm` crate;
-- gives the root `Cargo.toml` the managed workspace lints, resolver, and release profile, turning a single package into a workspace, and points each member at the workspace lints in place of its own;
+- pins `rust-toolchain.toml` to Rust 1.100.0 with Clippy and rustfmt, keeping the targets the repo lists and adding `wasm32-unknown-unknown` for a `wasm` crate;
+- gives the root `Cargo.toml` the managed workspace lints, resolver, and release profile, turning a single package into a workspace, and points each member at the workspace lints in place of its own. They include Cargo's `unused_dependencies`, so a `[dependencies]` or `[build-dependencies]` entry the crate never uses fails the build until you remove it; Cargo leaves `[dev-dependencies]` out;
 - removes `cargo-husky`;
 - moves each `foo/mod.rs` to `foo.rs`, prefixing its relative `#[path]` and `include!` paths with `foo/` so they reach the same files, and leaving a file whose paths it cannot rewrite safely where it is, with a note; starts each integration test in `tests/` with `#![cfg(test)]`, and gives it a `//!` crate doc when it has none, since `missing_docs` checks each test crate;
 - removes the `xtask` crate, its workspace member, the `bedrock` alias in `.cargo/config.toml`, and the `deny.toml` `allow-git` entry that rust-bedrock releases wrote, then runs `cargo fetch`.

@@ -5,7 +5,7 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C++20, Java and Kotl
 | Language | Kinds | Tooling |
 | --- | --- | --- |
 | `typescript` | `library`, `cli`, `plugin` | Bun 1.4.4, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
-| `rust` | `lib`, `bin`, `no-std`, `ffi`, `wasm`, `bun-ffi` | Rust 1.99.1, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, unit tests in `tests.rs` files |
+| `rust` | `lib`, `bin`, `no-std`, `ffi`, `wasm`, `bun-ffi` | Rust 1.100.0, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, unit tests in `tests.rs` files |
 | `swift` | `library`, `executable`, `app` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config |
 | `cpp` | | C++20 beside Swift, clang-format and clang-tidy, xmake |
 | `jvm` | `java-library`, `java-application`, `java-native`, `kotlin-library`, `kotlin-application`, `kotlin-native`, `kmp`, `cmp`, `android` | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |

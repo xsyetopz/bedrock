@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
+import { appendFile } from "node:fs/promises";
+import { join } from "node:path";
 
-import { $ } from "bun";
+import { $, Glob } from "bun";
 
 import { inOrder } from "../../core/order.ts";
 import { tempRepo } from "../../core/testing.ts";
@@ -54,3 +56,33 @@ for (const kind of KINDS) {
 		300_000,
 	);
 }
+
+test.skipIf(!hasCargo)(
+	"a dependency the crate never uses fails cargo check",
+	async () => {
+		// Arrange
+		const root = await tempRepo();
+		await adoptRust(root, true, { kind: "lib" });
+		// The crate's directory is the repo's name in lower case, so find it.
+		const [manifest = ""] = await Array.fromAsync(
+			new Glob("crates/*/Cargo.toml").scan({ cwd: root }),
+		);
+		await Bun.write(
+			join(root, "crates/unused/Cargo.toml"),
+			'[package]\nname = "unused"\nversion = "0.1.0"\nedition = "2024"\npublish = false\n',
+		);
+		await Bun.write(join(root, "crates/unused/src/lib.rs"), "");
+		await appendFile(
+			join(root, manifest),
+			'\n[dependencies]\nunused = { path = "../unused" }\n',
+		);
+
+		// Act
+		const result = await run(root, ["cargo", "check", "--workspace"]);
+
+		// Assert
+		expect(result.code).not.toBe(0);
+		expect(result.output).toContain("cargo::unused_dependencies");
+	},
+	300_000,
+);
