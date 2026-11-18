@@ -51,7 +51,7 @@ export interface Language {
 	readonly requires?: readonly string[];
 	/** Executables adopt needs, each with how to install it. */
 	readonly tools: Readonly<Record<string, string>>;
-	/** Globs of the files this language's checks read; pre-commit runs them only when a staged path matches. */
+	/** Globs of the files this language's checks read; the pre-commit and pre-push hooks run them only when a changed path matches. */
 	readonly sources: readonly string[];
 	/**
 	 * The kinds `bedrock init` can start, each a `templates/<id>/kinds/<kind>`

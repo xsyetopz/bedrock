@@ -17,30 +17,32 @@ const gitOutput = async (root: string, args: readonly string[]) => {
 	return result.exitCode === 0 ? result.stdout.toString().trim() : "";
 };
 
+/** The hooks `lefthook.yml` lists, which `just setup` installs. */
+const LEFTHOOK_HOOKS = ["pre-commit", "commit-msg", "pre-push"];
+
 /**
- * Whether git runs the hooks in `.githooks`. A Claude Code worktree stores
- * `core.hooksPath` as an absolute path into the main checkout, so both the
- * main checkout's and this work tree's `.githooks` count.
+ * Whether git runs each hook through lefthook. `--git-path` resolves the
+ * hooks directory git uses, which `core.hooksPath` moves and which every
+ * worktree shares with the main checkout.
  */
 export const hooksOn = async (root: string): Promise<boolean> => {
-	const [common, configured] = await Promise.all([
-		gitOutput(root, [
-			"rev-parse",
-			"--path-format=absolute",
-			"--git-common-dir",
-		]),
-		gitOutput(root, ["config", "core.hooksPath"]),
+	const dir = await gitOutput(root, [
+		"rev-parse",
+		"--path-format=absolute",
+		"--git-path",
+		"hooks",
 	]);
-	if (common === "" || configured === "") {
+	if (dir === "") {
 		return false;
 	}
-	const main = join(common, "..");
-	const resolved = configured.startsWith("/")
-		? configured
-		: join(main, configured);
-	return (
-		resolved === join(main, ".githooks") || resolved === join(root, ".githooks")
+	const installed = await Promise.all(
+		LEFTHOOK_HOOKS.map(async (hook) => {
+			const file = Bun.file(join(dir, hook));
+			const text = (await file.exists()) ? await file.text() : "";
+			return text.includes(`call_lefthook run "${hook}"`);
+		}),
 	);
+	return installed.every(Boolean);
 };
 
 /**
@@ -91,6 +93,41 @@ export const heldByGit = async (
 	return new Set(
 		paths.filter((_, index) => lines[index]?.endsWith(" missing") === false),
 	);
+};
+
+/**
+ * The paths HEAD's commits change that no remote-tracking branch has yet,
+ * deletions included: the diff from the oldest such commit's parent. Undefined
+ * when that commit has no parent, since then the whole history is new.
+ */
+export const unpushedPaths = async (
+	root: string,
+): Promise<string[] | undefined> => {
+	const commits = await gitOutput(root, [
+		"rev-list",
+		"--reverse",
+		"HEAD",
+		"--not",
+		"--remotes",
+	]);
+	const [oldest] = commits.split("\n");
+	if (oldest === undefined || oldest === "") {
+		return [];
+	}
+	const base = await gitOutput(root, [
+		"rev-parse",
+		"--verify",
+		"--quiet",
+		`${oldest}^`,
+	]);
+	if (base === "") {
+		return undefined;
+	}
+	const diff = await $`git diff --name-only -z ${base} HEAD`.cwd(root).quiet();
+	return diff.stdout
+		.toString()
+		.split("\0")
+		.filter((path) => path !== "");
 };
 
 /** The staged paths, added, copied, modified, or renamed. */

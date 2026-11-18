@@ -6,7 +6,6 @@
 
 *.md diff=markdown
 *.sh diff=bash
-.githooks/* text eol=lf diff=bash
 
 *.png binary
 *.jpg binary

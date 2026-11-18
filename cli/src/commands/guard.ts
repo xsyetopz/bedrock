@@ -62,7 +62,7 @@ const guardBase = async (
 		),
 		...replaced.map(
 			(path) =>
-				`${path}: replaced by the justfile and .githooks; move what it still does into project.just`,
+				`${path}: replaced by the justfile and lefthook.yml; move what it still does into project.just`,
 		),
 		...(process.env["CI"] === undefined && !hooks
 			? ["git hooks are off: run just setup"]

@@ -16,7 +16,7 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C++20, Java and Kotl
 Every language writes the same base, so a repo with several languages has one of each:
 
 - a `justfile` that runs each task for every language, through `.just/<language>.just`, with the project's own recipes in `project.just`; a `project-<task>` recipe there, such as `project-verify`, runs after the languages' `<task>`;
-- `.githooks`: `pre-commit` runs the checks for the languages a commit touches, `pre-push` runs `just verify`, and `commit-msg` checks Conventional Commits;
+- `lefthook.yml`, whose hooks each run one `just` recipe: `pre-commit` checks the languages a commit touches, `pre-push` runs `verify` without the tests for the languages the unpushed commits touch, and `commit-msg` checks Conventional Commits;
 - `AGENTS.md`, linked as `CLAUDE.md` and `GEMINI.md`, with a block of rules from each language;
 - `.gitignore`, `.gitattributes`, `.editorconfig`, and `.github/dependabot.yml`, with a block from each language;
 - `.bedrock.json`, which pins the bedrock release and lists the languages;
@@ -26,12 +26,12 @@ Bedrock rewrites only the blocks it owns, between `# >>> name` and `# <<< name` 
 
 ```bash
 just            # list the recipes
-just setup      # install bedrock, the pinned tools, and the hooks
+just setup      # install bedrock, the pinned tools, and the lefthook hooks
 just verify     # every check CI runs
 just rust::test # one language's recipe
 ```
 
-`just setup` downloads the bedrock release `.bedrock.json` pins, checks it against the release's `SHA256SUMS`, and keeps one copy per release in the user cache, shared by every checkout and worktree.
+`just setup` downloads the bedrock release `.bedrock.json` pins and the lefthook release the justfile pins, checks each against its release checksums, and keeps one copy per release in the user cache, shared by every checkout and worktree. It then installs the hooks `lefthook.yml` lists and unsets `core.hooksPath`, which releases before 0.5 pointed at `.githooks`, so rerun `just setup` in each clone after updating to 0.5. CI skips the hook install.
 
 ## Adopt a Repo
 
@@ -137,4 +137,4 @@ The repo adopts itself from source (`.bedrock.json` pins `"source"`), so `just v
 
 MIT. See [LICENSE](LICENSE).
 
-`templates/base/files/.githooks/commit-msg.tmpl` is ported from [compilerla/conventional-pre-commit](https://github.com/compilerla/conventional-pre-commit) v4.5.0, licensed under [Apache-2.0](https://github.com/compilerla/conventional-pre-commit/blob/v4.5.0/LICENSE). The file header lists the changes.
+`cli/src/commands/commit-msg.ts` is ported from [compilerla/conventional-pre-commit](https://github.com/compilerla/conventional-pre-commit) v4.5.0, licensed under [Apache-2.0](https://github.com/compilerla/conventional-pre-commit/blob/v4.5.0/LICENSE). The file header lists the changes.

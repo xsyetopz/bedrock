@@ -15,7 +15,7 @@ const REMOVED_KEYS = [
 	"prettier",
 	"simple-git-hooks",
 ];
-// `just setup` points git at .githooks, so a script that installs another hook manager does nothing.
+// `just setup` installs the hooks lefthook.yml lists, with its pinned lefthook, so a script that installs hooks is redundant.
 const HOOK_INSTALLERS =
 	/^(?:typescript-bedrock hooks|husky|lefthook install|simple-git-hooks)(?:\s|$)/u;
 // `bun fmt` and `bun check` run these names instead of the built-in command.

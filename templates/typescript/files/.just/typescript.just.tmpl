@@ -49,6 +49,9 @@ verify: format-check typecheck lint guard test
 # The Bun checks the pre-commit hook runs.
 pre-commit: format-staged typecheck lint guard
 
+# The Bun checks the pre-push hook runs: verify without the tests, which CI runs.
+pre-push: format-check typecheck lint guard
+
 [private]
 format-staged:
     bun fmt --staged

@@ -62,7 +62,7 @@ export const readManaged = (workspaceToml: string): Managed => {
 const isLintsName = (name: string, prefix: string): boolean =>
 	name === prefix || name.startsWith(`${prefix}.`);
 
-/** Dev-dependencies whose job the justfile and `.githooks` took over. */
+/** Dev-dependencies whose job the justfile and lefthook.yml took over. */
 const REPLACED_DEV_DEPENDENCIES = ["cargo-husky"];
 
 const dropReplacedDevDependencies = (
