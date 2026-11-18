@@ -43,15 +43,6 @@
 .zed/
 # <<< bedrock
 
-# >>> rust-bedrock
-# Adapted from github/gitignore@41862c8 (CC0-1.0): Rust.
-target/
-**/*.rs.bk
-*.pdb
-**/mutants.out*/
-rustc-ice-*.txt
-# <<< rust-bedrock
-
 # >>> typescript-bedrock
 # Adapted from github/gitignore@41862c8 (CC0-1.0): Node.
 node_modules/
@@ -71,57 +62,7 @@ coverage/
 .vscode-test/
 # <<< typescript-bedrock
 
-# >>> swift-bedrock
-# Adapted from github/gitignore@41862c8 (CC0-1.0): Swift, Global/Xcode.
-.build/
-xcuserdata/
-DerivedData/
-*.xcscmblueprint
-*.xccheckout
-*.hmap
-*.ipa
-*.dSYM.zip
-*.dSYM
-timeline.xctimeline
-playground.xcworkspace
-Carthage/Build/
-fastlane/report.xml
-fastlane/Preview.html
-fastlane/screenshots/**/*.png
-fastlane/test_output
-iOSInjectionProject/
-# <<< swift-bedrock
 
-# >>> swift-bedrock-cxx
-# Adapted from github/gitignore@41862c8 (CC0-1.0): C++.
-*.o
-*.obj
-*.gch
-*.pch
-*.a
-*.lib
-*.dylib
-*.so
-*.dll
-*.exe
-*.out
-compile_commands.json
-.cache/clangd/
-# xmake keeps its configuration in .xmake/.
-.xmake/
-# <<< swift-bedrock-cxx
-
-# >>> jvm-bedrock
-# Adapted from github/gitignore@41862c8 (CC0-1.0): Gradle, Kotlin, and Android.
-.gradle/
-.kotlin/
-build/
-local.properties
-*.class
-*.hprof
-hs_err_pid*
-replay_pid*
-captures/
-.externalNativeBuild/
-.cxx/
-# <<< jvm-bedrock
+# Editors index the Rust and Swift templates with rust-analyzer and SourceKit-LSP.
+/target/
+/.build/

@@ -13,7 +13,7 @@ import {
 } from "../core/plan.ts";
 import { VERSION } from "../version.ts";
 import { findBackups } from "./clean.ts";
-import { select } from "./select.ts";
+import { dropped, select } from "./select.ts";
 
 const USAGE = `Usage: bedrock guard [base|<language>...] [--fix]
 
@@ -33,6 +33,7 @@ const drift = async (
 	const plan = await buildPlan(root, selected, {
 		init: false,
 		version: config.version,
+		dropped: await dropped(root, selected),
 	});
 	return plan.steps
 		.filter((step) => !plan.projectFiles.has(step.path))

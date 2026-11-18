@@ -24,37 +24,7 @@
 *.woff2 binary
 # <<< bedrock
 
-# >>> rust-bedrock
-*.rs diff=rust
-Cargo.lock text linguist-generated
-# <<< rust-bedrock
-
 # >>> typescript-bedrock
 bun.lock text linguist-generated
 *.lockb binary
 # <<< typescript-bedrock
-
-# >>> swift-bedrock
-*.pbxproj text linguist-generated
-Package.resolved text linguist-generated
-*.xcscheme text
-*.m diff=objc
-*.mm diff=objc
-# <<< swift-bedrock
-
-# >>> swift-bedrock-cxx
-*.c diff=cpp
-*.cc diff=cpp
-*.cpp diff=cpp
-*.cxx diff=cpp
-*.h diff=cpp
-*.hh diff=cpp
-*.hpp diff=cpp
-*.hxx diff=cpp
-# <<< swift-bedrock-cxx
-
-# >>> jvm-bedrock
-gradlew text eol=lf
-*.bat text eol=crlf
-*.jar binary
-# <<< jvm-bedrock

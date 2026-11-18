@@ -1,6 +1,8 @@
 pluginManagement {
   includeBuild("gradle/bedrock")
+  // Central first: the plugin portal mirrors it on demand and has missed Kotlin artifacts.
   repositories {
+    mavenCentral()
     gradlePluginPortal()
     google()
   }

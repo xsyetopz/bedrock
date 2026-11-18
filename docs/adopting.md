@@ -20,6 +20,7 @@ Project checks that `just verify` should run, such as a build or a repo-specific
 - It writes the shared `justfile`, `.githooks/`, `.markdownlint.jsonc`, and `.github/workflows/base.yml`, plus its own `.just/<language>.just` and `.github/workflows/<language>.yml`.
 - It adds its block to `AGENTS.md`, `.gitignore`, `.gitattributes`, `.editorconfig`, and `.github/dependabot.yml`, and keeps the rest of each file. An existing `CLAUDE.md` becomes `AGENTS.md`, and `CLAUDE.md` and `GEMINI.md` link to it.
 - It records the bedrock release and the languages in `.bedrock.json`, which `just setup` reads to install that release.
+- It removes what a language the repo dropped left behind: the language's blocks in the shared files and its managed files, such as `.just/rust.just` and `.github/workflows/rust.yml`. A language counts as dropped when the run does not cover it and none of its marker files sits at the root, such as `Cargo.toml` for Rust or `go.mod` for Go. Markers bedrock writes itself, such as `gradlew` or `.swift-version`, don't count, since they stay behind when the code goes. To drop one, take it out of `.bedrock.json` and run `bedrock update`. `bedrock guard` reports the leftovers as drift.
 - It removes hook managers (husky, lefthook, pre-commit, simple-git-hooks) and the `Makefile`, whose jobs the hooks and `just` take over.
 
 ## Bun

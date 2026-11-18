@@ -64,6 +64,14 @@ describe("removeBlock", () => {
 		);
 	});
 
+	test("drops the blank line before the last block", () => {
+		const text =
+			"# >>> bedrock\nb\n# <<< bedrock\n\n# >>> rust-bedrock\nr\n# <<< rust-bedrock\n";
+		expect(removeBlock(text, "hash", "rust-bedrock")).toBe(
+			"# >>> bedrock\nb\n# <<< bedrock\n",
+		);
+	});
+
 	test("returns the text unchanged when the block is missing", () => {
 		expect(removeBlock("own\n", "hash", "bedrock")).toBe("own\n");
 	});
