@@ -71,6 +71,9 @@ verify: format-check typecheck lint guard test
 # The Swift checks the pre-commit hook runs.
 pre-commit: format-check lint guard
 
+# The Swift checks the pre-push hook runs: verify without the tests, which CI runs.
+pre-push: format-check typecheck lint guard
+
 # Delete the git-ignored .build folder of each other worktree with no build running in it.
 clean-worktrees:
     #!/usr/bin/env bash

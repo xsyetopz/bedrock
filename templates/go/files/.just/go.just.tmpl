@@ -53,3 +53,6 @@ verify: format-check typecheck lint guard test
 
 # The Go checks the pre-commit hook runs.
 pre-commit: format-check lint guard
+
+# The Go checks the pre-push hook runs: verify without the tests, which CI runs.
+pre-push: format-check typecheck lint guard

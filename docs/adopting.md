@@ -17,11 +17,11 @@ Project checks that `just verify` should run, such as a build or a repo-specific
 
 ## What Every Language Changes
 
-- It writes the shared `justfile`, `.githooks/`, `.markdownlint.jsonc`, and `.github/workflows/base.yml`, plus its own `.just/<language>.just` and `.github/workflows/<language>.yml`.
+- It writes the shared `justfile`, `lefthook.yml`, `.markdownlint.jsonc`, and `.github/workflows/base.yml`, plus its own `.just/<language>.just` and `.github/workflows/<language>.yml`.
 - It adds its block to `AGENTS.md`, `.gitignore`, `.gitattributes`, `.editorconfig`, and `.github/dependabot.yml`, and keeps the rest of each file. An existing `CLAUDE.md` becomes `AGENTS.md`, and `CLAUDE.md` and `GEMINI.md` link to it.
 - It records the bedrock release and the languages in `.bedrock.json`, which `just setup` reads to install that release.
 - It removes what a language the repo dropped left behind: the language's blocks in the shared files and its managed files, such as `.just/rust.just` and `.github/workflows/rust.yml`. A language counts as dropped when the run does not cover it and none of its marker files sits at the root, such as `Cargo.toml` for Rust or `go.mod` for Go. Markers bedrock writes itself, such as `gradlew` or `.swift-version`, don't count, since they stay behind when the code goes. To drop one, take it out of `.bedrock.json` and run `bedrock update`. `bedrock guard` reports the leftovers as drift.
-- It removes hook managers (husky, lefthook, pre-commit, simple-git-hooks) and the `Makefile`, whose jobs the hooks and `just` take over.
+- It removes other hook setups (husky, pre-commit, simple-git-hooks, the `.githooks` of bedrock releases before 0.5, and lefthook configs under names other than `lefthook.yml`) and the `Makefile`, whose jobs `lefthook.yml` and `just` take over. An existing `lefthook.yml` is replaced; machine-local hooks belong in `lefthook-local.yml`.
 
 ## Bun
 
@@ -33,7 +33,7 @@ Project checks that `just verify` should run, such as a build or a repo-specific
 
 ### Scripts
 
-Every adopted repo ends up with these scripts: `format`, `format:check`, `guard`, `lint`, `lint:fix`, `typecheck`, `verify`, and `test`. Your own `test` script stays, with the commands below rewritten; without one, adopt sets `bun test --pass-with-no-tests`. When one of the other names already ran something else, adopt prints the old command so you can move a step it still needs, such as a build or `cargo test`, into the new script. A script that installs a hook manager (`husky`, `lefthook install`, `simple-git-hooks`) is removed, because `just setup` points git at `.githooks`.
+Every adopted repo ends up with these scripts: `format`, `format:check`, `guard`, `lint`, `lint:fix`, `typecheck`, `verify`, and `test`. Your own `test` script stays, with the commands below rewritten; without one, adopt sets `bun test --pass-with-no-tests`. When one of the other names already ran something else, adopt prints the old command so you can move a step it still needs, such as a build or `cargo test`, into the new script. A script that installs a hook manager (`husky`, `lefthook install`, `simple-git-hooks`) is removed, because `just setup` installs the hooks in `lefthook.yml` with the lefthook the justfile pins.
 
 Commands inside your other scripts are rewritten:
 

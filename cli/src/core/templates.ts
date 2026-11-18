@@ -27,9 +27,9 @@ export const templatesRoot = (): string =>
 		? `${import.meta.dir}/templates`
 		: fileURLToPath(new URL("../../../templates", import.meta.url));
 
-/** Paths that git and the hooks need to run as programs. */
+/** Paths that need to run as programs. */
 export const isExecutable = (path: string): boolean =>
-	path.startsWith(".githooks/") || /(?:^|\/)gradlew$/u.test(path);
+	/(?:^|\/)gradlew$/u.test(path);
 
 /** Fills each match of `pattern`; a name without a value is an error in bedrock itself. */
 const fill = (

@@ -14,14 +14,19 @@ import { copySteps, sharedSteps, starterSteps } from "./shared.ts";
 import { dedupe, pending, type Step } from "./steps.ts";
 import { templateDir, type Variables } from "./templates.ts";
 
-/** Hook managers and task runners the justfile and `.githooks` replace. */
+/**
+ * Hook managers and task runners the justfile and `lefthook.yml` replace,
+ * with the `.githooks` of releases before 0.5 and the lefthook config names
+ * lefthook would read in place of `lefthook.yml`.
+ */
 export const REPLACED_BY_BASE = [
+	".githooks",
 	".husky",
+	".lefthook.yaml",
 	".lefthook.yml",
 	".pre-commit-config.yaml",
 	".simple-git-hooks.json",
 	"lefthook.yaml",
-	"lefthook.yml",
 	"Makefile",
 ];
 

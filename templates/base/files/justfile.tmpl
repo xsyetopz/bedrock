@@ -21,14 +21,18 @@ bedrock_version := `sed -n 's/^[[:space:]]*"version": "\(.*\)",$/\1/p' .bedrock.
 bedrock_asset := "bedrock-" + replace(os(), "macos", "darwin") + "-" + replace(replace(arch(), "aarch64", "arm64"), "x86_64", "x64")
 # One copy per release, shared by every checkout and worktree.
 bedrock_bin := cache_directory() / "bedrock" / bedrock_version / bedrock_asset
+# The lefthook release that runs the git hooks lefthook.yml lists.
+lefthook_version := "2.2.2"
+lefthook_asset := "lefthook_" + lefthook_version + "_" + replace(replace(os(), "macos", "MacOS"), "linux", "Linux") + "_" + replace(arch(), "aarch64", "arm64")
+lefthook_bin := cache_directory() / "lefthook" / lefthook_version / "lefthook"
 
 # List the recipes.
 default:
     @just --list --list-submodules
 
-# Install bedrock and the pinned tools, and point git at .githooks.
+# Install bedrock and the pinned tools, and the git hooks lefthook.yml lists.
 setup: install-bedrock (each "setup")
-    @if [[ -z "${CI:-}" ]]; then git config core.hooksPath .githooks; fi
+    @if [[ -z "${CI:-}" ]]; then {{ just_executable() }} install-hooks; fi
 
 # Format every file in place.
 format: (each "format")
@@ -75,10 +79,21 @@ pre-commit: (bedrock "guard" "base")
         {{ just_executable() }} --justfile "$PWD/justfile" --working-directory "$scratch" \
             lint-markdown --no-globs "${markdown[@]/#/:}"
     fi
-    if grep -q '^\.githooks/' <<<"$staged"; then {{ just_executable() }} lint-hooks; fi
+    if grep -qx 'lefthook\.yml' <<<"$staged"; then {{ just_executable() }} lint-hooks; fi
     for language in $({{ just_executable() }} bedrock languages --staged); do
         if [[ -f ".just/$language.just" ]]; then
             {{ just_executable() }} "$language::pre-commit"
+        fi
+    done
+
+# The checks the pre-push hook runs: verify without the tests, which CI runs, for the
+# languages whose files the commits no remote has yet change.
+pre-push: (bedrock "guard" "base") lint-markdown lint-hooks
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for language in $({{ just_executable() }} bedrock languages --unpushed); do
+        if [[ -f ".just/$language.just" ]]; then
+            {{ just_executable() }} "$language::pre-push"
         fi
     done
 
@@ -102,23 +117,46 @@ install-bedrock:
         exit 1
     fi
     if [[ "$version" == source || -x "{{ bedrock_bin }}" ]]; then exit 0; fi
-    url="https://github.com/xsyetopz/bedrock/releases/download/v$version"
-    dir="$(dirname "{{ bedrock_bin }}")"
+    {{ just_executable() }} download "bedrock $version" \
+        "https://github.com/xsyetopz/bedrock/releases/download/v$version" \
+        "{{ bedrock_asset }}" SHA256SUMS "{{ bedrock_bin }}"
+
+[private]
+install-lefthook:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ -x "{{ lefthook_bin }}" ]]; then exit 0; fi
+    {{ just_executable() }} download "lefthook {{ lefthook_version }}" \
+        "https://github.com/evilmartians/lefthook/releases/download/v{{ lefthook_version }}" \
+        "{{ lefthook_asset }}" lefthook_checksums.txt "{{ lefthook_bin }}"
+
+# The hooks call the lefthook binary that installed them by its full path, so it needs no PATH
+# entry. --reset-hooks-path unsets the core.hooksPath that bedrock releases before 0.5 set.
+[private]
+install-hooks: install-lefthook
+    "{{ lefthook_bin }}" install --reset-hooks-path
+
+# Downloads `asset` from `url` to `bin`, checked against the `sums` file published beside it.
+[private]
+download name url asset sums bin:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dir="$(dirname "{{ bin }}")"
     mkdir -p "$dir"
     tmp="$(mktemp "$dir/.download.XXXXXX")"
     trap 'rm -f "$tmp" "$tmp.sums"' EXIT
-    echo "Downloading bedrock $version ({{ bedrock_asset }})" >&2
-    curl --fail --silent --show-error --location --retry 3 -o "$tmp" "$url/{{ bedrock_asset }}"
-    curl --fail --silent --show-error --location --retry 3 -o "$tmp.sums" "$url/SHA256SUMS"
-    expected="$(awk -v asset="{{ bedrock_asset }}" '$2 == asset { print $1 }' "$tmp.sums")"
+    echo "Downloading {{ name }} ({{ asset }})" >&2
+    curl --fail --silent --show-error --location --retry 3 -o "$tmp" "{{ url }}/{{ asset }}"
+    curl --fail --silent --show-error --location --retry 3 -o "$tmp.sums" "{{ url }}/{{ sums }}"
+    expected="$(awk -v asset="{{ asset }}" '$2 == asset { print $1 }' "$tmp.sums")"
     actual="$(shasum -a 256 "$tmp" | cut -d ' ' -f 1)"
     if [[ -z "$expected" || "$expected" != "$actual" ]]; then
-        echo "bedrock $version: checksum mismatch for {{ bedrock_asset }}" >&2
+        echo "{{ name }}: checksum mismatch for {{ asset }}" >&2
         exit 1
     fi
     chmod +x "$tmp"
     # A rename is atomic, so parallel worktrees never run a half-written binary.
-    mv -f "$tmp" "{{ bedrock_bin }}"
+    mv -f "$tmp" "{{ bin }}"
 
 [private]
 each recipe:
@@ -153,13 +191,5 @@ lint-markdown *args:
 lint-markdown-fix: (lint-markdown "--fix")
 
 [private]
-lint-hooks:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if command -v shellcheck >/dev/null; then
-        exec shellcheck .githooks/*
-    elif [[ -n "${CI:-}" ]]; then
-        echo "shellcheck is not installed" >&2
-        exit 1
-    fi
-    echo "Skipped hooks: shellcheck is not installed. CI runs it."
+lint-hooks: install-lefthook
+    "{{ lefthook_bin }}" validate

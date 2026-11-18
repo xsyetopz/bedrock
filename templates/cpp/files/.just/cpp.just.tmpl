@@ -46,6 +46,9 @@ verify: format-check lint
 # The C++ checks the pre-commit hook runs.
 pre-commit: format-check
 
+# The C++ checks the pre-push hook runs: verify without the tests, which CI runs.
+pre-push: format-check lint
+
 [private]
 files:
     git ls-files -z --cached --others --exclude-standard -- '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.m' '*.mm'

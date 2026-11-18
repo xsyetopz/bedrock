@@ -43,6 +43,9 @@ verify: guard (gradle "spotlessCheck" "bedrockCompile" "bedrockLint" "bedrockTes
 # The JVM checks the pre-commit hook runs.
 pre-commit: guard (gradle "spotlessCheck" "bedrockCompile")
 
+# The JVM checks the pre-push hook runs: verify without the tests, which CI runs.
+pre-push: guard (gradle "spotlessCheck" "bedrockCompile" "bedrockLint")
+
 # Run Gradle with a JDK that works. macOS ships a /usr/bin/java that only says no JDK is
 # installed, and Homebrew's JDKs are not linked where macOS looks, so this finds one, exports
 # JAVA_HOME for Gradle, and stops with the install step when there is none. A build that

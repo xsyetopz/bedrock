@@ -9,7 +9,7 @@ bun install
 just setup
 ```
 
-`just setup` installs the pinned tools and points git at `.githooks`. This repo pins `"source"` in `.bedrock.json`, so it runs the CLI from its own tree and downloads no release.
+`just setup` installs the pinned tools and the hooks in `lefthook.yml`. This repo pins `"source"` in `.bedrock.json`, so it runs the CLI from its own tree and downloads no release.
 
 ## Before You Open a Pull Request
 
