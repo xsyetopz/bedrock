@@ -22,7 +22,7 @@ export const runSubcommand = async (
 	if (language === undefined || command === undefined) {
 		return undefined;
 	}
-	// Without this, --help reaches the subcommand as a path to convert.
+	// Without this, `--help` reaches the subcommand as a path to convert.
 	if (rest.some((arg) => arg === "-h" || arg === "--help")) {
 		console.info(
 			`Usage: bedrock ${subcommandUsage(language.id, name, command)}\n\n${command.summary}`,

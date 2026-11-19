@@ -80,7 +80,7 @@ export const clean = async (args: readonly string[]): Promise<number> => {
 	}
 	const result = await removeBackups(resolveRoot(positionals[0]), values.force);
 	if (result.removed.length === 0 && result.kept.length === 0) {
-		console.info("No *.bak files.");
+		console.info("No `*.bak` files.");
 	}
 	reportCleanup(result);
 	return result.kept.length === 0 ? 0 : 1;

@@ -25,7 +25,7 @@ const confirm = async (yes: boolean): Promise<boolean> => {
 	}
 	if (!process.stdin.isTTY) {
 		console.error(
-			"No terminal to confirm. Pass --yes to apply, or --dry-run to preview.",
+			"No terminal to confirm. Pass `--yes` to apply, or `--dry-run` to preview.",
 		);
 		return false;
 	}
@@ -104,7 +104,7 @@ const checkClean = async (root: string, plan: Plan): Promise<void> => {
 	if (dirty.length > 0) {
 		throw new Error(
 			[
-				"Commit or stash these first, so git can show and undo what bedrock changes (or pass --allow-dirty):",
+				"Commit or stash these first, so git can show and undo what bedrock changes (or pass `--allow-dirty`):",
 				...dirty.map((path) => `  ${path}`),
 			].join("\n"),
 		);
@@ -144,7 +144,7 @@ const printRuns = (runs: readonly Selected[], skipped: boolean): void => {
 		const what = language.runs ?? "its setup";
 		console.info(
 			skipped
-				? `  skip    ${language.id}: ${what} (--no-run)`
+				? `  skip    ${language.id}: ${what} (\`--no-run\`)`
 				: `  run     ${language.id}: ${what}`,
 		);
 	}
@@ -218,7 +218,7 @@ export const adopt = async (
 	}
 	reportCleanup(await removeBackups(root, false));
 	console.info(
-		"Done. Review the change with git diff, then run just setup and just verify, and fix what they report.",
+		"Done. Review the change with `git diff`, then run `just setup` and `just verify`, and fix what they report.",
 	);
 	return 0;
 };

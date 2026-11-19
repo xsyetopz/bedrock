@@ -15,7 +15,7 @@ afterAll(async () => {
 
 describe("isConventional", () => {
 	test.each([
-		["a typed subject", "feat: add --dry-run\n"],
+		["a typed subject", "feat: add `--dry-run`\n"],
 		["a scope", "fix(cli): read the config once\n"],
 		["a breaking marker", "feat(cli)!: drop the old flags\n"],
 		["a body after a blank line", "docs: say why\n\nBecause it matters.\n"],

@@ -21,7 +21,7 @@ const USAGE = `Usage: bedrock commit-msg <file>
 Checks the commit message in <file>, as the commit-msg hook hands it, against
 Conventional Commits with no line over ${MAX_LINE} characters.`;
 
-const HELP = `commit-msg: use Conventional Commits, for example "feat(cli): add --dry-run", with no line over ${MAX_LINE} characters.
+const HELP = `commit-msg: use Conventional Commits, for example "feat(cli): add \`--dry-run\`", with no line over ${MAX_LINE} characters.
 Types: ${TYPES.replaceAll("|", ", ")}. https://www.conventionalcommits.org`;
 
 /**
