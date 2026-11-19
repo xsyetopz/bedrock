@@ -1,0 +1,8 @@
+package @@package@@
+
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+
+final class GreeterTest:
+  @Test def greets(): Unit =
+    assertEquals("Hello, Ada", Greeter.greet(Some("Ada")))

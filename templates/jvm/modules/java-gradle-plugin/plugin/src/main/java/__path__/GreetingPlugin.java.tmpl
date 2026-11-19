@@ -1,0 +1,23 @@
+package @@package@@;
+
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+
+/** Registers a {@code greet} task that prints a greeting. */
+public final class GreetingPlugin implements Plugin<Project> {
+  /** Creates the plugin; Gradle calls this. */
+  public GreetingPlugin() {}
+
+  @Override
+  public void apply(Project project) {
+    project
+        .getTasks()
+        .register(
+            "greet",
+            task -> {
+              task.setGroup("help");
+              task.setDescription("Prints a greeting.");
+              task.doLast(done -> System.out.println("Hello from " + project.getName()));
+            });
+  }
+}

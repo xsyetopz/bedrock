@@ -51,7 +51,7 @@ pre-push: guard (gradle "spotlessCheck" "bedrockCompile" "bedrockLint")
 # Run Gradle with a JDK that works. macOS ships a /usr/bin/java that only says no JDK is
 # installed, and Homebrew's JDKs are not linked where macOS looks, so this finds one, exports
 # JAVA_HOME for Gradle, and stops with the install step when there is none. A build that
-# applies bedrock.android or bedrock.cmp also needs the Android SDK.
+# applies bedrock.android, or bedrock.kmp or bedrock.cmp for android, also needs the Android SDK.
 [positional-arguments]
 [private]
 gradle +tasks:
@@ -79,7 +79,13 @@ gradle +tasks:
     fi
     uses_android=false
     while IFS= read -r -d '' script; do
-        if grep -qE 'id\("bedrock\.(android|cmp)"\)' "$script"; then uses_android=true; break; fi
+        if grep -qE 'id\("bedrock\.android"\)' "$script"; then uses_android=true; break; fi
+        # kmp and cmp build for Android unless the module's bedrock.platforms leaves it out.
+        if grep -qE 'id\("bedrock\.(kmp|cmp)"\)' "$script"; then
+            props="$(dirname "$script")/gradle.properties"
+            platforms="$(sed -n 's/^bedrock\.platforms=//p' "$props" 2>/dev/null || true)"
+            if [[ -z "$platforms" || ",$platforms," == *",android,"* ]]; then uses_android=true; break; fi
+        fi
     done < <(git ls-files --cached --others --exclude-standard -z -- '*build.gradle.kts' 2>/dev/null)
     if [[ "$uses_android" == true ]]; then
         sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"

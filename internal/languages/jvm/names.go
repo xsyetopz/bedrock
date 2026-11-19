@@ -35,3 +35,15 @@ const (
 	nameTest    = "test"
 	toolMaven   = "Maven"
 )
+
+// Kind, platform, and language names the jvm Spec and the platform logic share.
+const (
+	kindAndroid      = "android"
+	kindCmp          = "cmp"
+	kindKmp          = "kmp"
+	kindKotlinNative = "kotlin-native"
+	nameLinux        = "linux"
+	nameMacos        = "macos"
+	nameScala        = "scala"
+	nameWindows      = "windows"
+)

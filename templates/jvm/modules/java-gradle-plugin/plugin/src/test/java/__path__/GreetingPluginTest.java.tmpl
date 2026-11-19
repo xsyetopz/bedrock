@@ -1,0 +1,18 @@
+package @@package@@;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import org.gradle.api.Project;
+import org.gradle.testfixtures.ProjectBuilder;
+import org.junit.jupiter.api.Test;
+
+final class GreetingPluginTest {
+  @Test
+  void registersTheGreetTask() {
+    Project project = ProjectBuilder.builder().build();
+
+    project.getPluginManager().apply(GreetingPlugin.class);
+
+    assertNotNull(project.getTasks().findByName("greet"));
+  }
+}

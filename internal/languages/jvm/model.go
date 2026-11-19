@@ -4,11 +4,13 @@ import (
 	"math"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/xsyetopz/bedrock/internal/fsutil"
 	"github.com/xsyetopz/bedrock/internal/step"
 )
 
@@ -134,6 +136,27 @@ func ignoredDirectory(name string) bool {
 	return name == "build" || name == "target" || name == "node_modules" || strings.HasPrefix(name, ".")
 }
 
+// foreignSourceSet reports whether a directory named name inside directory is
+// a Scala or Groovy source set no bedrock plugin compiles. A module that
+// applies `bedrock.scala` compiles its Scala.
+func foreignSourceSet(root, name, directory string, parts []string) bool {
+	if (name != nameScala && name != "groovy") || len(parts) < 2 || parts[len(parts)-2] != "src" {
+		return false
+	}
+
+	if name == nameScala {
+		module := path.Dir(path.Dir(directory))
+		buildFile := filepath.Join(root, filepath.FromSlash(path.Join(module, fileBuildGradleKts)))
+
+		script, _, err := fsutil.ReadText(buildFile)
+		if err == nil && strings.Contains(script, `"bedrock.scala"`) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // foreignSources returns the Scala and Groovy source directories below
 // directory, which the bedrock plugins do not compile.
 func foreignSources(root, directory string) []string {
@@ -151,8 +174,7 @@ func foreignSources(root, directory string) []string {
 
 		child := path.Join(directory, entry.Name())
 
-		parts := strings.Split(directory, "/")
-		if (entry.Name() == "scala" || entry.Name() == "groovy") && len(parts) >= 2 && parts[len(parts)-2] == "src" {
+		if foreignSourceSet(root, entry.Name(), directory, strings.Split(directory, "/")) {
 			found = append(found, child)
 		}
 

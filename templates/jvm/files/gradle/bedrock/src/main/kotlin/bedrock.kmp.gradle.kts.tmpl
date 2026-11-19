@@ -1,21 +1,39 @@
-// Managed by bedrock: a Kotlin Multiplatform library for the JVM, Android 5 and up, and
-// iOS, with Java 8 bytecode on the JVM and Android.
+// Managed by bedrock: a Kotlin Multiplatform library for the JVM and the platforms in the
+// bedrock.platforms property of the module's gradle.properties, android and ios by default.
+// Android is Android 5 and up; the JVM and Android get Java 8 bytecode.
+@file:OptIn(ExperimentalWasmDsl::class)
+
 import bedrock.java8
+import bedrock.platforms
 import bedrock.strict
 import bedrock.version
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.targets.wasm.nodejs.WasmNodeJsEnvSpec
+import org.jetbrains.kotlin.gradle.targets.wasm.nodejs.WasmNodeJsPlugin
+import org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenEnvSpec
+import org.jetbrains.kotlin.gradle.targets.wasm.binaryen.BinaryenPlugin
 
 plugins {
   id("org.jetbrains.kotlin.multiplatform")
-  id("com.android.kotlin.multiplatform.library")
-  id("com.android.lint")
   id("com.diffplug.spotless")
 }
 
-// Lint runs on the toolchain the code compiles with: the Android and JVM targets each have a lint,
-// and on the Gradle daemon's JVM each fails whenever that is older.
-fun JavaToolchainSpec.lintToolchain() {
-  languageVersion = JavaLanguageVersion.of(version("jdk"))
-  vendor = JvmVendorSpec.GRAAL_VM
+val selected = platforms(setOf("android", "ios"))
+val nativeDesktop = !pluginManager.hasPlugin("org.jetbrains.compose")
+
+if ("android" in selected) apply(plugin = "bedrock.kmp-android")
+
+if ("wasm" in selected || "wasi" in selected) {
+  // The Kotlin plugin adds its Node.js and Binaryen download repositories to the project, which
+  // the settings' FAIL_ON_PROJECT_REPOS rejects; bedrock.settings declares them instead. Kotlin/Wasm
+  // applies both plugins to the project that has the wasm target.
+  // The root and the project each get a Node.js setup task.
+  for (target in setOf(rootProject, project)) {
+    target.plugins.withType<WasmNodeJsPlugin> {
+      target.the<WasmNodeJsEnvSpec>().downloadBaseUrl.set(null as String?)
+    }
+  }
+  plugins.withType<BinaryenPlugin> { the<BinaryenEnvSpec>().downloadBaseUrl.set(null as String?) }
 }
 
 kotlin {
@@ -29,32 +47,20 @@ kotlin {
   jvm {
     compilations.named("main") { compileTaskProvider.configure { compilerOptions { java8() } } }
   }
-  android {
-    namespace = "${project.group}.${project.name}".replace('-', '_')
-    compileSdk = version("android-compile-sdk").toInt()
-    minSdk = version("android-min-sdk").toInt()
-    compilerOptions { java8() }
-    withHostTest {}
-    lint { toolchain { lintToolchain() } }
+  if ("ios" in selected) {
+    iosArm64()
+    iosSimulatorArm64()
   }
-  iosArm64()
-  iosSimulatorArm64()
+  // Compose Multiplatform runs desktop on the JVM, not on native targets.
+  if (nativeDesktop) {
+    if ("macos" in selected) macosArm64()
+    if ("linux" in selected) linuxX64()
+    if ("windows" in selected) mingwX64()
+  }
+  // The wasm targets run their tests on Node.js, which Gradle downloads; no browser is needed.
+  if ("wasm" in selected) wasmJs { nodejs() }
+  if ("wasi" in selected) wasmWasi { nodejs() }
   sourceSets.commonTest.dependencies { implementation(kotlin("test")) }
-}
-
-lint {
-  toolchain { lintToolchain() }
-  warningsAsErrors = true
-  checkDependencies = true
-  // New releases would fail a build that did not change; Dependabot bumps the catalog instead.
-  // The AndroidX releases that still run on Android 5 ship lint checks this lint cannot load.
-  disable +=
-    setOf(
-      "GradleDependency",
-      "NewerVersionAvailable",
-      "AndroidGradlePluginVersion",
-      "ObsoleteLintCustomCheck",
-    )
 }
 
 tasks.withType<Test>().configureEach { useJUnitPlatform() }
