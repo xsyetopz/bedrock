@@ -1,0 +1,148 @@
+package jvm_test
+
+import (
+	"bytes"
+	"context"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/xsyetopz/bedrock/internal/bedrocktest"
+)
+
+// gradleTimeout bounds one real Gradle run, which downloads Gradle, a JDK,
+// and every plugin on a cold cache.
+const gradleTimeout = 20 * time.Minute
+
+func kinds() []string {
+	return []string{
+		"android", "cmp", "java-application", "java-library", "java-native",
+		"kmp", "kotlin-application", "kotlin-library", "kotlin-native",
+	}
+}
+
+// needsAndroid reports whether a kind builds against the Android SDK.
+func needsAndroid(kind string) bool {
+	return kind == "android" || kind == "cmp" || kind == "kmp"
+}
+
+func androidSDK() bool {
+	return os.Getenv("ANDROID_HOME") != "" || os.Getenv("ANDROID_SDK_ROOT") != ""
+}
+
+func TestInitedKindsPassTheGuard(t *testing.T) {
+	t.Parallel()
+
+	for _, kind := range kinds() {
+		t.Run(kind, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			root := bedrocktest.Repo(t, nil)
+			bedrocktest.Adopt(t, root, true, jvm(t, kind, ""))
+			bedrocktest.CommitAll(t, root)
+
+			// Act
+			found := guard(t, root)
+
+			// Assert
+			if len(found) != 0 {
+				t.Errorf("guard: %v", found)
+			}
+		})
+	}
+}
+
+// javaMajor returns the major version of the `java` on PATH, or 0 when it
+// does not report one.
+func javaMajor(t *testing.T) int {
+	t.Helper()
+
+	// `java -version` writes to stderr, which CombinedOutput includes.
+	output, err := exec.CommandContext(t.Context(), "java", "-version").CombinedOutput()
+	if err != nil {
+		return 0
+	}
+
+	match := regexp.MustCompile(`version "(?:1\.)?(\d+)`).FindSubmatch(output)
+	if match == nil {
+		return 0
+	}
+
+	major, _ := strconv.Atoi(string(match[1]))
+
+	return major
+}
+
+// toolchainMajor returns the JDK major version the generated daemon
+// properties require, or 0 when they name none.
+func toolchainMajor(t *testing.T, root string) int {
+	t.Helper()
+
+	match := regexp.MustCompile(`(?m)^toolchainVersion=(\d+)$`).FindStringSubmatch(
+		bedrocktest.Read(t, root, "gradle/gradle-daemon-jvm.properties"))
+	if match == nil {
+		return 0
+	}
+
+	major, _ := strconv.Atoi(match[1])
+
+	return major
+}
+
+// TestInitedKindsBuildWithGradle runs the kinds one after another, never in
+// parallel: concurrent builds contend for the shared Gradle cache and daemons.
+// Run it with its own budget, such as `-timeout 30m`.
+//
+//nolint:paralleltest // Gradle builds share one cache and must run in sequence.
+func TestInitedKindsBuildWithGradle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("a Gradle build is slow")
+	}
+
+	if _, err := exec.LookPath("java"); err != nil {
+		t.Skip("no JDK on PATH")
+	}
+
+	for _, kind := range kinds() {
+		t.Run(kind, func(t *testing.T) {
+			if needsAndroid(kind) && !androidSDK() {
+				t.Skip("no Android SDK: set ANDROID_HOME or ANDROID_SDK_ROOT")
+			}
+
+			// Arrange
+			root := bedrocktest.Repo(t, nil)
+			bedrocktest.Adopt(t, root, true, jvm(t, kind, ""))
+			bedrocktest.CommitAll(t, root)
+
+			if want, have := toolchainMajor(t, root), javaMajor(t); want != have {
+				t.Skipf("the build needs JDK %d and the `java` on PATH is %d", want, have)
+			}
+
+			ctx, cancel := context.WithTimeout(t.Context(), gradleTimeout)
+			defer cancel()
+
+			// Act
+			command := exec.CommandContext(ctx, filepath.Join(root, "gradlew"), "--console=plain",
+				"spotlessCheck", "bedrockCompile", "bedrockLint", "bedrockTest")
+			command.Dir = root
+
+			var output bytes.Buffer
+
+			command.Stdout = &output
+			command.Stderr = &output
+
+			err := command.Run()
+
+			// Assert
+			if err != nil || !strings.Contains(output.String(), "BUILD SUCCESSFUL") {
+				t.Errorf("gradle failed: %v\n%s", err, output.String())
+			}
+		})
+	}
+}

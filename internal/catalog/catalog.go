@@ -10,6 +10,7 @@ import (
 	"github.com/xsyetopz/bedrock/internal/languages/dotnet"
 	"github.com/xsyetopz/bedrock/internal/languages/golang"
 	"github.com/xsyetopz/bedrock/internal/languages/haxe"
+	"github.com/xsyetopz/bedrock/internal/languages/jvm"
 	"github.com/xsyetopz/bedrock/internal/languages/typescript"
 )
 
@@ -18,6 +19,7 @@ func Languages() []language.Language {
 	return []language.Language{
 		typescript.New(),
 		cpp.New(),
+		jvm.New(),
 		golang.New(),
 		haxe.New(),
 		dotnet.New(),
