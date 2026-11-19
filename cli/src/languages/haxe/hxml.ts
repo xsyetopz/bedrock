@@ -20,7 +20,7 @@ const TARGETS = new Set([
 	"hl",
 	"interp",
 	"run",
-	"x",
+	"x"
 ]);
 
 /** Flags after which a compilation runs something: the interpreter, or `--cmd`. */
@@ -57,7 +57,7 @@ const flagOf = (line: string): string | undefined =>
 export const readHxml = async (
 	root: string,
 	path: string,
-	seen: ReadonlySet<string> = new Set(),
+	seen: ReadonlySet<string> = new Set()
 ): Promise<Hxml> => {
 	const lines = hxmlLines((await readText(join(root, path))) ?? "");
 	const flags = lines.flatMap((line) => {
@@ -71,17 +71,16 @@ export const readHxml = async (
 				(line) =>
 					flagOf(line) === undefined &&
 					line.endsWith(".hxml") &&
-					!reading.has(line),
+					!reading.has(line)
 			)
-			.map((line) => readHxml(root, line, reading)),
+			.map((line) => readHxml(root, line, reading))
 	);
 	return {
 		target:
 			flags.some((flag) => TARGETS.has(flag)) ||
 			included.some((hxml) => hxml.target),
 		runs:
-			flags.some((flag) => RUNS.has(flag)) ||
-			included.some((hxml) => hxml.runs),
+			flags.some((flag) => RUNS.has(flag)) || included.some((hxml) => hxml.runs)
 	};
 };
 
@@ -111,7 +110,7 @@ export const hxmlBuilds = async (root: string): Promise<HxmlBuild[]> => {
 		paths.map(async (path) => {
 			const hxml = await readHxml(root, path);
 			return { path, target: hxml.target, runs: hxml.runs };
-		}),
+		})
 	);
 };
 

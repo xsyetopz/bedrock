@@ -26,7 +26,7 @@ const afterApply = async (context: Context): Promise<void> => {
 			cwd: context.root,
 			env,
 			stdout: "ignore",
-			stderr: "ignore",
+			stderr: "ignore"
 		});
 		await child.exited;
 	} catch {
@@ -48,7 +48,7 @@ export const jvm: Language = {
 		"build.sbt",
 		"build.xml",
 		"ivy.xml",
-		"gradlew",
+		"gradlew"
 	],
 	tools: {},
 	sources: [
@@ -57,7 +57,7 @@ export const jvm: Language = {
 		"**/*.kts",
 		"**/*.pro",
 		"gradle/**",
-		"gradle.properties",
+		"gradle.properties"
 	],
 	kinds: KINDS,
 	variables: (context) => {
@@ -65,7 +65,7 @@ export const jvm: Language = {
 			groupOf(context) ?? `com.example.${packageName(basename(context.root))}`;
 		return Promise.resolve({
 			package: group,
-			path: group.replaceAll(".", "/"),
+			path: group.replaceAll(".", "/")
 		});
 	},
 	plan: planJvm,
@@ -75,5 +75,5 @@ export const jvm: Language = {
 	// javac, kotlinc, Error Prone, and NullAway bound no sizes, so lizard covers files and functions.
 	lizard: ["java", "kotlin", "scala"],
 	testFiles: jvmTestFiles,
-	subcommands: { j2k },
+	subcommands: { j2k }
 };

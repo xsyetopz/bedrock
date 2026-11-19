@@ -7,9 +7,9 @@ const base = {
 		module: "Preserve",
 		strict: true,
 		target: "ESNext",
-		types: ["bun"],
+		types: ["bun"]
 	},
-	exclude: ["**/.build", "**/build", "**/coverage", "**/target"],
+	exclude: ["**/.build", "**/build", "**/coverage", "**/target"]
 };
 
 describe("migrateTsconfig", () => {
@@ -24,12 +24,12 @@ describe("migrateTsconfig", () => {
 					module: "commonjs",
 					strict: false,
 					jsx: "react-jsx",
-					types: ["node"],
+					types: ["node"]
 				},
 				include: ["src"],
-				exclude: ["fixtures", "**/dist"],
+				exclude: ["fixtures", "**/dist"]
 			},
-			base,
+			base
 		);
 		expect(tsconfig).toEqual({
 			$schema: "https://json.schemastore.org/tsconfig.json",
@@ -40,7 +40,7 @@ describe("migrateTsconfig", () => {
 				target: "ESNext",
 				paths: { "@site/*": ["./*"] },
 				jsx: "react-jsx",
-				types: ["node", "bun"],
+				types: ["node", "bun"]
 			},
 			include: ["src"],
 			exclude: [
@@ -49,8 +49,8 @@ describe("migrateTsconfig", () => {
 				"**/.build",
 				"**/build",
 				"**/coverage",
-				"**/target",
-			],
+				"**/target"
+			]
 		});
 		expect(notes).toHaveLength(5);
 	});
@@ -58,31 +58,31 @@ describe("migrateTsconfig", () => {
 	test("maps a lone baseUrl to a catch-all path", () => {
 		const { tsconfig } = migrateTsconfig(
 			{ compilerOptions: { baseUrl: "src" } },
-			base,
+			base
 		);
 		expect(tsconfig["extends"]).toBeUndefined();
 		expect(tsconfig["compilerOptions"]).toEqual({
 			...base.compilerOptions,
-			paths: { "*": ["./src/*"] },
+			paths: { "*": ["./src/*"] }
 		});
 	});
 
 	test("turns emit back on for projects that build with tsc", () => {
 		const { tsconfig } = migrateTsconfig(
 			{ compilerOptions: { outDir: "dist", declaration: true } },
-			base,
+			base
 		);
 		expect(tsconfig["compilerOptions"]).toMatchObject({
 			noEmit: false,
 			allowImportingTsExtensions: false,
-			outDir: "dist",
+			outDir: "dist"
 		});
 	});
 
 	test("drops the extends of the old typescript-bedrock base file", () => {
 		const { tsconfig, notes } = migrateTsconfig(
 			{ extends: "typescript-bedrock/tsconfig.base.json" },
-			base,
+			base
 		);
 		expect(tsconfig["extends"]).toBeUndefined();
 		expect(notes).toEqual([]);

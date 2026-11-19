@@ -13,7 +13,7 @@ import {
 	manifests,
 	moduleMoves,
 	type Moves,
-	rustFiles,
+	rustFiles
 } from "./project.ts";
 
 /** Files whose job a managed file took over. */
@@ -21,13 +21,13 @@ const REPLACED = [
 	".cargo/config",
 	".clippy.toml",
 	".rustfmt.toml",
-	"rust-toolchain",
+	"rust-toolchain"
 ];
 
 /** The toolchain file at the pinned channel; a wasm crate adds its target. */
 const toolchainPart = async (
 	context: Context,
-	kinds: readonly string[],
+	kinds: readonly string[]
 ): Promise<Part> => {
 	const template = await context.templates("parts").read("rust-toolchain.toml");
 	const current = await readText(join(context.root, "rust-toolchain.toml"));
@@ -37,23 +37,23 @@ const toolchainPart = async (
 			{
 				kind: "write",
 				path: "rust-toolchain.toml",
-				content: toolchainFile(template ?? "", current, targets),
-			},
+				content: toolchainFile(template ?? "", current, targets)
+			}
 		],
 		notes: [],
-		projectFiles: ["rust-toolchain.toml"],
+		projectFiles: ["rust-toolchain.toml"]
 	};
 };
 
 /** Integration tests that lack `#![cfg(test)]`, written with it. */
 const testsPart = async (
 	root: string,
-	found: readonly Manifest[],
+	found: readonly Manifest[]
 ): Promise<Part> => {
 	const dirs = new Set(found.map((manifest) => manifest.dir));
 	const listed = await rustFiles(root);
 	const tests = listed.filter(
-		(path) => isIntegrationTest(path) && dirs.has(dirname(dirname(path))),
+		(path) => isIntegrationTest(path) && dirs.has(dirname(dirname(path)))
 	);
 	const steps = await Promise.all(
 		tests.map(async (path): Promise<Step | undefined> => {
@@ -61,13 +61,13 @@ const testsPart = async (
 			return content === undefined
 				? undefined
 				: { kind: "write", path, content };
-		}),
+		})
 	);
 	const written = steps.filter((step) => step !== undefined);
 	return {
 		steps: written,
 		notes: [],
-		projectFiles: written.map((step) => step.path),
+		projectFiles: written.map((step) => step.path)
 	};
 };
 
@@ -81,14 +81,14 @@ const movesPart = ({ moves, kept }: Moves): Part => ({
 			? [{ kind: "move", path: move.to, from: move.from }]
 			: [
 					{ kind: "write", path: move.to, content: move.content },
-					{ kind: "remove", path: move.from },
-				],
+					{ kind: "remove", path: move.from }
+				]
 	),
 	notes: kept.map(
 		(path) =>
-			`${path}: not renamed, because a #[path] or include! in it cannot be rewritten safely; move it by hand.`,
+			`${path}: not renamed, because a #[path] or include! in it cannot be rewritten safely; move it by hand.`
 	),
-	projectFiles: moves.flatMap((move) => [move.from, move.to]),
+	projectFiles: moves.flatMap((move) => [move.from, move.to])
 });
 
 /** Removes the files whose job a managed file took over. */
@@ -99,16 +99,16 @@ const replacedPart = async (root: string): Promise<Part> => {
 		: {
 				steps: present.map((path): Step => ({ kind: "remove", path })),
 				notes: [
-					`Removed ${present.join(", ")}: the toolchain, clippy.toml, rustfmt.toml, and the justfile replace them. Their settings are not carried over; git still has them.`,
+					`Removed ${present.join(", ")}: the toolchain, clippy.toml, rustfmt.toml, and the justfile replace them. Their settings are not carried over; git still has them.`
 				],
-				projectFiles: [],
+				projectFiles: []
 			};
 };
 
 /** At init: the crates for each kind, and a README when there is none. */
 const initPart = async (
 	context: Context,
-	kinds: readonly string[],
+	kinds: readonly string[]
 ): Promise<Part> => {
 	if (!context.init) {
 		return EMPTY;
@@ -123,10 +123,10 @@ const initPart = async (
 			...crates.steps,
 			...(readme === undefined || !missing
 				? []
-				: [{ kind: "write" as const, path: "README.md", content: readme }]),
+				: [{ kind: "write" as const, path: "README.md", content: readme }])
 		],
 		notes: crates.notes,
-		projectFiles: [],
+		projectFiles: []
 	};
 };
 
@@ -142,7 +142,7 @@ export const planRust = async (context: Context): Promise<LanguagePlan> => {
 	const covered = legacy.dropXtask
 		? all.filter(
 				(manifest) =>
-					manifest.dir !== "xtask" && !manifest.dir.startsWith("xtask/"),
+					manifest.dir !== "xtask" && !manifest.dir.startsWith("xtask/")
 			)
 		: all;
 	const moves = await moduleMoves(context.root, covered);
@@ -154,7 +154,7 @@ export const planRust = async (context: Context): Promise<LanguagePlan> => {
 			Promise.resolve(movesPart(moves)),
 			replacedPart(context.root),
 			initPart(context, kinds),
-			Promise.resolve(legacy),
-		]),
+			Promise.resolve(legacy)
+		])
 	);
 };

@@ -10,7 +10,7 @@ import {
 	dotnetLint,
 	dotnetRestore,
 	dotnetTest,
-	dotnetTypecheck,
+	dotnetTypecheck
 } from "./commands.ts";
 import { guardDotnet } from "./guard.ts";
 import { dotnet } from "./index.ts";
@@ -82,7 +82,7 @@ public class GreetingTests
     [Fact]
     public void GreetsByName() => Assert.Equal("Hello, you", Greeting.Of("you"));
 }
-`,
+`
 };
 
 const selected = [{ language: dotnet, options: {} }];
@@ -92,7 +92,7 @@ const contextIn = (root: string): Context =>
 
 /** A repo with {@link SOURCES} and `overrides`, adopted, with the pinned tools restored. */
 const adopted = async (
-	overrides: Record<string, string> = {},
+	overrides: Record<string, string> = {}
 ): Promise<string> => {
 	const root = await tempRepo({ ...SOURCES, ...overrides });
 	const plan = await buildPlan(root, selected, { init: false });
@@ -123,7 +123,7 @@ test.skipIf(!hasDotnet)(
 		expect(guarded).toEqual([]);
 		expect(tested).toBe(0);
 	},
-	600_000,
+	600_000
 );
 
 test.skipIf(!hasDotnet)(
@@ -142,7 +142,7 @@ test.skipIf(!hasDotnet)(
 }
 `,
 			"src/Shout/Shout.fs":
-				"module Shout\n\n/// The text in upper case.\nlet Loud_Text (text:string) =   text.ToUpperInvariant()\n",
+				"module Shout\n\n/// The text in upper case.\nlet Loud_Text (text:string) =   text.ToUpperInvariant()\n"
 		});
 		const context = contextIn(root);
 
@@ -154,7 +154,7 @@ test.skipIf(!hasDotnet)(
 		expect(formatted).toBe(1);
 		expect(linted).toBe(1);
 	},
-	600_000,
+	600_000
 );
 
 /** The test project on xUnit v3, a Microsoft.Testing.Platform application. */
@@ -175,7 +175,7 @@ const XUNIT_V3 = `<Project Sdk="Microsoft.NET.Sdk">
 
 test.skipIf(!hasDotnet).each([
 	["Hello", 0],
-	["Hi", 1],
+	["Hi", 1]
 ])(
 	"xUnit v3 tests run on the testing platform adopt opts into: %s exits %p",
 	async (greeting, expected) => {
@@ -184,8 +184,8 @@ test.skipIf(!hasDotnet).each([
 			"tests/Greet.Tests/Greet.Tests.csproj": XUNIT_V3,
 			"src/Greet/Greeting.cs": SOURCES["src/Greet/Greeting.cs"].replace(
 				"Hello",
-				greeting,
-			),
+				greeting
+			)
 		});
 
 		// Act
@@ -194,7 +194,7 @@ test.skipIf(!hasDotnet).each([
 		// Assert
 		expect(tested).toBe(expected);
 	},
-	600_000,
+	600_000
 );
 
 test.skipIf(!hasDotnet)(
@@ -204,7 +204,7 @@ test.skipIf(!hasDotnet)(
 		const root = await adopted({
 			"tests/Greet.Tests/Greet.Tests.csproj": XUNIT_V3,
 			"tests/Greet.Tests/GreetingTests.cs":
-				"namespace Greet.Tests;\n\ninternal static class GreetingTests;\n",
+				"namespace Greet.Tests;\n\ninternal static class GreetingTests;\n"
 		});
 
 		// Act
@@ -213,7 +213,7 @@ test.skipIf(!hasDotnet)(
 		// Assert
 		expect(tested).toBe(0);
 	},
-	600_000,
+	600_000
 );
 
 test.skipIf(!hasDotnet)(
@@ -223,8 +223,8 @@ test.skipIf(!hasDotnet)(
 		const root = await adopted({
 			"src/Greet/Greeting.cs": SOURCES["src/Greet/Greeting.cs"].replace(
 				"Hello",
-				"Hi",
-			),
+				"Hi"
+			)
 		});
 
 		// Act
@@ -233,5 +233,5 @@ test.skipIf(!hasDotnet)(
 		// Assert
 		expect(tested).toBe(1);
 	},
-	600_000,
+	600_000
 );

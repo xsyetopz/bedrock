@@ -6,7 +6,7 @@ const INCLUDES = new Set(["include", "include_str", "include_bytes"]);
 /** The literal of an `include!("…")`-style call whose name is at `index`. */
 const includeLiteral = (
 	all: readonly Token[],
-	index: number,
+	index: number
 ): Token | undefined => {
 	const opens = ["(", "[", "{"].includes(all[index + 2]?.text ?? "");
 	const closes = [")", "]", "}"].includes(all[index + 4]?.text ?? "");
@@ -36,7 +36,7 @@ const relative = (literal: Token): string | null | undefined => {
 const pathLiteral = (
 	all: readonly Token[],
 	index: number,
-	depth: number,
+	depth: number
 ): { end: number; literal?: Token | undefined } | undefined => {
 	const open = index + (all[index + 1]?.text === "!" ? 2 : 1);
 	if (all[open]?.text !== "[") {
@@ -48,7 +48,7 @@ const pathLiteral = (
 	}
 	const inner = all.slice(open + 1, end);
 	const names = inner.some(
-		(part, at) => part.text === "path" && inner[at + 1]?.text === "=",
+		(part, at) => part.text === "path" && inner[at + 1]?.text === "="
 	);
 	if (!names || depth > 0) {
 		return { end };
@@ -65,7 +65,7 @@ const pathLiteral = (
 const literalAt = (
 	all: readonly Token[],
 	index: number,
-	depth: number,
+	depth: number
 ):
 	| { literal?: Token | undefined; next: number; include?: boolean }
 	| undefined => {
@@ -108,7 +108,7 @@ export interface Prefixes {
  */
 export const prefixPaths = (
 	source: string,
-	prefix: string | Prefixes,
+	prefix: string | Prefixes
 ): string | undefined => {
 	const { include, path } =
 		typeof prefix === "string" ? { include: prefix, path: prefix } : prefix;

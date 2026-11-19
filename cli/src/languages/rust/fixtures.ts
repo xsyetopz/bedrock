@@ -43,5 +43,5 @@ unsafe_code = "forbid"
 `,
 	"crates/a/src/lib.rs": "//! A.\n\npub mod foo;\n",
 	"crates/a/src/foo/mod.rs": "//! Foo.\n",
-	"crates/a/tests/it.rs": "#[test]\nfn it() {}\n",
+	"crates/a/tests/it.rs": "#[test]\nfn it() {}\n"
 };

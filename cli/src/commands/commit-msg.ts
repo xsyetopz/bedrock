@@ -8,7 +8,7 @@ const SCISSORS = "# ------------------------ >8 ------------------------";
 const TYPES = "build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test";
 const SUBJECT = new RegExp(
 	`^(?:${TYPES})(?:\\([a-z0-9_ :,./#-]+\\))?!?: .+$`,
-	"u",
+	"u"
 );
 const EXEMPT = /^(?:amend|fixup|squash)! /u;
 const MERGE = /^merge(?:[^a-z0-9_]|$)/u;
@@ -35,7 +35,7 @@ const keptLines = (text: string): string[] => {
 	}
 	const cut = raw.indexOf(SCISSORS);
 	const kept = (cut === -1 ? raw : raw.slice(0, cut)).filter(
-		(line) => !line.startsWith("#"),
+		(line) => !line.startsWith("#")
 	);
 	return kept.length > 0 ? kept : raw;
 };

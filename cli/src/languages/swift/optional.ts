@@ -13,11 +13,11 @@ const read = async (dir: string, path: string): Promise<string> =>
 export const manifestBlocks = async (cxx: boolean): Promise<Block[]> => {
 	const [strict, interop] = await Promise.all([
 		read("swift/manifest", "block.swift"),
-		cxx ? read("cpp/manifest", "block.swift") : "",
+		cxx ? read("cpp/manifest", "block.swift") : ""
 	]);
 	return [
 		{ name: "swift-bedrock", content: strict },
-		...(cxx ? [{ name: "swift-bedrock-cxx", content: interop }] : []),
+		...(cxx ? [{ name: "swift-bedrock-cxx", content: interop }] : [])
 	];
 };
 
@@ -27,11 +27,11 @@ const xcconfig = (text: string, cxx: boolean): string =>
 		? text
 				.replace(
 					"BEDROCK_CXX_FLAGS =\n",
-					"BEDROCK_CXX_FLAGS = $(BEDROCK_CXX_INTEROP)\n",
+					"BEDROCK_CXX_FLAGS = $(BEDROCK_CXX_INTEROP)\n"
 				)
 				.replace(
 					"COMPILATION_CACHE_ENABLE_CACHING = YES\n",
-					"COMPILATION_CACHE_ENABLE_CACHING = NO\n",
+					"COMPILATION_CACHE_ENABLE_CACHING = NO\n"
 				)
 		: text;
 
@@ -40,12 +40,12 @@ export const optionalSteps = async (
 	context: Context,
 	cxx: boolean,
 	hasXcode: boolean,
-	hasTests: boolean,
+	hasTests: boolean
 ): Promise<Step[]> => {
 	const optional = context.templates("optional");
 	const wanted: [string, boolean][] = [
 		["Config/Bedrock.xcconfig", hasXcode],
-		["Tests/.swiftlint.yml", hasTests],
+		["Tests/.swiftlint.yml", hasTests]
 	];
 	const steps = await Promise.all(
 		wanted.map(async ([path, on]): Promise<Step[]> => {
@@ -56,10 +56,10 @@ export const optionalSteps = async (
 						{
 							kind: "write",
 							path,
-							content: xcconfig(text, cxx && path.endsWith(".xcconfig")),
-						},
+							content: xcconfig(text, cxx && path.endsWith(".xcconfig"))
+						}
 					];
-		}),
+		})
 	);
 	return steps.flat();
 };
@@ -73,12 +73,12 @@ const cxxFiles = (root: string): Promise<string[]> =>
 /** A note to adopt with `--cxx` when C or C++ files exist but cpp is not adopted. */
 export const cxxNote = async (
 	root: string,
-	cxx: boolean,
+	cxx: boolean
 ): Promise<string[]> => {
 	const files = cxx ? [] : await cxxFiles(root);
 	return files.length > 0
 		? [
-				"C or C++ files found; adopt with --cxx to add the C++ setup (clang-format, clang-tidy, SwiftPM interop).",
+				"C or C++ files found; adopt with --cxx to add the C++ setup (clang-format, clang-tidy, SwiftPM interop)."
 			]
 		: [];
 };

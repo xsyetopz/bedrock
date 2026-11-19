@@ -15,20 +15,20 @@ const hasCargo = Bun.which("cargo") !== null;
 /** Runs a command in `root`, returning its exit code and output for diagnosis. */
 const run = async (
 	root: string,
-	command: readonly string[],
+	command: readonly string[]
 ): Promise<{ command: string; code: number; output: string }> => {
 	const result = await $`${command}`.cwd(root).nothrow().quiet();
 	return {
 		command: command.join(" "),
 		code: result.exitCode,
-		output: result.stdout.toString() + result.stderr.toString(),
+		output: result.stdout.toString() + result.stderr.toString()
 	};
 };
 
 const CHECKS = [
 	["cargo", "fmt", "--all", "--check"],
 	["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"],
-	["cargo", "test", "--workspace"],
+	["cargo", "test", "--workspace"]
 ] as const;
 
 for (const kind of KINDS) {
@@ -53,7 +53,7 @@ for (const kind of KINDS) {
 			expect(results.filter(({ code }) => code !== 0)).toEqual([]);
 			expect(findings).toEqual([]);
 		},
-		300_000,
+		300_000
 	);
 }
 
@@ -65,16 +65,16 @@ test.skipIf(!hasCargo)(
 		await adoptRust(root, true, { kind: "lib" });
 		// The crate's directory is the repo's name in lower case, so find it.
 		const [manifest = ""] = await Array.fromAsync(
-			new Glob("crates/*/Cargo.toml").scan({ cwd: root }),
+			new Glob("crates/*/Cargo.toml").scan({ cwd: root })
 		);
 		await Bun.write(
 			join(root, "crates/unused/Cargo.toml"),
-			'[package]\nname = "unused"\nversion = "0.1.0"\nedition = "2024"\npublish = false\n',
+			'[package]\nname = "unused"\nversion = "0.1.0"\nedition = "2024"\npublish = false\n'
 		);
 		await Bun.write(join(root, "crates/unused/src/lib.rs"), "");
 		await appendFile(
 			join(root, manifest),
-			'\n[dependencies]\nunused = { path = "../unused" }\n',
+			'\n[dependencies]\nunused = { path = "../unused" }\n'
 		);
 
 		// Act
@@ -84,5 +84,5 @@ test.skipIf(!hasCargo)(
 		expect(result.code).not.toBe(0);
 		expect(result.output).toContain("cargo::unused_dependencies");
 	},
-	300_000,
+	300_000
 );

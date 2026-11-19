@@ -25,7 +25,7 @@ const FORMATTER_CONFIGS = [
 	"prettier.config.cjs",
 	"prettier.config.js",
 	"prettier.config.mjs",
-	"prettier.config.ts",
+	"prettier.config.ts"
 ];
 /** Configs of tools Bun and bedrock replace. Core removes the hook managers and Makefile. */
 const REPLACED_CONFIGS = [
@@ -63,7 +63,7 @@ const REPLACED_CONFIGS = [
 	"vitest.config.js",
 	"vitest.config.mjs",
 	"vitest.config.mts",
-	"vitest.config.ts",
+	"vitest.config.ts"
 ];
 /** Other package managers' lockfiles; `bun install` migrates them into `bun.lock` first. */
 export const LOCKFILES = [
@@ -71,7 +71,7 @@ export const LOCKFILES = [
 	"npm-shrinkwrap.json",
 	"package-lock.json",
 	"pnpm-lock.yaml",
-	"yarn.lock",
+	"yarn.lock"
 ];
 /** The CI file of the old template, or one that runs another package manager. */
 const OLD_CI = ".github/workflows/ci.yml";
@@ -86,7 +86,7 @@ export const removalSteps = async (root: string): Promise<Step[]> => {
 	const ci = await readText(join(root, OLD_CI));
 	const paths = [
 		...(await existing(root, [...FORMATTER_CONFIGS, ...REPLACED_CONFIGS])),
-		...(ci !== undefined && OLD_CI_COMMAND.test(ci) ? [OLD_CI] : []),
+		...(ci !== undefined && OLD_CI_COMMAND.test(ci) ? [OLD_CI] : [])
 	];
 	return paths.map((path): Step => ({ kind: "remove", path }));
 };
@@ -98,7 +98,7 @@ export const lockfilesIn = (root: string): Promise<string[]> =>
 /** A package.json without the `typescript-bedrock` dependency, or undefined when it had none. */
 const withoutLegacy = (manifest: Json): Json | undefined => {
 	const holders = ["dependencies", "devDependencies"].filter(
-		(key) => LEGACY_PACKAGE in asRecord(manifest[key]),
+		(key) => LEGACY_PACKAGE in asRecord(manifest[key])
 	);
 	if (holders.length === 0) {
 		return undefined;
@@ -107,8 +107,8 @@ const withoutLegacy = (manifest: Json): Json | undefined => {
 	for (const key of holders) {
 		next[key] = Object.fromEntries(
 			Object.entries(asRecord(manifest[key])).filter(
-				([name]) => name !== LEGACY_PACKAGE,
-			),
+				([name]) => name !== LEGACY_PACKAGE
+			)
 		);
 	}
 	return next;
@@ -119,7 +119,7 @@ export const workspaceManifestSteps = async (root: string): Promise<Step[]> => {
 	const listed = await listSources(root, MANIFESTS);
 	const paths = listed.filter((path) => path !== "package.json");
 	const manifests = await Promise.all(
-		paths.map((path) => readJsonc(join(root, path))),
+		paths.map((path) => readJsonc(join(root, path)))
 	);
 	return paths.flatMap((path, index): Step[] => {
 		const next = withoutLegacy(asRecord(manifests[index]));
@@ -133,16 +133,16 @@ export const workspaceManifestSteps = async (root: string): Promise<Step[]> => {
 export const legacyMentions = async (root: string): Promise<string[]> => {
 	const paths = [
 		...(await listSources(root, WORKFLOWS)),
-		...(await existing(root, ["project.just"])),
+		...(await existing(root, ["project.just"]))
 	].filter((path) => !MANAGED.has(path));
 	const texts = await Promise.all(
-		paths.map((path) => readText(join(root, path))),
+		paths.map((path) => readText(join(root, path)))
 	);
 	return paths
 		.filter((_, index) => texts[index]?.includes(LEGACY_PACKAGE) === true)
 		.map(
 			(path) =>
-				`${path} still mentions ${LEGACY_PACKAGE}, which bedrock no longer installs. Run \`just typescript::guard\` and \`just lint\` instead.`,
+				`${path} still mentions ${LEGACY_PACKAGE}, which bedrock no longer installs. Run \`just typescript::guard\` and \`just lint\` instead.`
 		);
 };
 

@@ -4,7 +4,7 @@ import {
 	prefixWhile,
 	type Scalars,
 	scalars,
-	topLevel,
+	topLevel
 } from "./lexer.ts";
 
 const OPERATORS = new Set("+*/%<>=&|^~:,;");
@@ -55,7 +55,7 @@ export const splitArguments = (b: Scalars): string[] | undefined => {
 		b
 			.slice((cuts[index] ?? 0) + 1, cut)
 			.join("")
-			.trim(),
+			.trim()
 	);
 	if (parts.at(-1) === "") {
 		parts.pop();
@@ -85,7 +85,7 @@ export interface Arguments {
 
 export const parseArguments = (
 	parts: readonly string[],
-	rewrite: (text: string) => string,
+	rewrite: (text: string) => string
 ): Arguments => {
 	const positional: string[] = [];
 	let accuracy: string | undefined;

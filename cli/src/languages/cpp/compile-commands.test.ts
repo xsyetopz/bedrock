@@ -6,15 +6,15 @@ import { asArray, asRecord, asString, asStrings } from "../swift/json.ts";
 import { compileCommands, swiftEntries } from "./compile-commands.ts";
 
 const INFO = {
-	paths: { runtimeResourcePath: "/tc/usr/lib/swift" },
+	paths: { runtimeResourcePath: "/tc/usr/lib/swift" }
 };
 
 const describeOf = (sources: string[]) => ({
 	cxx_language_standard: "c++20",
 	targets: [
 		{ module_type: "ClangTarget", path: "Sources/Lib", sources },
-		{ module_type: "SwiftTarget", path: "Sources/App", sources: ["a.swift"] },
-	],
+		{ module_type: "SwiftTarget", path: "Sources/App", sources: ["a.swift"] }
+	]
 });
 
 describe("swiftEntries", () => {
@@ -22,12 +22,12 @@ describe("swiftEntries", () => {
 		["a.c", "clang", "-std=c17"],
 		["a.m", "clang", "-fobjc-arc"],
 		["a.mm", "clang++", "-std=c++20"],
-		["a.cpp", "clang++", "-std=c++20"],
+		["a.cpp", "clang++", "-std=c++20"]
 	])("compiles %s with %s %s", (source, compiler, flag) => {
 		const [entry] = swiftEntries("/r", {
 			describe: describeOf([source]),
 			info: INFO,
-			sdk: "/sdk",
+			sdk: "/sdk"
 		});
 
 		expect(entry?.arguments[0]).toBe(compiler);
@@ -40,7 +40,7 @@ describe("swiftEntries", () => {
 		const [entry] = swiftEntries("/r", {
 			describe: describeOf(["a.cpp"]),
 			info: INFO,
-			sdk: "/sdk",
+			sdk: "/sdk"
 		});
 
 		expect(entry?.arguments).toEqual([
@@ -54,7 +54,7 @@ describe("swiftEntries", () => {
 			"-I",
 			"/r/Sources/Lib/include",
 			"-c",
-			"/r/Sources/Lib/a.cpp",
+			"/r/Sources/Lib/a.cpp"
 		]);
 	});
 
@@ -62,7 +62,7 @@ describe("swiftEntries", () => {
 		const [entry] = swiftEntries("/r", {
 			describe: { ...describeOf(["a.cpp"]), cxx_language_standard: "gnu++17" },
 			info: INFO,
-			sdk: "",
+			sdk: ""
 		});
 
 		expect(entry?.arguments).not.toContain("-isysroot");
@@ -73,7 +73,7 @@ describe("swiftEntries", () => {
 		const entries = swiftEntries("/r", {
 			describe: describeOf([]),
 			info: INFO,
-			sdk: "",
+			sdk: ""
 		});
 
 		expect(entries).toEqual([]);
@@ -93,12 +93,12 @@ test.skipIf(Bun.which("swift") === null)(
 
 		// Assert
 		const entries = asArray(
-			JSON.parse(await Bun.file(`${root}/compile_commands.json`).text()),
+			JSON.parse(await Bun.file(`${root}/compile_commands.json`).text())
 		).map((entry) => asRecord(entry));
 		expect(status).toBe(0);
 		expect(entries).toHaveLength(1);
 		expect(asString(entries[0]?.["file"])).toEndWith("Cxx.cpp");
 		expect(asStrings(entries[0]?.["arguments"])[0]).toBe("clang++");
 	},
-	120_000,
+	120_000
 );

@@ -85,34 +85,32 @@ export const xmakeEntries = async (root: string): Promise<unknown[]> =>
 					join(root, project),
 					"-k",
 					"compile_commands",
-					output,
+					output
 				],
-				root,
+				root
 			);
 			if (result.code !== 0) {
 				throw new Error(
-					`xmake project of ${project || "."} failed: ${firstLine(result.stderr)}`,
+					`xmake project of ${project || "."} failed: ${firstLine(result.stderr)}`
 				);
 			}
 			return asArray(
-				JSON.parse(
-					await Bun.file(join(output, "compile_commands.json")).text(),
-				),
+				JSON.parse(await Bun.file(join(output, "compile_commands.json")).text())
 			);
-		}),
+		})
 	);
 
 /** The targets of the xmake project `project`, or none when xmake cannot load it. */
 export const xmakeTargets = (
 	root: string,
-	project: string,
+	project: string
 ): Promise<Target[]> =>
 	inTemp(async (dir) => {
 		const script = join(dir, "targets.lua");
 		await Bun.write(script, TARGETS_SCRIPT);
 		const result = await run(
 			["xmake", "lua", "-P", join(root, project), script],
-			root,
+			root
 		);
 		if (result.code !== 0) {
 			return [];
@@ -130,7 +128,7 @@ export const xmakeTargets = (
 				}),
 				deps: asStrings(target["deps"]),
 				test: target["test"] === true,
-				installed: target["installed"] === true,
+				installed: target["installed"] === true
 			};
 		});
 	});

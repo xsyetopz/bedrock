@@ -17,7 +17,7 @@ const workflowNote = async (root: string): Promise<string[]> => {
 		return [];
 	}
 	return [
-		`${WORKFLOW}: replaced with bedrock's; git has yours. Move the steps it still needs into .github/actions/project-setup/action.yml and the recipes it ran into project.just.`,
+		`${WORKFLOW}: replaced with bedrock's; git has yours. Move the steps it still needs into .github/actions/project-setup/action.yml and the recipes it ran into project.just.`
 	];
 };
 
@@ -28,7 +28,7 @@ const testNotes = async (root: string): Promise<string[]> => {
 		.filter((build) => isTestHxml(build.path) && !build.runs)
 		.map(
 			(build) =>
-				`${build.path}: names no --interp, --run, or --cmd, so just haxe::test does not run it; a project-test recipe in project.just runs it on its target.`,
+				`${build.path}: names no --interp, --run, or --cmd, so just haxe::test does not run it; a project-test recipe in project.just runs it on its target.`
 		);
 };
 
@@ -37,7 +37,7 @@ export const planHaxe = async (context: Context): Promise<LanguagePlan> => ({
 	steps: [],
 	notes: [
 		...(await workflowNote(context.root)),
-		...(await testNotes(context.root)),
+		...(await testNotes(context.root))
 	],
-	projectFiles: [],
+	projectFiles: []
 });

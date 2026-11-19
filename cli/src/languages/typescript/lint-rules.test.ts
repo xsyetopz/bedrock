@@ -10,7 +10,7 @@ import { asRecord, readJsonc } from "./json.ts";
 
 const oxlint = join(
 	dirname(fileURLToPath(import.meta.resolve("oxlint/package.json"))),
-	"bin/oxlint",
+	"bin/oxlint"
 );
 
 /** What oxlint prints for `source` at `path`, under the config adopt writes. */
@@ -22,8 +22,8 @@ const reported = async (path: string, source: string): Promise<string> => {
 		join(root, ".oxlintrc.json"),
 		JSON.stringify({
 			...config,
-			options: { ...asRecord(config["options"]), typeAware: false },
-		}),
+			options: { ...asRecord(config["options"]), typeAware: false }
+		})
 	);
 	await Bun.write(join(root, path), source);
 	const result = await $`bun ${oxlint} -c .oxlintrc.json ${path}`
@@ -37,7 +37,7 @@ const HOOK = "declare const hook: { catch(handler: unknown): void };\n";
 const IMPORTS = Array.from(
 	{ length: 40 },
 	(_, index) =>
-		`import { hook${index} } from "./hook-${index}.ts";\nhook${index}();\n`,
+		`import { hook${index} } from "./hook-${index}.ts";\nhook${index}();\n`
 ).join("");
 
 describe("unicorn/catch-error-name", () => {

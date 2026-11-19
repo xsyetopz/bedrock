@@ -18,7 +18,7 @@ test("finds test modules behind attributes and visibility", () => {
 	// Assert
 	expect(summary(source)).toEqual([
 		["tests", true],
-		["util", false],
+		["util", false]
 	]);
 	expect(found[0]?.line).toBe(3);
 });
@@ -32,7 +32,7 @@ test("reads compound cfg predicates", () => {
 		["#[cfg(any(test, all(test, unix)))] mod d;", true],
 		['#[cfg(test = "x")] mod e;', false],
 		['#[cfg(feature = "test")] mod f;', false],
-		["#[cfg( test )] unsafe mod g;", true],
+		["#[cfg( test )] unsafe mod g;", true]
 	];
 
 	// Act
@@ -48,7 +48,7 @@ test("comments, strings, and raw strings declare nothing", () => {
 		"// #[cfg(test)] mod x;",
 		"/* #[cfg(test)] mod z; */",
 		'const S: &str = "#[cfg(test)] mod y;";',
-		'const R: &str = r#"#[cfg(test)] mod w;"#;',
+		'const R: &str = r#"#[cfg(test)] mod w;"#;'
 	].join("\n");
 
 	// Act
@@ -88,14 +88,14 @@ const declaration: Module = {
 	testOnly: true,
 	start: 0,
 	body: undefined,
-	depth: 0,
+	depth: 0
 };
 
 test("finds the child file for both module layouts", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"src/parser/tests.rs": "",
-		"src/tests.rs": "",
+		"src/tests.rs": ""
 	});
 
 	// Act
@@ -113,21 +113,21 @@ test("a file in a target directory of a package owns its directory", async () =>
 		"Cargo.toml": '[package]\nname = "a"\n',
 		"src/bin/x.rs": "",
 		"tests/it.rs": "",
-		"src/tests/y.rs": "",
+		"src/tests/y.rs": ""
 	});
 
 	// Act
 	const directories = await Promise.all(
 		["src/bin/x.rs", "tests/it.rs", "src/tests/y.rs"].map((path) =>
-			moduleDirectory(join(root, path)),
-		),
+			moduleDirectory(join(root, path))
+		)
 	);
 
 	// Assert
 	expect(directories).toEqual([
 		join(root, "src/bin"),
 		join(root, "tests"),
-		join(root, "src/tests/y"),
+		join(root, "src/tests/y")
 	]);
 });
 
@@ -138,7 +138,7 @@ test("a path attribute names a file beside the declaring file", async () => {
 	// Act
 	const found = await childFile(join(root, "src/lib.rs"), {
 		...declaration,
-		path: "checks.rs",
+		path: "checks.rs"
 	});
 
 	// Assert

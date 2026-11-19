@@ -22,7 +22,7 @@ export const statement = (code: string): string => {
 /** Converts members of an XCTestCase and returns the converted class body. */
 export const members = (code: string) => {
 	const result = converted(
-		`import XCTest\nfinal class T: XCTestCase {\n${code}\n}\n`,
+		`import XCTest\nfinal class T: XCTestCase {\n${code}\n}\n`
 	);
 	const prefix = "import Testing\nfinal class T {\n";
 	expect(result.text.startsWith(prefix)).toBe(true);

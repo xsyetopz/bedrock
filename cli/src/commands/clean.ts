@@ -24,8 +24,8 @@ export const findBackups = async (root: string): Promise<string[]> => {
 			cwd: root,
 			dot: true,
 			onlyFiles: true,
-			followSymlinks: false,
-		}),
+			followSymlinks: false
+		})
 	);
 	return found.filter((path) => !SKIPPED.test(path)).toSorted();
 };
@@ -39,7 +39,7 @@ export interface Cleanup {
 /** Deletes each backup git can restore, and each other one when `force` is set. */
 export const removeBackups = async (
 	root: string,
-	force: boolean,
+	force: boolean
 ): Promise<Cleanup> => {
 	const backups = await findBackups(root);
 	const held = (await isRepository(root))
@@ -47,7 +47,7 @@ export const removeBackups = async (
 		: new Set<string>();
 	const removed = backups.filter((path) => force || held.has(path));
 	await Promise.all(
-		removed.map((path) => rm(join(root, path), { force: true })),
+		removed.map((path) => rm(join(root, path), { force: true }))
 	);
 	return { removed, kept: backups.filter((path) => !removed.includes(path)) };
 };
@@ -59,7 +59,7 @@ export const reportCleanup = ({ removed, kept }: Cleanup): void => {
 	}
 	for (const path of kept) {
 		console.info(
-			`  keep    ${path}: git does not hold this content. Review it, then run \`bedrock clean --force\`.`,
+			`  keep    ${path}: git does not hold this content. Review it, then run \`bedrock clean --force\`.`
 		);
 	}
 };
@@ -71,8 +71,8 @@ export const clean = async (args: readonly string[]): Promise<number> => {
 		allowPositionals: true,
 		options: {
 			force: { type: "boolean", default: false },
-			help: { type: "boolean", short: "h", default: false },
-		},
+			help: { type: "boolean", short: "h", default: false }
+		}
 	});
 	if (values.help) {
 		console.info(USAGE);

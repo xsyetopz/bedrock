@@ -60,7 +60,7 @@ export const newModule = (directory: string): Module => ({
 	directory,
 	kotlin: false,
 	kept: false,
-	dependencies: [],
+	dependencies: []
 });
 
 /** An empty migration for `tool`. */
@@ -68,7 +68,7 @@ export const newMigration = (tool: string): Migration => ({
 	tool,
 	modules: [],
 	steps: [],
-	notes: new Set(),
+	notes: new Set()
 });
 
 /** The Gradle path, such as `:core`, for a module below the root. */
@@ -79,12 +79,12 @@ export const gradlePath = (directory: string): string =>
 export const javaLevelNote = (
 	file: string,
 	level: string | undefined,
-	notes: Set<string>,
+	notes: Set<string>
 ): void => {
 	const number = Math.trunc(Number(level?.replace(/^1\./u, "") ?? ""));
 	if (number > 8) {
 		notes.add(
-			`${file}: compiled for Java ${number}; bedrock compiles main code to Java 8, so the compilers reject newer APIs and syntax`,
+			`${file}: compiled for Java ${number}; bedrock compiles main code to Java 8, so the compilers reject newer APIs and syntax`
 		);
 	}
 };
@@ -93,10 +93,10 @@ const IGNORED_DIRECTORIES = new Set(["build", "target", "node_modules"]);
 
 const foreignIn = async (
 	root: string,
-	directory: string,
+	directory: string
 ): Promise<string[]> => {
 	const entries = await readdir(join(root, directory), {
-		withFileTypes: true,
+		withFileTypes: true
 	}).catch(() => []);
 	const found = await Promise.all(
 		entries
@@ -104,7 +104,7 @@ const foreignIn = async (
 				(entry) =>
 					entry.isDirectory() &&
 					!IGNORED_DIRECTORIES.has(entry.name) &&
-					!entry.name.startsWith("."),
+					!entry.name.startsWith(".")
 			)
 			.map(async (entry) => {
 				const path =
@@ -117,7 +117,7 @@ const foreignIn = async (
 				const nested = await foreignIn(root, path);
 				nested.unshift(...own);
 				return nested;
-			}),
+			})
 	);
 	return found.flat();
 };

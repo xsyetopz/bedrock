@@ -47,7 +47,7 @@ describe("adopt", () => {
 		const project = await Bun.file(join(root, "src/App/App.csproj")).text();
 		expect(project).toContain("<TargetFramework>net10.0</TargetFramework>");
 		expect(plan.notes.join("\n")).toContain(
-			"src/App/App.csproj: LangVersion 12",
+			"src/App/App.csproj: LangVersion 12"
 		);
 	});
 
@@ -73,23 +73,23 @@ describe("adopt", () => {
 				csharpier: {
 					version: "1.4.0",
 					commands: ["csharpier"],
-					rollForward: false,
+					rollForward: false
 				},
 				fantomas: {
 					version: "8.1.3",
 					commands: ["fantomas"],
-					rollForward: false,
+					rollForward: false
 				},
 				"dotnet-fsharplint": {
 					version: "0.27.2",
 					commands: ["dotnet-fsharplint"],
-					rollForward: false,
-				},
-			},
+					rollForward: false
+				}
+			}
 		};
 		const root = await tempRepo({
 			"src/App/App.fsproj": '<Project Sdk="Microsoft.NET.Sdk" />\n',
-			"dotnet-tools.json": `${JSON.stringify(manifest, undefined, 2)}\n`,
+			"dotnet-tools.json": `${JSON.stringify(manifest, undefined, 2)}\n`
 		});
 
 		// Act
@@ -106,7 +106,7 @@ describe("adopt", () => {
 		const root = await tempRepo({
 			"src/App/App.csproj": CSPROJ,
 			"Directory.Build.props":
-				"<Project>\n  <PropertyGroup>\n    <Nullable>enable</Nullable>\n  </PropertyGroup>\n</Project>\n",
+				"<Project>\n  <PropertyGroup>\n    <Nullable>enable</Nullable>\n  </PropertyGroup>\n</Project>\n"
 		});
 
 		// Act
@@ -116,7 +116,7 @@ describe("adopt", () => {
 		const paths = plan.steps.map((step) => step.path);
 		expect(paths).not.toContain("Directory.Build.props");
 		expect(plan.notes.join("\n")).toContain(
-			"Directory.Build.props: kept as yours; bedrock's starter also sets <AnalysisLevel>",
+			"Directory.Build.props: kept as yours; bedrock's starter also sets <AnalysisLevel>"
 		);
 	});
 
@@ -124,7 +124,7 @@ describe("adopt", () => {
 		// Arrange
 		const root = await tempRepo({
 			"src/App/App.csproj": CSPROJ,
-			".github/workflows/dotnet.yml": "name: .NET\n",
+			".github/workflows/dotnet.yml": "name: .NET\n"
 		});
 
 		// Act
@@ -134,7 +134,7 @@ describe("adopt", () => {
 
 		// Assert
 		expect(first.notes.join("\n")).toContain(
-			".github/workflows/dotnet.yml: replaced with bedrock's",
+			".github/workflows/dotnet.yml: replaced with bedrock's"
 		);
 		expect(again.notes.join("\n")).not.toContain("dotnet.yml");
 	});
@@ -144,7 +144,7 @@ describe("adopt", () => {
 		const root = await tempRepo({
 			"src/App/App.csproj": CSPROJ,
 			".github/workflows/ci.yml":
-				"jobs:\n  build:\n    steps:\n      - run: dotnet test\n",
+				"jobs:\n  build:\n    steps:\n      - run: dotnet test\n"
 		});
 
 		// Act
@@ -152,7 +152,7 @@ describe("adopt", () => {
 
 		// Assert
 		expect(plan.notes.join("\n")).toContain(
-			".github/workflows/ci.yml: sets up .NET or runs dotnet",
+			".github/workflows/ci.yml: sets up .NET or runs dotnet"
 		);
 	});
 
@@ -162,7 +162,7 @@ describe("adopt", () => {
 			"tests/A/A.csproj":
 				'<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><PackageReference Include="xunit.v3" /></ItemGroup></Project>\n',
 			"tests/B/B.csproj":
-				'<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><PackageReference Include="TUnit" /></ItemGroup></Project>\n',
+				'<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><PackageReference Include="TUnit" /></ItemGroup></Project>\n'
 		});
 
 		// Act
@@ -173,7 +173,7 @@ describe("adopt", () => {
 		// Assert
 		const json: unknown = await Bun.file(join(root, "global.json")).json();
 		expect(json).toMatchObject({
-			test: { runner: "Microsoft.Testing.Platform" },
+			test: { runner: "Microsoft.Testing.Platform" }
 		});
 		expect(again.steps).toEqual([]);
 	});
@@ -184,7 +184,7 @@ describe("adopt", () => {
 			"tests/A/A.csproj":
 				'<Project Sdk="MSTest.Sdk/4.5.3"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>\n',
 			"tests/B/B.csproj":
-				'<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><PackageReference Include="Microsoft.NET.Test.Sdk" /></ItemGroup></Project>\n',
+				'<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><PackageReference Include="Microsoft.NET.Test.Sdk" /></ItemGroup></Project>\n'
 		});
 
 		// Act
@@ -193,10 +193,10 @@ describe("adopt", () => {
 		// Assert
 		const globalJson = plan.steps.find((step) => step.path === "global.json");
 		expect(
-			String(globalJson?.kind === "write" && globalJson.content),
+			String(globalJson?.kind === "write" && globalJson.content)
 		).not.toContain("Microsoft.Testing.Platform");
 		expect(plan.notes.join("\n")).toContain(
-			"global.json: tests/A/A.csproj run on Microsoft.Testing.Platform and tests/B/B.csproj on VSTest",
+			"global.json: tests/A/A.csproj run on Microsoft.Testing.Platform and tests/B/B.csproj on VSTest"
 		);
 	});
 
@@ -204,11 +204,11 @@ describe("adopt", () => {
 		// Arrange
 		const root = await tempRepo({
 			"package.json": '{ "name": "app" }\n',
-			"src/App/App.csproj": CSPROJ,
+			"src/App/App.csproj": CSPROJ
 		});
 		const both = [
 			{ language: typescript, options: {} },
-			{ language: dotnet, options: {} },
+			{ language: dotnet, options: {} }
 		];
 
 		// Act

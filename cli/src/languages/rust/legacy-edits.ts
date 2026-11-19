@@ -7,7 +7,7 @@ import {
 	renderSections,
 	tidy,
 	upsertSection,
-	withUnits,
+	withUnits
 } from "./toml.ts";
 
 const isAlias = (unit: string): boolean => {
@@ -26,12 +26,12 @@ export const withoutBedrockAlias = (text: string): string => {
 	const stripped = sections.map((section) =>
 		withUnits(
 			section,
-			section.units.filter((unit) => !isAlias(unit)),
-		),
+			section.units.filter((unit) => !isAlias(unit))
+		)
 	);
 	// An alias table that held only the bedrock alias goes with it.
 	const kept = stripped.filter(
-		(section) => section.name !== "alias" || !hasNoEntries(section),
+		(section) => section.name !== "alias" || !hasNoEntries(section)
 	);
 	return renderSections(tidy(kept));
 };
@@ -49,7 +49,7 @@ export const withoutBedrockGit = (text: string): string => {
 	const listed = at(parseToml(unit), "allow-git");
 	const urls = Array.isArray(listed) ? listed : [];
 	const rest = urls.filter(
-		(url) => !(typeof url === "string" && BEDROCK_GIT.test(url)),
+		(url) => !(typeof url === "string" && BEDROCK_GIT.test(url))
 	);
 	if (rest.length === urls.length) {
 		return text;
@@ -63,7 +63,7 @@ export const withoutBedrockGit = (text: string): string => {
 		rest.length === 0 ? [] : [`allow-git = ${JSON.stringify(rest)}\n`];
 	const edited = {
 		...sources,
-		units: [...before, ...replacement, ...sources.units.slice(index + 1)],
+		units: [...before, ...replacement, ...sources.units.slice(index + 1)]
 	};
 	return renderSections(tidy(upsertSection(sections, edited)));
 };
@@ -93,7 +93,7 @@ export const withoutXtaskMember = (text: string): string => {
 	}
 	const fixed = withoutMember(unit);
 	const units = workspace.units.map((entry) =>
-		entry === unit ? fixed : entry,
+		entry === unit ? fixed : entry
 	);
 	return renderSections(upsertSection(sections, { ...workspace, units }));
 };

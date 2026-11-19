@@ -22,11 +22,11 @@ interface Repo {
 /** A repo with the managed typescript.just and a fake bun on PATH. */
 const lintRepo = async (): Promise<Repo> => {
 	const recipes = await templateDir("typescript/files").read(
-		".just/typescript.just",
+		".just/typescript.just"
 	);
 	const root = await tempRepo({
 		".just/typescript.just": recipes ?? "",
-		"bin/bun": FAKE_BUN,
+		"bin/bun": FAKE_BUN
 	});
 	await chmod(join(root, "bin/bun"), 0o755);
 	return { root, lock: join(root, "lint.lock"), log: join(root, "lint.log") };
@@ -41,10 +41,10 @@ const lint = (repo: Repo, run: string, fail = false) =>
 			BEDROCK_LINT_LOCK: repo.lock,
 			LOG: repo.log,
 			RUN: run,
-			FAKE_EXIT: fail ? "1" : "0",
+			FAKE_EXIT: fail ? "1" : "0"
 		},
 		stderr: "pipe",
-		stdout: "ignore",
+		stdout: "ignore"
 	});
 
 /** Waits until the file at `path` exists. */
@@ -78,7 +78,7 @@ describe.skipIf(Bun.which("just") === null)("the lint lock", () => {
 			"start a",
 			"end a",
 			"start b",
-			"end b",
+			"end b"
 		]);
 	}, 15_000);
 

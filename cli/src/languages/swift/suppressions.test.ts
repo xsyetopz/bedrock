@@ -35,9 +35,9 @@ describe("suppressions", () => {
 		"accepts swiftlint:disable:%s",
 		(scope) => {
 			expect(
-				suppressions(`let a = 1 // swiftlint:disable:${scope} x\n`),
+				suppressions(`let a = 1 // swiftlint:disable:${scope} x\n`)
 			).toEqual([]);
-		},
+		}
 	);
 
 	test("ignores the text in a string", () => {
@@ -50,7 +50,7 @@ describe("isUITest", () => {
 		["AppUITests/Login.swift", true],
 		["Tests/AppUITest/Login.swift", true],
 		["Tests/AppTests/Login.swift", false],
-		["UITests.swift", false],
+		["UITests.swift", false]
 	])("%s is %s", (path, expected) => {
 		expect(isUITest(path)).toBe(expected);
 	});
@@ -62,7 +62,7 @@ describe("importsXCTest", () => {
 		"  import XCTest // comment",
 		"@testable import XCTest",
 		"@preconcurrency import XCTest",
-		"import struct XCTest",
+		"import struct XCTest"
 	])("matches %s", (line) => {
 		expect(importsXCTest(`${line}\n`)).toBe(true);
 	});
@@ -71,6 +71,6 @@ describe("importsXCTest", () => {
 		"does not match %s",
 		(line) => {
 			expect(importsXCTest(`${line}\n`)).toBe(false);
-		},
+		}
 	);
 });

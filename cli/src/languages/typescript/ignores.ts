@@ -21,7 +21,7 @@ const globsOf = (pattern: string): string[] => {
  */
 export const isIgnored = (
 	path: string,
-	patterns: readonly string[],
+	patterns: readonly string[]
 ): boolean => {
 	let ignored = false;
 	for (const entry of patterns) {
@@ -40,19 +40,19 @@ export const isIgnored = (
 /** The `ignorePatterns` of the repo's `.oxlintrc.json`. */
 export const readOxlintIgnores = async (root: string): Promise<string[]> =>
 	asStrings(
-		asRecord(await readJsonc(join(root, ".oxlintrc.json")))["ignorePatterns"],
+		asRecord(await readJsonc(join(root, ".oxlintrc.json")))["ignorePatterns"]
 	);
 
 /** The `[test] pathIgnorePatterns` of the repo's `bunfig.toml`: the paths `bun test` skips. */
 export const readBunfigTestIgnores = async (
-	root: string,
+	root: string
 ): Promise<string[]> => {
 	const file = Bun.file(join(root, "bunfig.toml"));
 	if (!(await file.exists())) {
 		return [];
 	}
 	const patterns = asRecord(
-		asRecord(Bun.TOML.parse(await file.text()))["test"],
+		asRecord(Bun.TOML.parse(await file.text()))["test"]
 	)["pathIgnorePatterns"];
 	return typeof patterns === "string" ? [patterns] : asStrings(patterns);
 };
@@ -61,7 +61,7 @@ export const readBunfigTestIgnores = async (
 export const listSources = async (
 	root: string,
 	glob: Glob,
-	ignore: readonly string[] = [],
+	ignore: readonly string[] = []
 ): Promise<string[]> => {
 	const files = await listFiles(root, glob);
 	return files.filter((path) => !isIgnored(path, ignore));

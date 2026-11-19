@@ -7,12 +7,12 @@ import {
 	memberManifest,
 	readManaged,
 	rootManifest,
-	toolchainFile,
+	toolchainFile
 } from "./manifests.ts";
 
 const PARTS = templateDir("rust/parts");
 const managed: Managed = readManaged(
-	(await PARTS.read("workspace.toml")) ?? "",
+	(await PARTS.read("workspace.toml")) ?? ""
 );
 
 test("a member with its own lints points at the workspace lints", () => {
@@ -65,7 +65,7 @@ test("a member without lints gains them", () => {
 
 	// Assert
 	expect(result).toBe(
-		'[package]\nname = "a"\nedition = "2024"\n\n[lints]\nworkspace = true\n',
+		'[package]\nname = "a"\nedition = "2024"\n\n[lints]\nworkspace = true\n'
 	);
 });
 
@@ -84,7 +84,7 @@ cargo-husky = { version = "1", features = ["user-hooks"] }
 
 	// Assert
 	expect(result).toBe(
-		'[package]\nname = "a"\nedition = "2024"\n\n[lints]\nworkspace = true\n',
+		'[package]\nname = "a"\nedition = "2024"\n\n[lints]\nworkspace = true\n'
 	);
 });
 
@@ -110,7 +110,7 @@ test("a virtual workspace gains the resolver, the managed lints, and the release
 	// Assert
 	expect(parsed).toMatchObject({
 		workspace: { resolver: "3", members: ["crates/*"] },
-		profile: { release: { lto: "thin", panic: "abort" } },
+		profile: { release: { lto: "thin", panic: "abort" } }
 	});
 	expect(result).toContain("[workspace.lints.clippy]");
 });
@@ -137,7 +137,7 @@ test("release profile keys the repo already sets keep their values", () => {
 
 	// Assert
 	expect(Bun.TOML.parse(once)).toMatchObject({
-		profile: { release: { panic: "unwind", lto: "fat" } },
+		profile: { release: { panic: "unwind", lto: "fat" } }
 	});
 	expect(twice).toBe(once);
 });
@@ -160,7 +160,7 @@ debug = true
 	// Assert
 	expect(parsed).toMatchObject({
 		workspace: { lints: { rust: { unsafe_code: "deny" } } },
-		profile: { release: { debug: true, lto: "thin" } },
+		profile: { release: { debug: true, lto: "thin" } }
 	});
 });
 
@@ -175,7 +175,7 @@ test("a single-package root becomes a workspace that uses its own lints", () => 
 	expect(parsed).toMatchObject({
 		package: { name: "a" },
 		lints: { workspace: true },
-		workspace: { resolver: "3" },
+		workspace: { resolver: "3" }
 	});
 });
 
@@ -188,15 +188,15 @@ test("the toolchain keeps the targets the project added and adds the new ones on
 	// Act
 	const result = toolchainFile(template, current, [
 		"wasm32-unknown-unknown",
-		"aarch64-apple-ios",
+		"aarch64-apple-ios"
 	]);
 
 	// Assert
 	expect(Bun.TOML.parse(result)).toEqual({
 		toolchain: {
 			channel: "1.100.0",
-			targets: ["aarch64-apple-ios", "wasm32-unknown-unknown"],
-		},
+			targets: ["aarch64-apple-ios", "wasm32-unknown-unknown"]
+		}
 	});
 });
 
@@ -221,7 +221,7 @@ test("a package without an edition names the 2015 that Cargo reads", () => {
 
 	// Assert
 	expect(result).toBe(
-		'[package]\nname = "a"\nedition = "2015"\n\n[lints]\nworkspace = true\n',
+		'[package]\nname = "a"\nedition = "2015"\n\n[lints]\nworkspace = true\n'
 	);
 });
 

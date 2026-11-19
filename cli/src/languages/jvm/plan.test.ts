@@ -25,7 +25,7 @@ test("a repo adopted by an older release loses its manifest and Guard.kt", async
 		"lib/build.gradle.kts": 'plugins { id("bedrock.java") }\n',
 		"gradle/bedrock/managed.sha256": "abc  gradlew\n",
 		"gradle/bedrock/src/main/kotlin/bedrock/core/Guard.kt":
-			"package bedrock.core\n",
+			"package bedrock.core\n"
 	});
 
 	// Act
@@ -35,14 +35,14 @@ test("a repo adopted by an older release loses its manifest and Guard.kt", async
 	expect(await exists(join(root, "gradle/bedrock/managed.sha256"))).toBe(false);
 	expect(
 		await exists(
-			join(root, "gradle/bedrock/src/main/kotlin/bedrock/core/Guard.kt"),
-		),
+			join(root, "gradle/bedrock/src/main/kotlin/bedrock/core/Guard.kt")
+		)
 	).toBe(false);
 	expect(await exists(join(root, "gradle/bedrock/build.gradle.kts"))).toBe(
-		true,
+		true
 	);
 	expect(await textOf(root, "settings.gradle.kts")).toContain(
-		'rootProject.name = "old"',
+		'rootProject.name = "old"'
 	);
 });
 
@@ -51,7 +51,7 @@ test("a Maven project becomes a Gradle build", async () => {
 	const root = await tempRepo({
 		"pom.xml":
 			"<project><groupId>org.acme</groupId><artifactId>x</artifactId><version>1</version>" +
-			"<dependencies><dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>33.0.0-jre</version></dependency></dependencies></project>",
+			"<dependencies><dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>33.0.0-jre</version></dependency></dependencies></project>"
 	});
 
 	// Act
@@ -73,7 +73,7 @@ test("a repo without a group gets a note", async () => {
 
 	// Assert
 	expect(
-		plan.notes.some((note) => note.startsWith("gradle.properties: ")),
+		plan.notes.some((note) => note.startsWith("gradle.properties: "))
 	).toBe(true);
 });
 
@@ -109,7 +109,7 @@ test("init with a kind writes its module, includes it, and passes the guard", as
 
 	// Assert
 	expect(await textOf(root, "settings.gradle.kts")).toContain(
-		'include(":lib", ":app")',
+		'include(":lib", ":app")'
 	);
 	expect(await exists(join(root, "lib/build.gradle.kts"))).toBe(true);
 	expect(await exists(join(root, "app/build.gradle.kts"))).toBe(true);
@@ -133,14 +133,14 @@ test("the group option replaces the group gradle.properties held", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"settings.gradle.kts": "",
-		"gradle.properties": "group=org.old\n",
+		"gradle.properties": "group=org.old\n"
 	});
 
 	// Act
 	const plan = await buildPlan(
 		root,
 		[{ language: jvm, options: { kind: "", group: "org.chosen" } }],
-		{ init: false },
+		{ init: false }
 	);
 	await applySteps(root, plan.steps);
 

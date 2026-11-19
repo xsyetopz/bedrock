@@ -3,7 +3,7 @@ import { planBunfig, planTsconfig } from "./configs.ts";
 import {
 	legacyMentions,
 	removalSteps,
-	workspaceManifestSteps,
+	workspaceManifestSteps
 } from "./legacy.ts";
 import { planIgnoreLists } from "./lint-configs.ts";
 import { planManifest } from "./manifest-plan.ts";
@@ -18,13 +18,13 @@ const PROJECT_FILES = ["bunfig.toml", "package.json", "tsconfig.json"];
 
 /** Plans the TypeScript part of an adopt: the manifest, configs, removed tools, and test files. */
 export const planTypescript = async (
-	context: Context,
+	context: Context
 ): Promise<LanguagePlan> => {
 	const parts = await Promise.all([
 		planManifest(context),
 		planTsconfig(context),
 		planBunfig(context),
-		planIgnoreLists(context),
+		planIgnoreLists(context)
 	]);
 	const { root } = context;
 	return {
@@ -32,12 +32,12 @@ export const planTypescript = async (
 			...parts.flatMap((part) => part.steps),
 			...(await removalSteps(root)),
 			...(await workspaceManifestSteps(root)),
-			...(await testSteps(root)),
+			...(await testSteps(root))
 		],
 		notes: [
 			...parts.flatMap((part) => part.notes),
-			...(await legacyMentions(root)),
+			...(await legacyMentions(root))
 		],
-		projectFiles: PROJECT_FILES,
+		projectFiles: PROJECT_FILES
 	};
 };

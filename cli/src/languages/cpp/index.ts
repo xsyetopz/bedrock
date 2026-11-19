@@ -29,13 +29,13 @@ export const cpp: Language = {
 		"*.{c,cc,cpp,cxx}",
 		"*/*.{c,cc,cpp,cxx}",
 		// SwiftPM builds C, C++, and Objective-C targets from the same tree.
-		"Sources/**/*.{c,cc,cpp,cxx,m,mm}",
+		"Sources/**/*.{c,cc,cpp,cxx,m,mm}"
 	],
 	tools: {},
 	sources: [
 		"**/*.{c,cc,cpp,cxx,h,hh,hpp,hxx,m,mm}",
 		".clang-format",
-		".clang-tidy",
+		".clang-tidy"
 	],
 	kinds: [],
 	variables: () => Promise.resolve({}),
@@ -46,12 +46,12 @@ export const cpp: Language = {
 		return {
 			steps: found.map((path) => ({ kind: "remove", path })),
 			notes: [],
-			projectFiles: [],
+			projectFiles: []
 		};
 	},
 	guard: () => Promise.resolve([]),
 	// clang-tidy has function checks (readability-function-size, readability-function-cognitive-complexity) but no file-length check.
 	lizard: ["cpp", "objectivec"],
 	testFiles: cppTestFiles,
-	subcommands: { "compile-commands": compileCommands, test: cppTest },
+	subcommands: { "compile-commands": compileCommands, test: cppTest }
 };

@@ -9,6 +9,6 @@ const TEST_SOURCE_SET = /(?:^|\/)src\/(?:test|[a-z]\w*Test)(?:[A-Z]\w*)?\//u;
 /** The files of `files` in a Gradle test source set. */
 export const jvmTestFiles = (
 	_root: string,
-	files: readonly string[],
+	files: readonly string[]
 ): Promise<Set<string>> =>
 	Promise.resolve(new Set(files.filter((file) => TEST_SOURCE_SET.test(file))));

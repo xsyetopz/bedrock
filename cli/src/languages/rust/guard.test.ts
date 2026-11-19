@@ -9,19 +9,19 @@ import { adoptRust, contextIn } from "./harness.ts";
 
 /** An adopted workspace with one member crate and the given extra files. */
 const adopted = async (
-	files: Readonly<Record<string, string>>,
+	files: Readonly<Record<string, string>>
 ): Promise<string> => {
 	const root = await tempRepo({
 		"Cargo.toml": '[workspace]\nmembers = ["crates/*"]\n',
 		"crates/a/Cargo.toml":
 			'[package]\nname = "a"\nversion = "0.1.0"\n\n[lints]\nworkspace = true\n',
-		"crates/a/src/lib.rs": "//! A.\n",
+		"crates/a/src/lib.rs": "//! A.\n"
 	});
 	await adoptRust(root);
 	await Promise.all(
 		Object.entries(files).map(([path, content]) =>
-			Bun.write(join(root, path), content),
-		),
+			Bun.write(join(root, path), content)
+		)
 	);
 	return root;
 };
@@ -44,7 +44,7 @@ test("a freshly initialized project has nothing to report", async () => {
 test("reports a test module whose body sits in the file", async () => {
 	// Arrange
 	const root = await adopted({
-		"crates/a/src/lib.rs": "#[cfg(test)]\nmod tests {\n    fn t() {}\n}\n",
+		"crates/a/src/lib.rs": "#[cfg(test)]\nmod tests {\n    fn t() {}\n}\n"
 	});
 
 	// Act
@@ -58,7 +58,7 @@ test("reports a test module that sets its file with #[path]", async () => {
 	// Arrange
 	const root = await adopted({
 		"crates/a/src/lib.rs": '#[cfg(test)]\n#[path = "checks.rs"]\nmod tests;\n',
-		"crates/a/src/checks.rs": "#[test]\nfn t() {}\n",
+		"crates/a/src/checks.rs": "#[test]\nfn t() {}\n"
 	});
 
 	// Act
@@ -72,7 +72,7 @@ test("a tests.rs beside its module is what the guard wants", async () => {
 	// Arrange
 	const root = await adopted({
 		"crates/a/src/lib.rs": "//! A.\n#[cfg(test)]\nmod tests;\n",
-		"crates/a/src/tests.rs": "#[test]\nfn t() {}\n",
+		"crates/a/src/tests.rs": "#[test]\nfn t() {}\n"
 	});
 
 	// Act
@@ -86,7 +86,7 @@ test("--fix moves the test module to tests.rs and leaves nothing to report", asy
 	// Arrange
 	const root = await adopted({
 		"crates/a/src/lib.rs":
-			"//! A.\n#[cfg(test)]\nmod tests {\n#[test]\nfn t() {}\n}\n",
+			"//! A.\n#[cfg(test)]\nmod tests {\n#[test]\nfn t() {}\n}\n"
 	});
 
 	// Act
@@ -95,10 +95,10 @@ test("--fix moves the test module to tests.rs and leaves nothing to report", asy
 	// Assert
 	expect(findings).toEqual([]);
 	expect(await readText(join(root, "crates/a/src/lib.rs"))).toBe(
-		"//! A.\n#[cfg(test)]\nmod tests;\n",
+		"//! A.\n#[cfg(test)]\nmod tests;\n"
 	);
 	expect(await readText(join(root, "crates/a/src/tests.rs"))).toBe(
-		"#[test]\nfn t() {}\n",
+		"#[test]\nfn t() {}\n"
 	);
 });
 
@@ -107,7 +107,7 @@ test("--fix reports a module it cannot move once and keeps fixing the other file
 	const root = await adopted({
 		"crates/a/src/a.rs":
 			"mod inner {\n    #[cfg(test)]\n    mod tests { }\n}\n",
-		"crates/a/src/b.rs": "#[cfg(test)]\nmod tests {\n    fn t() {}\n}\n",
+		"crates/a/src/b.rs": "#[cfg(test)]\nmod tests {\n    fn t() {}\n}\n"
 	});
 
 	// Act
@@ -127,7 +127,7 @@ test.each([false, true])(
 		const root = await adopted({
 			"crates/a/src/lib.rs": "//! A.\n#[cfg(test)]\nmod tests;\n",
 			"crates/a/src/tests.rs": `mod more;\n${nested}`,
-			"crates/a/src/tests/more.rs": nested,
+			"crates/a/src/tests/more.rs": nested
 		});
 
 		// Act
@@ -136,16 +136,16 @@ test.each([false, true])(
 		// Assert
 		expect(findings).toEqual([]);
 		expect(await readText(join(root, "crates/a/src/tests/more.rs"))).toBe(
-			nested,
+			nested
 		);
-	},
+	}
 );
 
 test("--fix moves a test module with another name to a file of that name", async () => {
 	// Arrange
 	const root = await adopted({
 		"crates/a/src/lib.rs":
-			"//! A.\n#[cfg(test)]\nmod support {\npub fn f() {}\n}\n",
+			"//! A.\n#[cfg(test)]\nmod support {\npub fn f() {}\n}\n"
 	});
 
 	// Act
@@ -154,10 +154,10 @@ test("--fix moves a test module with another name to a file of that name", async
 	// Assert
 	expect(findings).toEqual([]);
 	expect(await readText(join(root, "crates/a/src/lib.rs"))).toBe(
-		"//! A.\n#[cfg(test)]\nmod support;\n",
+		"//! A.\n#[cfg(test)]\nmod support;\n"
 	);
 	expect(await readText(join(root, "crates/a/src/support.rs"))).toBe(
-		"pub fn f() {}\n",
+		"pub fn f() {}\n"
 	);
 });
 
@@ -165,7 +165,7 @@ test("does not take a test module in a comment or string for a declaration", asy
 	// Arrange
 	const root = await adopted({
 		"crates/a/src/lib.rs":
-			'//! A.\n// #[cfg(test)] mod tests;\nconst S: &str = "#[cfg(test)] mod tests;";\n',
+			'//! A.\n// #[cfg(test)] mod tests;\nconst S: &str = "#[cfg(test)] mod tests;";\n'
 	});
 
 	// Act
@@ -179,7 +179,7 @@ test("reports #[allow] and #[expect] without a reason", async () => {
 	// Arrange
 	const root = await adopted({
 		"crates/a/src/lib.rs":
-			"//! A.\n#[allow(dead_code)]\nfn a() {}\n#[expect(dead_code)]\nfn b() {}\n",
+			"//! A.\n#[allow(dead_code)]\nfn a() {}\n#[expect(dead_code)]\nfn b() {}\n"
 	});
 
 	// Act
@@ -188,14 +188,14 @@ test("reports #[allow] and #[expect] without a reason", async () => {
 	// Assert
 	expect(findings.map((finding) => finding.slice(0, 22))).toEqual([
 		"crates/a/src/lib.rs:2:",
-		"crates/a/src/lib.rs:4:",
+		"crates/a/src/lib.rs:4:"
 	]);
 });
 
 test("reports foo/mod.rs, which belongs beside its directory as foo.rs", async () => {
 	// Arrange
 	const root = await adopted({
-		"crates/a/src/foo/mod.rs": "//! Foo.\n",
+		"crates/a/src/foo/mod.rs": "//! Foo.\n"
 	});
 
 	// Act
@@ -208,7 +208,7 @@ test("reports foo/mod.rs, which belongs beside its directory as foo.rs", async (
 test("reports an integration test without #![cfg(test)], and --fix adds it", async () => {
 	// Arrange
 	const root = await adopted({
-		"crates/a/tests/it.rs": "//! Tests.\n#[test]\nfn it() {}\n",
+		"crates/a/tests/it.rs": "//! Tests.\n#[test]\nfn it() {}\n"
 	});
 
 	// Act
@@ -219,14 +219,14 @@ test("reports an integration test without #![cfg(test)], and --fix adds it", asy
 	expect(locations(before)).toEqual(["crates/a/tests/it.rs"]);
 	expect(after).toEqual([]);
 	expect(await readText(join(root, "crates/a/tests/it.rs"))).toContain(
-		"#![cfg(test)]",
+		"#![cfg(test)]"
 	);
 });
 
 test("reports a member that skips the workspace lints", async () => {
 	// Arrange
 	const root = await adopted({
-		"crates/a/Cargo.toml": '[package]\nname = "a"\nversion = "0.1.0"\n',
+		"crates/a/Cargo.toml": '[package]\nname = "a"\nversion = "0.1.0"\n'
 	});
 
 	// Act

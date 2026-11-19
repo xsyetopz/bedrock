@@ -36,7 +36,7 @@ const fill = (
 	pattern: RegExp,
 	text: string,
 	variables: Variables,
-	from: string,
+	from: string
 ): string =>
 	text.replaceAll(pattern, (placeholder, name: string) => {
 		const value = variables[name];
@@ -50,7 +50,7 @@ const fill = (
 export const render = (
 	text: string,
 	variables: Variables,
-	from: string,
+	from: string
 ): string => fill(PLACEHOLDER, text, variables, from);
 
 /** A template's target path with each `__name__` placeholder filled. */
@@ -71,7 +71,7 @@ export interface Rendered {
 const contentOf = async (
 	file: Bun.BunFile,
 	variables: Variables,
-	from: string,
+	from: string
 ): Promise<string | Uint8Array> => {
 	const bytes = await file.bytes();
 	return bytes.includes(0)
@@ -86,7 +86,7 @@ export interface TemplateDir {
 	/** The rendered template for a target path, or undefined when there is none. */
 	readonly read: (
 		path: string,
-		variables?: Variables,
+		variables?: Variables
 	) => Promise<string | undefined>;
 	/** Every template, with its path and text filled from `variables` and binary files as bytes, sorted by template path. */
 	readonly files: (variables?: Variables) => Promise<Rendered[]>;
@@ -95,7 +95,7 @@ export interface TemplateDir {
 /** The templates under `templates/<dir>`. */
 export const templateDir = (
 	dir: string,
-	root = templatesRoot(),
+	root = templatesRoot()
 ): TemplateDir => {
 	const base = `${root}/${dir}`;
 	const paths = async (): Promise<string[]> => {
@@ -103,8 +103,8 @@ export const templateDir = (
 			new Glob(`**/*${SUFFIX}`).scan({
 				cwd: base,
 				dot: true,
-				onlyFiles: true,
-			}),
+				onlyFiles: true
+			})
 		).catch(() => []);
 		return found.map((path) => path.slice(0, -SUFFIX.length)).toSorted();
 	};
@@ -124,10 +124,10 @@ export const templateDir = (
 					content: await contentOf(
 						Bun.file(`${base}/${path}${SUFFIX}`),
 						variables,
-						`${dir}/${path}`,
-					),
-				})),
+						`${dir}/${path}`
+					)
+				}))
 			);
-		},
+		}
 	};
 };

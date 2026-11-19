@@ -15,11 +15,11 @@ const scratch = async (project: string): Promise<string> => {
 	roots.push(root);
 	await Bun.write(
 		join(root, "justfile"),
-		Bun.file(join(BASE, "justfile.tmpl")),
+		Bun.file(join(BASE, "justfile.tmpl"))
 	);
 	await Bun.write(
 		join(root, ".just/typescript.just"),
-		'test:\n\t@echo "language test"\n',
+		'test:\n\t@echo "language test"\n'
 	);
 	if (project !== "") {
 		await Bun.write(join(root, "project.just"), project);
@@ -35,7 +35,7 @@ const run = async (root: string, recipe: string): Promise<string> => {
 const workflows = async (): Promise<Record<string, string>> => {
 	const entries: Record<string, string> = {};
 	for await (const path of new Glob(
-		"*/files/.github/workflows/*.yml.tmpl",
+		"*/files/.github/workflows/*.yml.tmpl"
 	).scan(templatesRoot())) {
 		entries[path] = await Bun.file(join(templatesRoot(), path)).text();
 	}
@@ -44,7 +44,7 @@ const workflows = async (): Promise<Record<string, string>> => {
 
 afterAll(async () => {
 	await Promise.all(
-		roots.map((root) => rm(root, { recursive: true, force: true })),
+		roots.map((root) => rm(root, { recursive: true, force: true }))
 	);
 });
 
@@ -93,10 +93,10 @@ describe("the base lefthook.yml", () => {
 
 		// Act
 		const recipes = [...config.matchAll(/run: just (\S+)/gu)].map(
-			(match) => match[1],
+			(match) => match[1]
 		);
 		const missing = recipes.filter(
-			(recipe) => recipe === undefined || !summary.includes(recipe),
+			(recipe) => recipe === undefined || !summary.includes(recipe)
 		);
 
 		// Assert
@@ -114,9 +114,9 @@ describe("the workflow templates", () => {
 		const pins = new Set(
 			Object.values(files).flatMap((text) =>
 				[...text.matchAll(/taiki-e\/install-action@\S+ # \S+/gu)].map(
-					(match) => match[0],
-				),
-			),
+					(match) => match[0]
+				)
+			)
 		);
 
 		// Assert

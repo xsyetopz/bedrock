@@ -9,8 +9,8 @@ const engine = (names: string[]): Engine => ({
 		register: ({ name }) => {
 			names.push(name);
 			return Promise.resolve();
-		},
-	},
+		}
+	}
 });
 
 test("registerHello adds the hello command", async () => {

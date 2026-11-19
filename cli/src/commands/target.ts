@@ -10,7 +10,7 @@ import { parseNamed, resolveRoot } from "./select.ts";
 const prepareInit = async (root: string): Promise<void> => {
 	if (await exists(root)) {
 		const entries = await Array.fromAsync(
-			new Bun.Glob("*").scan({ cwd: root, dot: true, onlyFiles: false }),
+			new Bun.Glob("*").scan({ cwd: root, dot: true, onlyFiles: false })
 		);
 		if (entries.length > 0) {
 			throw new Error(`${root} is not empty. Run bedrock adopt there instead.`);
@@ -24,7 +24,7 @@ const prepareInit = async (root: string): Promise<void> => {
 export const prepare = async (
 	mode: Mode,
 	root: string,
-	dryRun: boolean,
+	dryRun: boolean
 ): Promise<void> => {
 	if (mode === "init") {
 		if (!dryRun) {
@@ -34,7 +34,7 @@ export const prepare = async (
 	}
 	if (!(await isRepository(root))) {
 		throw new Error(
-			`${root} is not a git repository. bedrock changes files in place and relies on git to review and undo them; run git init and commit first.`,
+			`${root} is not a git repository. bedrock changes files in place and relies on git to review and undo them; run git init and commit first.`
 		);
 	}
 };
@@ -65,7 +65,7 @@ Starts a repo in <dir>, which must be empty or missing, then adopts it.${OPTIONS
 	update: `Usage: bedrock update [<dir>] [options]
 
 Rewrites every managed file for the languages .editorconfig lists, with the
-templates of this bedrock release.${OPTIONS}`,
+templates of this bedrock release.${OPTIONS}`
 };
 
 /** Whether `arg` names a language rather than an existing folder. */
@@ -85,7 +85,7 @@ const isLanguageName = async (arg: string): Promise<boolean> => {
  */
 export const target = async (
 	mode: Mode,
-	positionals: readonly string[],
+	positionals: readonly string[]
 ): Promise<{ root: string; names: readonly string[] }> => {
 	const [first, ...rest] = positionals;
 	const firstIsTarget =
@@ -93,7 +93,7 @@ export const target = async (
 	const names = firstIsTarget ? rest : positionals;
 	if (mode === "update" && names.length > 0) {
 		throw new Error(
-			"bedrock update takes no languages. Use bedrock adopt to add one.",
+			"bedrock update takes no languages. Use bedrock adopt to add one."
 		);
 	}
 	return { root: resolveRoot(firstIsTarget ? first : undefined), names };

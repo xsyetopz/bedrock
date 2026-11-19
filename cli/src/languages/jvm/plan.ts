@@ -17,7 +17,7 @@ import { includes, render } from "./render.ts";
 const LEGACY = [
 	"gradle/bedrock/managed.sha256",
 	"gradle/bedrock/src/main/kotlin/bedrock/core/Guard.kt",
-	"gradle/wrapper/gradle-wrapper.jar.b64",
+	"gradle/wrapper/gradle-wrapper.jar.b64"
 ];
 
 const ROOT_NAME = /rootProject\.name\s*=\s*['"]([^'"]+)['"]/u;
@@ -33,7 +33,7 @@ export const groupOf = (context: Context): string | undefined => {
 const blockFirst = (
 	current: string | undefined,
 	header: string,
-	content: string,
+	content: string
 ): string => {
 	const [open] = markers("slash", BLOCK);
 	if (current?.includes(open) === true) {
@@ -51,13 +51,13 @@ const includeLine = (modules: readonly string[]): string =>
 const settingsStep = async (
 	context: Context,
 	migration: Migration | undefined,
-	modules: readonly string[],
+	modules: readonly string[]
 ): Promise<Step> => {
 	const { root } = context;
 	const [kts, groovy, block] = await Promise.all([
 		readText(join(root, "settings.gradle.kts")),
 		readText(join(root, "settings.gradle")),
-		context.templates("blocks").read("settings.gradle.kts", {}),
+		context.templates("blocks").read("settings.gradle.kts", {})
 	]);
 	const name = ROOT_NAME.exec(kts ?? groovy ?? "")?.[1] ?? basename(root);
 	// A Gradle build's own settings would apply plugins before bedrock's, so they start over.
@@ -65,7 +65,7 @@ const settingsStep = async (
 	let settings = blockFirst(
 		current,
 		`rootProject.name = "${name}"\n`,
-		block ?? "",
+		block ?? ""
 	);
 	const lines =
 		migration === undefined ? includeLine(modules) : includes(migration);
@@ -78,14 +78,14 @@ const settingsStep = async (
 const propertiesStep = async (
 	context: Context,
 	migration: Migration | undefined,
-	fallback: string | undefined,
+	fallback: string | undefined
 ): Promise<{ step: Step; notes: string[] }> => {
 	const [current, block] = await Promise.all([
 		readText(join(context.root, "gradle.properties")),
-		context.templates("blocks").read("gradle.properties", {}),
+		context.templates("blocks").read("gradle.properties", {})
 	]);
 	let text = upsert(current, "", "hash", [
-		{ name: BLOCK, content: block ?? "" },
+		{ name: BLOCK, content: block ?? "" }
 	]);
 	const notes: string[] = [];
 	const option = groupOf(context);
@@ -94,7 +94,7 @@ const propertiesStep = async (
 		const chosen = option ?? migration?.group ?? fallback;
 		if (chosen === undefined) {
 			notes.push(
-				"gradle.properties: set group= to the package the code lives in; NullAway checks it and Android derives namespaces from it",
+				"gradle.properties: set group= to the package the code lives in; NullAway checks it and Android derives namespaces from it"
 			);
 		} else {
 			text += `group=${chosen}\n`;
@@ -103,12 +103,12 @@ const propertiesStep = async (
 		// The group option, kept in .editorconfig as bedrock_jvm_group, is what the user chose last.
 		text = text.replace(declared[0], `group=${option}`);
 		notes.push(
-			`gradle.properties: group ${declared[1] ?? ""} becomes ${option}, bedrock_jvm_group in .editorconfig; NullAway and the Android namespaces follow it.`,
+			`gradle.properties: group ${declared[1] ?? ""} becomes ${option}, bedrock_jvm_group in .editorconfig; NullAway and the Android namespaces follow it.`
 		);
 	}
 	return {
 		step: { kind: "write", path: "gradle.properties", content: text },
-		notes,
+		notes
 	};
 };
 
@@ -122,7 +122,7 @@ export const planJvm = async (context: Context): Promise<LanguagePlan> => {
 	const variables = {
 		name,
 		package: group,
-		path: group.replaceAll(".", "/"),
+		path: group.replaceAll(".", "/")
 	};
 	const kinds = context.init
 		? await kindSteps(context, variables)
@@ -132,14 +132,14 @@ export const planJvm = async (context: Context): Promise<LanguagePlan> => {
 		settingsStep(context, migration, kinds.modules),
 		propertiesStep(context, migration, kindGroup),
 		existing(root, LEGACY),
-		migration === undefined ? [] : render(root, migration),
+		migration === undefined ? [] : render(root, migration)
 	]);
 	const steps: Step[] = [
 		settings,
 		properties.step,
 		...migrated,
 		...kinds.steps,
-		...legacy.map((path): Step => ({ kind: "remove", path })),
+		...legacy.map((path): Step => ({ kind: "remove", path }))
 	];
 	return {
 		steps,
@@ -149,7 +149,7 @@ export const planJvm = async (context: Context): Promise<LanguagePlan> => {
 			"gradle.properties",
 			...[...migrated, ...kinds.steps]
 				.filter((step) => step.kind === "write")
-				.map((step) => step.path),
-		],
+				.map((step) => step.path)
+		]
 	};
 };

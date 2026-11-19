@@ -14,7 +14,7 @@ const run = async (command: readonly string[], root: string) => {
 	const child = await $`${command}`.cwd(root).nothrow().quiet();
 	return {
 		code: child.exitCode,
-		output: child.stdout.toString() + child.stderr.toString(),
+		output: child.stdout.toString() + child.stderr.toString()
 	};
 };
 
@@ -39,7 +39,7 @@ test.skipIf(!hasGo).each(["command", "library"])(
 		expect(tidy.code).toBe(0);
 		expect(found).toEqual([]);
 	},
-	300_000,
+	300_000
 );
 
 test.skipIf(!hasGo || !hasLint).each(["command", "library"])(
@@ -59,5 +59,5 @@ test.skipIf(!hasGo || !hasLint).each(["command", "library"])(
 		expect(lint.output).toContain("0 issues");
 		expect(lint.code).toBe(0);
 	},
-	600_000,
+	600_000
 );

@@ -11,7 +11,7 @@ interface Attribute {
 
 const attributeAt = (
 	all: readonly Token[],
-	index: number,
+	index: number
 ): Attribute | undefined => {
 	const hash = all[index];
 	if (hash?.text !== "#") {
@@ -27,7 +27,7 @@ const attributeAt = (
 /** Whether the attribute's arguments have a top-level `reason = …`. */
 const hasReason = (inner: readonly Token[]): boolean =>
 	inner.some(
-		(token, index) => token.text === "reason" && inner[index + 1]?.text === "=",
+		(token, index) => token.text === "reason" && inner[index + 1]?.text === "="
 	);
 
 /** The message for one `allow` or `expect` attribute that breaks the rule, if any. */
@@ -46,7 +46,7 @@ const problemOf = (attribute: Attribute): string | undefined => {
  * `#[expect]` without a `reason`. Returns `line: message` pairs.
  */
 export const suppressionProblems = (
-	source: string,
+	source: string
 ): { line: number; message: string }[] => {
 	const all = tokens(source);
 	const found: { line: number; message: string }[] = [];

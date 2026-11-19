@@ -20,7 +20,7 @@ export const BLOCK_ORDER = [
 	"jvm-bedrock",
 	"go-bedrock",
 	"haxe-bedrock",
-	"dotnet-bedrock",
+	"dotnet-bedrock"
 ] as const;
 
 export const markers = (syntax: Syntax, name: string): [string, string] => {
@@ -42,7 +42,7 @@ const laterBlock = (text: string, syntax: Syntax, name: string): number => {
 		...order
 			.slice(order.indexOf(name) + 1)
 			.map((later) => lineStart(text, markers(syntax, later)[0]))
-			.filter((index) => index !== -1),
+			.filter((index) => index !== -1)
 	);
 };
 
@@ -50,7 +50,7 @@ const laterBlock = (text: string, syntax: Syntax, name: string): number => {
 export const removeBlock = (
 	text: string,
 	syntax: Syntax,
-	name: string,
+	name: string
 ): string => {
 	const [open, close] = markers(syntax, name);
 	const start = lineStart(text, open);
@@ -77,7 +77,7 @@ export const upsert = (
 	current: string | undefined,
 	header: string,
 	syntax: Syntax,
-	blocks: readonly Block[],
+	blocks: readonly Block[]
 ): string => {
 	let text = current ?? header;
 	for (const block of blocks) {

@@ -13,29 +13,29 @@ const LEGACY = {
 		scripts: {
 			guard: "typescript-bedrock guard",
 			lint: "oxlint",
-			test: "jest",
+			test: "jest"
 		},
 		devDependencies: { "typescript-bedrock": "catalog:", eslint: "^9.0.0" },
-		workspaces: { catalog: { "typescript-bedrock": "1.2.3" } },
+		workspaces: { catalog: { "typescript-bedrock": "1.2.3" } }
 	}),
 	"tsconfig.json": JSON.stringify({
 		extends: "typescript-bedrock/tsconfig.base.json",
-		compilerOptions: { rootDir: "." },
+		compilerOptions: { rootDir: "." }
 	}),
 	".oxlintrc.json": JSON.stringify({
 		extends: ["./node_modules/typescript-bedrock/oxlintrc.json"],
 		ignorePatterns: ["vendor/**"],
-		rules: { "no-console": "off" },
+		rules: { "no-console": "off" }
 	}),
 	".markdownlint-cli2.jsonc": JSON.stringify({
 		ignores: ["notes/**"],
-		config: { extends: "./node_modules/typescript-bedrock/markdownlint.jsonc" },
+		config: { extends: "./node_modules/typescript-bedrock/markdownlint.jsonc" }
 	}),
 	"eslint.config.js": "export default [];\n",
 	"yarn.lock": "",
 	".github/workflows/ci.yml": "steps:\n  - run: npm test\n",
 	"project.just": "guard:\n    bunx typescript-bedrock guard\n",
-	"src/a.test.ts": 'test("a", () => {});\n',
+	"src/a.test.ts": 'test("a", () => {});\n'
 };
 
 describe("planTypescript on a repo that typescript-bedrock adopted", () => {
@@ -47,12 +47,12 @@ describe("planTypescript on a repo that typescript-bedrock adopted", () => {
 			await textOf(root, "package.json"),
 			await textOf(root, "tsconfig.json"),
 			await textOf(root, ".oxlintrc.json"),
-			await textOf(root, ".markdownlint-cli2.jsonc"),
+			await textOf(root, ".markdownlint-cli2.jsonc")
 		].join("\n");
 		expect(text).not.toContain("typescript-bedrock");
 		expect(asRecord(manifest["scripts"])).toMatchObject({
 			guard: "just typescript::guard",
-			lint: "just lint",
+			lint: "just lint"
 		});
 		expect(await exists(join(root, "eslint.config.js"))).toBe(false);
 		expect(await exists(join(root, ".github/workflows/ci.yml"))).toBe(false);
@@ -63,7 +63,7 @@ describe("planTypescript on a repo that typescript-bedrock adopted", () => {
 		await adoptTypescript(root);
 		expect(await textOf(root, ".oxlintrc.json")).toContain('"vendor/**"');
 		expect(await textOf(root, ".markdownlint-cli2.jsonc")).toContain(
-			'"notes/**"',
+			'"notes/**"'
 		);
 	});
 
@@ -71,7 +71,7 @@ describe("planTypescript on a repo that typescript-bedrock adopted", () => {
 		const root = await tempRepo(LEGACY);
 		await adoptTypescript(root);
 		expect(await textOf(root, "src/a.test.ts")).toStartWith(
-			'import { test } from "bun:test";',
+			'import { test } from "bun:test";'
 		);
 	});
 
@@ -90,7 +90,7 @@ describe("planTypescript on a fresh repo", () => {
 		const configs = [
 			await textOf(root, "tsconfig.json"),
 			await textOf(root, ".oxlintrc.json"),
-			await textOf(root, ".markdownlint-cli2.jsonc"),
+			await textOf(root, ".markdownlint-cli2.jsonc")
 		];
 		for (const config of configs) {
 			expect(config).not.toContain('"extends"');
@@ -108,7 +108,7 @@ describe("planTypescript on a fresh repo", () => {
 
 /** Adopts `root`, lets `edit` change .oxlintrc.json's text, and returns the next plan's drift paths. */
 const driftAfter = async (
-	edit: (text: string) => string,
+	edit: (text: string) => string
 ): Promise<string[]> => {
 	const root = await tempRepo({ "package.json": '{"name":"x"}' });
 	await adoptTypescript(root);
@@ -158,10 +158,10 @@ describe("installDependencies", () => {
 			"package.json": JSON.stringify({
 				name: "x",
 				version: "1.0.0",
-				dependencies: { dep: "file:./dep" },
+				dependencies: { dep: "file:./dep" }
 			}),
 			"dep/package.json": '{"name":"dep","version":"1.0.0"}',
-			"yarn.lock": "# yarn lockfile v1\n",
+			"yarn.lock": "# yarn lockfile v1\n"
 		});
 		await installDependencies(contextIn(root));
 		expect(await exists(join(root, "bun.lock"))).toBe(true);
@@ -172,7 +172,7 @@ describe("installDependencies", () => {
 		// Arrange
 		const root = await tempRepo({
 			"package.json": '{"name":"x","version":"1.0.0"}',
-			"index.ts": "export const a = {b:1}\n",
+			"index.ts": "export const a = {b:1}\n"
 		});
 
 		// Act
@@ -187,7 +187,7 @@ test("a lint config that dropped a bedrock ignore gets it back", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"package.json": "{}\n",
-		".oxlintrc.json": JSON.stringify({ ignorePatterns: ["vendor/**"] }),
+		".oxlintrc.json": JSON.stringify({ ignorePatterns: ["vendor/**"] })
 	});
 
 	// Act

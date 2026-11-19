@@ -15,7 +15,7 @@ const idAt = (text: string, from: number): string =>
 const valueOf = (
 	key: string,
 	text: string,
-	after: number,
+	after: number
 ): string | undefined => {
 	const start = text.indexOf(`${key} = `, after);
 	return start === -1 ? undefined : idAt(text, start + key.length + 3);
@@ -29,7 +29,7 @@ const objectAt = (id: string, text: string): number | undefined => {
 const childrenOf = (
 	key: string,
 	text: string,
-	after: number,
+	after: number
 ): string[] | undefined => {
 	const start = text.indexOf(`${key} = (\n`, after);
 	const end = start === -1 ? -1 : text.indexOf(");", start);
@@ -65,7 +65,7 @@ const wireConfiguration = (text: string, id: string): string | undefined => {
 	return insertAt(
 		text,
 		isa + ISA.length,
-		`\t\t\tbaseConfigurationReference = ${XCCONFIG_REFERENCE} /* Bedrock.xcconfig */;\n`,
+		`\t\t\tbaseConfigurationReference = ${XCCONFIG_REFERENCE} /* Bedrock.xcconfig */;\n`
 	);
 };
 
@@ -81,12 +81,12 @@ const addReference = (text: string, mainGroup: string): string | undefined => {
 	const withGroup = insertAt(
 		text,
 		children + "children = (\n".length,
-		`\t\t\t\t${XCCONFIG_REFERENCE} /* Bedrock.xcconfig */,\n`,
+		`\t\t\t\t${XCCONFIG_REFERENCE} /* Bedrock.xcconfig */,\n`
 	);
 	return insertAt(
 		withGroup,
 		withGroup.indexOf("/* End PBXFileReference section */"),
-		`\t\t${XCCONFIG_REFERENCE} /* Bedrock.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Bedrock.xcconfig; path = Config/Bedrock.xcconfig; sourceTree = "<group>"; };\n`,
+		`\t\t${XCCONFIG_REFERENCE} /* Bedrock.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Bedrock.xcconfig; path = Config/Bedrock.xcconfig; sourceTree = "<group>"; };\n`
 	);
 };
 
@@ -132,7 +132,7 @@ export const overrides = (pbxproj: string): string[] =>
 			!setting.includes("$(inherited)")
 		) {
 			return [
-				"OTHER_SWIFT_FLAGS without $(inherited) drops the upcoming features",
+				"OTHER_SWIFT_FLAGS without $(inherited) drops the upcoming features"
 			];
 		}
 		return [];

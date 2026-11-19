@@ -14,14 +14,14 @@ export const haxe: Language = {
 	aliases: ["haxe", "hx"],
 	markers: [".just/haxe.just", "haxelib.json", "**/*.hxml", "**/*.hx"],
 	tools: {
-		haxe: "https://haxe.org/download, such as brew install haxe, which brings haxelib",
+		haxe: "https://haxe.org/download, such as brew install haxe, which brings haxelib"
 	},
 	sources: [
 		"**/*.hx",
 		"**/*.hxml",
 		"haxelib.json",
 		"checkstyle.json",
-		"hxformat.json",
+		"hxformat.json"
 	],
 	kinds: [],
 	variables: () => Promise.resolve({}),
@@ -34,6 +34,6 @@ export const haxe: Language = {
 		format: haxeFormat,
 		lint: haxeLint,
 		typecheck: haxeTypecheck,
-		test: haxeTest,
-	},
+		test: haxeTest
+	}
 };

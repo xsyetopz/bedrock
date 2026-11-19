@@ -18,7 +18,7 @@ describe("legacyPlan", () => {
 	test("keeps a BuildTools package that is the project's own", async () => {
 		const root = await tempRepo({
 			"BuildTools/Package.swift":
-				'let package = Package(name: "BuildTools", dependencies: [.package(url: "https://example.com/other", from: "1.0.0")])\n',
+				'let package = Package(name: "BuildTools", dependencies: [.package(url: "https://example.com/other", from: "1.0.0")])\n'
 		});
 
 		const plan = await legacyPlan(root);
@@ -35,24 +35,21 @@ describe("legacyPlan", () => {
 			const plan = await legacyPlan(root);
 
 			expect(plan.steps).toEqual([{ kind: "remove", path }]);
-		},
+		}
 	);
 
 	test.each([
 		[
 			"project.just",
-			"lint:\n\tswift run --package-path BuildTools swiftlint\n",
+			"lint:\n\tswift run --package-path BuildTools swiftlint\n"
 		],
 		[".gitignore", "BuildTools/.build\n"],
 		[".just/ci.just", "x:\n\tcd BuildTools\n"],
-		[
-			".github/workflows/ci.yml",
-			"run: swift run --package-path BuildTools x\n",
-		],
+		[".github/workflows/ci.yml", "run: swift run --package-path BuildTools x\n"]
 	])("notes the BuildTools reference in %s", async (path, text) => {
 		const root = await tempRepo({
 			"BuildTools/Package.swift": OLD_TOOLS,
-			[path]: text,
+			[path]: text
 		});
 
 		const plan = await legacyPlan(root);
@@ -67,7 +64,7 @@ describe("legacyPlan", () => {
 			".just/swift.just": "BuildTools\n",
 			".github/workflows/swift.yml": "BuildTools\n",
 			".gitignore":
-				"# >>> swift-bedrock\nBuildTools/.build\n# <<< swift-bedrock\n",
+				"# >>> swift-bedrock\nBuildTools/.build\n# <<< swift-bedrock\n"
 		});
 
 		const plan = await legacyPlan(root);
@@ -81,7 +78,7 @@ describe("legacyPlan", () => {
 		expect(await legacyPlan(root)).toEqual({
 			steps: [],
 			notes: [],
-			projectFiles: [],
+			projectFiles: []
 		});
 	});
 });

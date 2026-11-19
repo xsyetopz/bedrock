@@ -29,11 +29,11 @@ export const swift: Language = {
 		"Package.swift",
 		".swift-version",
 		".swift-format",
-		".swiftlint.yml",
+		".swiftlint.yml"
 	],
 	tools: {
 		swift: "swiftly (https://www.swift.org/install/), or Xcode",
-		swiftlint: "brew install swiftlint",
+		swiftlint: "brew install swiftlint"
 	},
 	sources: [
 		"**/*.swift",
@@ -43,7 +43,7 @@ export const swift: Language = {
 		".swiftlint.yml",
 		"**/.swiftlint.yml",
 		"**/*.xcodeproj/project.pbxproj",
-		"Config/*.xcconfig",
+		"Config/*.xcconfig"
 	],
 	kinds: KINDS,
 	variables: (context) => {
@@ -54,5 +54,5 @@ export const swift: Language = {
 	afterApply,
 	runs: "swift package resolve",
 	guard: guardSwift,
-	subcommands: { "convert-tests": convertTests },
+	subcommands: { "convert-tests": convertTests }
 };

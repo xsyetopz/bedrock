@@ -8,7 +8,7 @@ import {
 	renderSections,
 	type Section,
 	tidy,
-	withKey,
+	withKey
 } from "./toml.ts";
 
 const sectionOf = (text: string, name: string): Section => {
@@ -58,7 +58,7 @@ test("keeps multi-line values and strings inside one entry", () => {
 	expect(names).toEqual([undefined, "dependencies", "lints.rust"]);
 	expect(dependencies?.units.map((unit) => keyOf(unit))).toEqual([
 		"serde",
-		"note",
+		"note"
 	]);
 });
 

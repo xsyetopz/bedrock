@@ -45,10 +45,10 @@ export const linkTarget = async (path: string): Promise<string | null> => {
 /** The paths under `root` that exist. */
 export const existing = async (
 	root: string,
-	paths: readonly string[],
+	paths: readonly string[]
 ): Promise<string[]> => {
 	const found = await Promise.all(
-		paths.map((path) => exists(join(root, path))),
+		paths.map((path) => exists(join(root, path)))
 	);
 	return paths.filter((_, index) => found[index] === true);
 };
@@ -62,7 +62,7 @@ const SKIPPED = new Set([
 	"build",
 	"node_modules",
 	"openspec",
-	"target",
+	"target"
 ]);
 
 /**
@@ -71,7 +71,7 @@ const SKIPPED = new Set([
  */
 export const listFiles = async (
 	root: string,
-	glob: Glob,
+	glob: Glob
 ): Promise<string[]> => {
 	const git = await $`git ls-files --cached --others --exclude-standard -z`
 		.cwd(root)
@@ -85,11 +85,11 @@ export const listFiles = async (
 		(path) =>
 			path !== "" &&
 			glob.match(path) &&
-			!path.split("/").some((part) => SKIPPED.has(part)),
+			!path.split("/").some((part) => SKIPPED.has(part))
 	);
 	// The index still lists a file deleted since the last commit.
 	const present = await Promise.all(
-		candidates.map((path) => isRegularFile(join(root, path))),
+		candidates.map((path) => isRegularFile(join(root, path)))
 	);
 	return candidates.filter((_, index) => present[index] === true);
 };

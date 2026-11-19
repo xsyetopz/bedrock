@@ -5,7 +5,7 @@ import {
 	editionsOf,
 	memberManifest,
 	readManaged,
-	rootManifest,
+	rootManifest
 } from "./manifests.ts";
 import type { Manifest } from "./project.ts";
 
@@ -24,14 +24,14 @@ export const EMPTY: Part = { steps: [], notes: [], projectFiles: [] };
 const edited = (
 	path: string,
 	text: string,
-	edit: (text: string) => string,
+	edit: (text: string) => string
 ): Part => {
 	try {
 		const content = edit(text);
 		return {
 			steps: [{ kind: "write", path, content }],
 			notes: editionNotes(path, text, content),
-			projectFiles: [path],
+			projectFiles: [path]
 		};
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
@@ -43,7 +43,7 @@ const edited = (
 const editionNotes = (
 	path: string,
 	before: string,
-	after: string,
+	after: string
 ): string[] => {
 	const old = editionsOf(after).filter((edition) => edition !== "2024");
 	const named = editionsOf(before).length < editionsOf(after).length;
@@ -53,7 +53,7 @@ const editionNotes = (
 	return old.length === 0
 		? []
 		: [
-				`${path}: ${what}; after applying, cargo fix --edition migrates it to 2024 (skipped with --no-run).`,
+				`${path}: ${what}; after applying, cargo fix --edition migrates it to 2024 (skipped with --no-run).`
 			];
 };
 
@@ -64,7 +64,7 @@ const editionNotes = (
 export const manifestPart = async (
 	context: Context,
 	found: readonly Manifest[],
-	dropXtask: boolean,
+	dropXtask: boolean
 ): Promise<Part> => {
 	const parts = context.templates("parts");
 	const managed = readManaged((await parts.read("workspace.toml")) ?? "");
@@ -74,18 +74,16 @@ export const manifestPart = async (
 	if (text === undefined) {
 		return {
 			...EMPTY,
-			notes: ["No Cargo.toml at the root; bedrock init starts a project."],
+			notes: ["No Cargo.toml at the root; bedrock init starts a project."]
 		};
 	}
 	const own = edited("Cargo.toml", text, (current) =>
-		rootManifest(dropXtask ? withoutXtaskMember(current) : current, managed),
+		rootManifest(dropXtask ? withoutXtaskMember(current) : current, managed)
 	);
 	const members = found
 		.filter((manifest) => manifest.hasPackage && manifest.dir !== ".")
 		.map((manifest) =>
-			edited(manifest.path, manifest.text, (current) =>
-				memberManifest(current),
-			),
+			edited(manifest.path, manifest.text, (current) => memberManifest(current))
 		);
 	return merge([own, ...members]);
 };
@@ -94,5 +92,5 @@ export const manifestPart = async (
 export const merge = (parts: readonly Part[]): Part => ({
 	steps: parts.flatMap((part) => part.steps),
 	notes: parts.flatMap((part) => part.notes),
-	projectFiles: parts.flatMap((part) => part.projectFiles),
+	projectFiles: parts.flatMap((part) => part.projectFiles)
 });

@@ -15,7 +15,7 @@ const FOREIGN_FILES = [
 	"package-lock.json",
 	"pnpm-lock.yaml",
 	"pnpm-workspace.yaml",
-	"yarn.lock",
+	"yarn.lock"
 ];
 
 /** Files only another package manager writes. */
@@ -30,11 +30,10 @@ export const findForeignScripts = async (root: string): Promise<Finding[]> => {
 	return Object.entries(asRecord(asRecord(manifest)["scripts"]))
 		.filter(
 			([, command]) =>
-				typeof command === "string" && OTHER_PACKAGE_MANAGER.test(command),
+				typeof command === "string" && OTHER_PACKAGE_MANAGER.test(command)
 		)
 		.map(
-			([name]) =>
-				`package.json: script "${name}" calls another package manager`,
+			([name]) => `package.json: script "${name}" calls another package manager`
 		);
 };
 
@@ -42,16 +41,16 @@ export const findForeignScripts = async (root: string): Promise<Finding[]> => {
 export const findUnsortedCatalogs = (manifest: unknown): Finding[] => {
 	const workspaces = asRecord(asRecord(manifest)["workspaces"]);
 	const named = Object.entries(asRecord(workspaces["catalogs"])).map(
-		([name, value]): [string, unknown] => [`catalogs.${name}`, value],
+		([name, value]): [string, unknown] => [`catalogs.${name}`, value]
 	);
 	const catalogs: [string, unknown][] = [
 		["catalog", workspaces["catalog"]],
-		...named,
+		...named
 	];
 	return catalogs.flatMap(([name, catalog]) => {
 		const keys = Object.keys(asRecord(catalog));
 		return keys.every(
-			(key, index) => index === 0 || (keys[index - 1] ?? "") < key,
+			(key, index) => index === 0 || (keys[index - 1] ?? "") < key
 		)
 			? []
 			: [`package.json: sort workspaces.${name} by package name`];

@@ -30,7 +30,7 @@ export const hooksOn = async (root: string): Promise<boolean> => {
 		"rev-parse",
 		"--path-format=absolute",
 		"--git-path",
-		"hooks",
+		"hooks"
 	]);
 	if (dir === "") {
 		return false;
@@ -40,7 +40,7 @@ export const hooksOn = async (root: string): Promise<boolean> => {
 			const file = Bun.file(join(dir, hook));
 			const text = (await file.exists()) ? await file.text() : "";
 			return text.includes(`call_lefthook run "${hook}"`);
-		}),
+		})
 	);
 	return installed.every(Boolean);
 };
@@ -51,7 +51,7 @@ export const hooksOn = async (root: string): Promise<boolean> => {
  */
 export const uncommitted = async (
 	root: string,
-	paths: readonly string[],
+	paths: readonly string[]
 ): Promise<string[]> => {
 	if (paths.length === 0) {
 		return [];
@@ -74,7 +74,7 @@ export const uncommitted = async (
  */
 export const heldByGit = async (
 	root: string,
-	paths: readonly string[],
+	paths: readonly string[]
 ): Promise<Set<string>> => {
 	if (paths.length === 0) {
 		return new Set();
@@ -91,7 +91,7 @@ export const heldByGit = async (
 			.quiet();
 	const lines = checked.stdout.toString().trim().split("\n");
 	return new Set(
-		paths.filter((_, index) => lines[index]?.endsWith(" missing") === false),
+		paths.filter((_, index) => lines[index]?.endsWith(" missing") === false)
 	);
 };
 
@@ -101,14 +101,14 @@ export const heldByGit = async (
  * when that commit has no parent, since then the whole history is new.
  */
 export const unpushedPaths = async (
-	root: string,
+	root: string
 ): Promise<string[] | undefined> => {
 	const commits = await gitOutput(root, [
 		"rev-list",
 		"--reverse",
 		"HEAD",
 		"--not",
-		"--remotes",
+		"--remotes"
 	]);
 	const [oldest] = commits.split("\n");
 	if (oldest === undefined || oldest === "") {
@@ -118,7 +118,7 @@ export const unpushedPaths = async (
 		"rev-parse",
 		"--verify",
 		"--quiet",
-		`${oldest}^`,
+		`${oldest}^`
 	]);
 	if (base === "") {
 		return undefined;

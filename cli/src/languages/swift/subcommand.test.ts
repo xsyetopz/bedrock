@@ -18,7 +18,7 @@ beforeEach(() => {
 		}),
 		spyOn(console, "error").mockImplementation((line: string) => {
 			logs.push(line);
-		}),
+		})
 	);
 });
 
@@ -31,7 +31,7 @@ afterEach(() => {
 test("converts every unit-test file when no path is given", async () => {
 	const root = await tempRepo({
 		"Tests/ATests/A.swift": XCTEST,
-		"Tests/AppUITests/U.swift": XCTEST,
+		"Tests/AppUITests/U.swift": XCTEST
 	});
 
 	const status = await convertTests.run(contextIn(root), []);
@@ -46,12 +46,12 @@ test("converts every unit-test file when no path is given", async () => {
 test("converts the given paths and reports a file without XCTest", async () => {
 	const root = await tempRepo({
 		"A.swift": XCTEST,
-		"B.swift": "import Testing\n",
+		"B.swift": "import Testing\n"
 	});
 
 	const status = await convertTests.run(contextIn(root), [
 		"A.swift",
-		"B.swift",
+		"B.swift"
 	]);
 
 	expect(status).toBe(0);
@@ -74,7 +74,7 @@ test("fails on a missing file", async () => {
 test("prints what conversion leaves for a person", async () => {
 	const root = await tempRepo({
 		"A.swift":
-			'import XCTest\nfinal class A: XCTestCase {\n  func testB() throws { throw XCTSkip("x") }\n}\n',
+			'import XCTest\nfinal class A: XCTestCase {\n  func testB() throws { throw XCTSkip("x") }\n}\n'
 	});
 
 	await convertTests.run(contextIn(root), ["A.swift"]);

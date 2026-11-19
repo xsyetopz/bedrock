@@ -27,7 +27,7 @@ const SOURCES = {
 	"test/TestMain.hx":
 		'import demo.Greeting;\n\nclass TestMain {\n\tstatic function main() {\n\t\tSys.exit(Greeting.of("you") == "Hello, you" ? 0 : 1);\n\t}\n}\n',
 	"build.hxml": "-cp src\n--main Main\n--js bin/main.js\n",
-	"test.hxml": "-cp src\n-cp test\n--main TestMain\n--interp\n",
+	"test.hxml": "-cp src\n-cp test\n--main TestMain\n--interp\n"
 };
 
 const contextIn = (root: string): Context =>
@@ -39,7 +39,7 @@ test.skipIf(!hasHaxe)(
 		// Arrange
 		const root = await tempRepo(SOURCES);
 		const plan = await buildPlan(root, [{ language: haxe, options: {} }], {
-			init: false,
+			init: false
 		});
 		await applySteps(root, plan.steps);
 
@@ -52,7 +52,7 @@ test.skipIf(!hasHaxe)(
 		expect(tested).toBe(0);
 		expect(await Bun.file(`${root}/bin/main.js`).exists()).toBe(false);
 	},
-	120_000,
+	120_000
 );
 
 test.skipIf(!hasHaxe)(
@@ -64,7 +64,7 @@ test.skipIf(!hasHaxe)(
 			"src/demo/Greeting.hx":
 				'package demo;\n\nclass Greeting {\n\tpublic static function of(name:String):String {\n\t\treturn "Hi, " + name;\n\t}\n}\n',
 			"src/Main.hx":
-				'class Main {\n\tstatic function main() {\n\t\tvar n:Int = "text";\n\t}\n}\n',
+				'class Main {\n\tstatic function main() {\n\t\tvar n:Int = "text";\n\t}\n}\n'
 		});
 
 		// Act
@@ -75,7 +75,7 @@ test.skipIf(!hasHaxe)(
 		expect(typechecked).toBe(1);
 		expect(tested).toBe(1);
 	},
-	120_000,
+	120_000
 );
 
 test.skipIf(!hasStyleTools)(
@@ -84,7 +84,7 @@ test.skipIf(!hasStyleTools)(
 		// Arrange
 		const root = await tempRepo(SOURCES);
 		const plan = await buildPlan(root, [{ language: haxe, options: {} }], {
-			init: false,
+			init: false
 		});
 		await applySteps(root, plan.steps);
 
@@ -93,7 +93,7 @@ test.skipIf(!hasStyleTools)(
 		const linted = await haxeLint.run(contextIn(root), []);
 		await Bun.write(
 			`${root}/src/Unused.hx`,
-			"import demo.Greeting;\n\nclass Unused {}\n",
+			"import demo.Greeting;\n\nclass Unused {}\n"
 		);
 		const flagged = await haxeLint.run(contextIn(root), []);
 
@@ -102,5 +102,5 @@ test.skipIf(!hasStyleTools)(
 		expect(linted).toBe(0);
 		expect(flagged).toBe(1);
 	},
-	120_000,
+	120_000
 );

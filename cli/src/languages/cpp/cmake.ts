@@ -11,7 +11,7 @@ import {
 	eachProject,
 	inBuildDirs,
 	projectsOf,
-	repoPaths,
+	repoPaths
 } from "./projects.ts";
 import type { Target } from "./targets.ts";
 
@@ -26,7 +26,7 @@ export const cmakeProjects = (root: string): Promise<string[]> =>
  */
 export const configureCmake = async (
 	root: string,
-	project: string,
+	project: string
 ): Promise<string> => {
 	const build = buildDir(root, "cmake", project);
 	const query = join(build, ".cmake/api/v1/query");
@@ -40,13 +40,13 @@ export const configureCmake = async (
 			"-B",
 			build,
 			"-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-			"-DBUILD_TESTING=ON",
+			"-DBUILD_TESTING=ON"
 		],
-		root,
+		root
 	);
 	if (result.code !== 0) {
 		throw new Error(
-			`cmake configure of ${project || "."} failed: ${firstLine(result.stderr)}`,
+			`cmake configure of ${project || "."} failed: ${firstLine(result.stderr)}`
 		);
 	}
 	return build;
@@ -57,9 +57,7 @@ export const cmakeEntries = async (root: string): Promise<unknown[]> =>
 	eachProject(await cmakeProjects(root), async (project) => {
 		const build = await configureCmake(root, project);
 		return asArray(
-			JSON.parse(
-				(await readText(join(build, "compile_commands.json"))) ?? "[]",
-			),
+			JSON.parse((await readText(join(build, "compile_commands.json"))) ?? "[]")
 		);
 	});
 
@@ -71,9 +69,9 @@ const testCommands = (text: string): string[][] =>
 	[...text.matchAll(/^add_test\((.*)\)$/gmu)].map((line) =>
 		[
 			...(line[1] ?? "").matchAll(
-				/"((?:[^"\\]|\\.)*)"|\[(=*)\[([\s\S]*?)\]\2\]/gu,
-			),
-		].map((arg) => arg[1] ?? arg[3] ?? ""),
+				/"((?:[^"\\]|\\.)*)"|\[(=*)\[([\s\S]*?)\]\2\]/gu
+			)
+		].map((arg) => arg[1] ?? arg[3] ?? "")
 	);
 
 /**
@@ -84,15 +82,15 @@ const testCommands = (text: string): string[][] =>
  */
 const testedPaths = async (
 	build: string,
-	inRepo: (path: string) => string | undefined,
+	inRepo: (path: string) => string | undefined
 ): Promise<Set<string>> => {
 	const tested = new Set<string>();
 	for await (const file of new Glob("**/CTestTestfile.cmake").scan({
 		cwd: build,
-		dot: true,
+		dot: true
 	})) {
 		for (const [, command] of testCommands(
-			(await readText(join(build, file))) ?? "",
+			(await readText(join(build, file))) ?? ""
 		)) {
 			const path =
 				command === undefined ? undefined : inRepo(resolve(build, command));
@@ -106,13 +104,13 @@ const testedPaths = async (
 
 /** The codemodel of the latest File API reply in `reply`, if configure wrote one. */
 const latestCodemodel = async (
-	reply: string,
+	reply: string
 ): Promise<Record<string, unknown> | undefined> => {
 	if (!(await exists(reply))) {
 		return undefined;
 	}
 	const indexes = await Array.fromAsync(
-		new Glob("index-*.json").scan({ cwd: reply }),
+		new Glob("index-*.json").scan({ cwd: reply })
 	);
 	const latest = indexes.toSorted().at(-1);
 	if (latest === undefined) {
@@ -122,8 +120,8 @@ const latestCodemodel = async (
 	return readJson(
 		join(
 			reply,
-			asString(asRecord(asRecord(index["reply"])["codemodel-v2"])["jsonFile"]),
-		),
+			asString(asRecord(asRecord(index["reply"])["codemodel-v2"])["jsonFile"])
+		)
 	);
 };
 
@@ -150,15 +148,15 @@ const targetOf = (target: Record<string, unknown>, build: Build): Target => ({
 			return path === undefined || inBuildDirs(path) ? [] : [path];
 		}),
 	deps: asArray(target["dependencies"]).map((dep) =>
-		asString(asRecord(dep)["id"]),
+		asString(asRecord(dep)["id"])
 	),
 	test: asArray(target["artifacts"]).some((artifact) =>
 		build.tested.has(
 			build.inRepo(resolve(build.dir, asString(asRecord(artifact)["path"]))) ??
-				"",
-		),
+				""
+		)
 	),
-	installed: target["install"] !== undefined,
+	installed: target["install"] !== undefined
 });
 
 /**
@@ -168,7 +166,7 @@ const targetOf = (target: Record<string, unknown>, build: Build): Target => ({
  */
 export const cmakeTargets = async (
 	root: string,
-	project: string,
+	project: string
 ): Promise<Target[]> => {
 	const dir = buildDir(root, "cmake", project);
 	const reply = join(dir, ".cmake/api/v1/reply");
@@ -182,14 +180,14 @@ export const cmakeTargets = async (
 		dir,
 		source: asString(asRecord(codemodel["paths"])["source"]),
 		inRepo,
-		tested: await testedPaths(dir, inRepo),
+		tested: await testedPaths(dir, inRepo)
 	};
 	return Promise.all(
 		asArray(asRecord(configuration)["targets"]).map(async (entry) =>
 			targetOf(
 				await readJson(join(reply, asString(asRecord(entry)["jsonFile"]))),
-				build,
-			),
-		),
+				build
+			)
+		)
 	);
 };

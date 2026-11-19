@@ -19,7 +19,7 @@ test("adopt moves a source pin from .bedrock.json into .editorconfig", async () 
 	expect(code).toBe(0);
 	expect(await readConfig(root)).toEqual({
 		version: "source",
-		languages: { typescript: {} },
+		languages: { typescript: {} }
 	});
 	expect(await Bun.file(join(root, ".bedrock.json")).exists()).toBe(false);
 });
@@ -34,7 +34,7 @@ test("adopt pins this release in a repo without a source pin", async () => {
 	// Assert
 	expect(await readConfig(root)).toEqual({
 		version: VERSION,
-		languages: { typescript: {} },
+		languages: { typescript: {} }
 	});
 });
 
@@ -44,7 +44,7 @@ test.skipIf(Bun.which("cargo") === null)(
 		// Arrange
 		const root = await tempRepo({
 			"Cargo.toml": '[package]\nname = "old"\nversion = "0.1.0"\n',
-			"src/lib.rs": "",
+			"src/lib.rs": ""
 		});
 		await adopt("adopt", [root, "rust", "--yes", "--no-run"]);
 
@@ -54,8 +54,8 @@ test.skipIf(Bun.which("cargo") === null)(
 		// Assert
 		expect(code).toBe(0);
 		expect(await Bun.file(join(root, "Cargo.toml")).text()).toContain(
-			'edition = "2024"',
+			'edition = "2024"'
 		);
 	},
-	240_000,
+	240_000
 );

@@ -5,7 +5,7 @@ import { converted, members } from "./convert-helpers.ts";
 describe("structure", () => {
 	test("keeps @testable imports", () => {
 		expect(converted("import XCTest\n@testable import Lib\n").text).toBe(
-			"import Testing\n@testable import Lib\n",
+			"import Testing\n@testable import Lib\n"
 		);
 	});
 
@@ -14,25 +14,25 @@ describe("structure", () => {
 		["final class FooTests: XCTestCase {", "final class FooTests {"],
 		[
 			"@MainActor final class FooTests: XCTestCase {",
-			"@MainActor final class FooTests {",
+			"@MainActor final class FooTests {"
 		],
 		[
 			"@MainActor\nclass FooTests: XCTestCase {",
-			"@MainActor\nfinal class FooTests {",
+			"@MainActor\nfinal class FooTests {"
 		],
 		[
 			"final class FooTests: XCTestCase, Sendable {",
-			"final class FooTests: Sendable {",
+			"final class FooTests: Sendable {"
 		],
 		[
 			"class FooTests: Base, XCTestCase, P {",
-			"final class FooTests: Base, P {",
+			"final class FooTests: Base, P {"
 		],
 		["public class FooTests : XCTestCase{", "public final class FooTests {"],
-		["class Helper: NSObject {", "class Helper: NSObject {"],
+		["class Helper: NSObject {", "class Helper: NSObject {"]
 	])("class declaration %s", (input, expected) => {
 		expect(converted(`import XCTest\n${input}\n}\n`).text).toBe(
-			`import Testing\n${expected}\n}\n`,
+			`import Testing\n${expected}\n}\n`
 		);
 	});
 
@@ -42,8 +42,8 @@ describe("structure", () => {
 				"  func testAddsNumbers() {}",
 				"  func testLoads() async throws {}",
 				"  func test_snake_case() throws {}",
-				"  func testURLParsing() {}",
-			].join("\n"),
+				"  func testURLParsing() {}"
+			].join("\n")
 		).body;
 
 		expect(body).toBe(
@@ -55,14 +55,14 @@ describe("structure", () => {
 				"  @Test",
 				"  func snake_case() throws {}",
 				"  @Test",
-				"  func uRLParsing() {}",
-			].join("\n"),
+				"  func uRLParsing() {}"
+			].join("\n")
 		);
 	});
 
 	test("puts @Test on its own line at the same indentation", () => {
 		expect(members("    @MainActor func testIt() {}").body).toBe(
-			"    @Test\n    @MainActor func it() {}",
+			"    @Test\n    @MainActor func it() {}"
 		);
 	});
 
@@ -76,8 +76,8 @@ describe("structure", () => {
 				"  func testBaz() { baz(1) }",
 				"  func testQux() {}",
 				"  func test_qux() {}",
-				"  func testFree() { _ = free }",
-			].join("\n"),
+				"  func testFree() { _ = free }"
+			].join("\n")
 		);
 
 		for (const kept of [
@@ -86,7 +86,7 @@ describe("structure", () => {
 			"func testBaz() { baz(1) }",
 			"func testQux() {}",
 			"func test_qux() {}",
-			"func free() { _ = free }",
+			"func free() { _ = free }"
 		]) {
 			expect(body).toContain(kept);
 		}
@@ -96,7 +96,7 @@ describe("structure", () => {
 		const names = ["test", "test1", "testDefault", "testInit", "test_"];
 
 		const { body } = members(
-			names.map((name) => `  func ${name}() {}`).join("\n"),
+			names.map((name) => `  func ${name}() {}`).join("\n")
 		);
 
 		for (const name of names) {
@@ -109,8 +109,8 @@ describe("structure", () => {
 			[
 				"  func testWithArgument(_ x: Int) {}",
 				"  private func testHelper() {}",
-				"  static func testStatic() {}",
-			].join("\n"),
+				"  static func testStatic() {}"
+			].join("\n")
 		);
 
 		expect(body).not.toContain("@Test");
@@ -121,7 +121,7 @@ describe("structure", () => {
 			"import XCTest\nclass A: XCTestCase {}\nextension A {\n  func testB() {}\n}\n";
 
 		expect(converted(source).text).toContain(
-			"extension A {\n  @Test\n  func b() {}\n}",
+			"extension A {\n  @Test\n  func b() {}\n}"
 		);
 	});
 
@@ -129,7 +129,7 @@ describe("structure", () => {
 		const source = "import XCTest\nclass A {\n  func testB() {}\n}\n";
 
 		expect(converted(source).text).toBe(
-			"import Testing\nclass A {\n  func testB() {}\n}\n",
+			"import Testing\nclass A {\n  func testB() {}\n}\n"
 		);
 	});
 
@@ -139,7 +139,7 @@ describe("structure", () => {
 		["override func setUpWithError() throws", "init() throws"],
 		["override func setUp() async throws", "init() async throws"],
 		["override func tearDown()", "deinit"],
-		["override func tearDownWithError()", "deinit"],
+		["override func tearDownWithError()", "deinit"]
 	])("lifecycle %s", (input, expected) => {
 		const call = `super.${input.slice(0, input.indexOf("(")).split(" ").pop()}()`;
 
@@ -157,11 +157,11 @@ describe("structure", () => {
 			"    await super.setUp()",
 			"    super.setUp();",
 			"    keep()",
-			"  }",
+			"  }"
 		];
 
 		expect(members(lines.join("\n")).body).toBe(
-			"  init() async throws {\n    keep()\n  }",
+			"  init() async throws {\n    keep()\n  }"
 		);
 	});
 
@@ -172,7 +172,7 @@ describe("structure", () => {
 			"  }",
 			"  override func tearDown() async {",
 			"    await cleanup()",
-			"  }",
+			"  }"
 		];
 
 		const result = members(lines.join("\n"));
@@ -188,16 +188,16 @@ describe("structure", () => {
 			"  override func setUp() {}",
 			"  override func setUpWithError() throws {}",
 			"  override func tearDown() {}",
-			"  override func tearDownWithError() {}",
+			"  override func tearDownWithError() {}"
 		];
 
 		const result = members(lines.join("\n"));
 
 		expect(result.body).toContain(
-			"  init() {}\n  override func setUpWithError() throws {}",
+			"  init() {}\n  override func setUpWithError() throws {}"
 		);
 		expect(result.body).toContain(
-			"  deinit {}\n  override func tearDownWithError() {}",
+			"  deinit {}\n  override func tearDownWithError() {}"
 		);
 		expect(result.notes).toHaveLength(2);
 	});

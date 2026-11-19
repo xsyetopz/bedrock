@@ -18,7 +18,7 @@ export const TOOLS: Readonly<
 > = {
 	csharpier: { version: "1.4.0", command: "csharpier" },
 	fantomas: { version: "8.1.3", command: "fantomas" },
-	"dotnet-fsharplint": { version: "0.27.2", command: "dotnet-fsharplint" },
+	"dotnet-fsharplint": { version: "0.27.2", command: "dotnet-fsharplint" }
 };
 
 /** The file that pins the SDK a repo builds with. */
@@ -31,13 +31,13 @@ export const GLOBAL_JSON = "global.json";
  */
 export const TOOL_MANIFESTS = [
 	".config/dotnet-tools.json",
-	"dotnet-tools.json",
+	"dotnet-tools.json"
 ];
 
 /** The tool manifest a repo already has, or the `.config/` one bedrock writes. */
 export const toolManifestPath = async (root: string): Promise<string> => {
 	const found = await Promise.all(
-		TOOL_MANIFESTS.map((path) => Bun.file(join(root, path)).exists()),
+		TOOL_MANIFESTS.map((path) => Bun.file(join(root, path)).exists())
 	);
 	return TOOL_MANIFESTS[found.indexOf(true)] ?? ".config/dotnet-tools.json";
 };
@@ -60,7 +60,7 @@ export const TESTING_PLATFORM = "Microsoft.Testing.Platform";
  */
 export const globalJsonStep = async (
 	root: string,
-	testingPlatform = false,
+	testingPlatform = false
 ): Promise<Step[]> => {
 	const text = await readText(join(root, GLOBAL_JSON));
 	const current: Json =
@@ -78,7 +78,7 @@ export const globalJsonStep = async (
 		sdk: sdkPinned
 			? sdk
 			: { ...sdk, version: SDK_VERSION, rollForward: "latestFeature" },
-		...(runnerSet ? {} : { test: { ...test, runner: TESTING_PLATFORM } }),
+		...(runnerSet ? {} : { test: { ...test, runner: TESTING_PLATFORM } })
 	};
 	return [{ kind: "write", path: GLOBAL_JSON, content: toJson(next) }];
 };
@@ -112,7 +112,7 @@ export const toolManifestStep = async (root: string): Promise<Step[]> => {
 			...asRecord(tools[id]),
 			version,
 			commands: [command],
-			rollForward: false,
+			rollForward: false
 		};
 	}
 	const content = toJson({ version: 1, isRoot: true, ...current, tools });
@@ -147,8 +147,8 @@ export const retargetProject = (text: string): string =>
 				list
 					.split(";")
 					.filter((item) => item.trim() !== "")
-					.map((item) => retarget(item)),
-			),
+					.map((item) => retarget(item))
+			)
 		];
 		return `<${tag}>${frameworks.join(";")}</${tag}>`;
 	});
@@ -157,10 +157,10 @@ export const retargetProject = (text: string): string =>
 export const retargetSteps = async (root: string): Promise<Step[]> => {
 	const paths = await listFiles(
 		root,
-		new Glob("**/{*.csproj,*.fsproj,Directory.Build.props}"),
+		new Glob("**/{*.csproj,*.fsproj,Directory.Build.props}")
 	);
 	const texts = await Promise.all(
-		paths.map((path) => readText(join(root, path))),
+		paths.map((path) => readText(join(root, path)))
 	);
 	return paths.flatMap((path, index): Step[] => {
 		const text = texts[index];
@@ -180,18 +180,18 @@ export const retargetSteps = async (root: string): Promise<Step[]> => {
 export const langVersionNotes = async (root: string): Promise<string[]> => {
 	const paths = await listFiles(
 		root,
-		new Glob("**/{*.csproj,Directory.Build.props}"),
+		new Glob("**/{*.csproj,Directory.Build.props}")
 	);
 	const texts = await Promise.all(
-		paths.map((path) => readText(join(root, path))),
+		paths.map((path) => readText(join(root, path)))
 	);
 	return paths.flatMap((path, index) => {
 		const match = /<LangVersion>\s*(\d+)(?:\.\d+)?\s*<\/LangVersion>/u.exec(
-			texts[index] ?? "",
+			texts[index] ?? ""
 		);
 		return match !== null && Number(match[1]) < 14
 			? [
-					`${path}: LangVersion ${match[1] ?? ""} holds C# below the C# 14 that .NET 10 defaults to; delete it unless a consumer needs the older language.`,
+					`${path}: LangVersion ${match[1] ?? ""} holds C# below the C# 14 that .NET 10 defaults to; delete it unless a consumer needs the older language.`
 				]
 			: [];
 	});

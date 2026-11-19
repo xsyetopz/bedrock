@@ -16,33 +16,33 @@ export const toolEnv = (): Record<string, string> =>
 			value === undefined ||
 			["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"].includes(key)
 				? []
-				: [[key, value]],
-		),
+				: [[key, value]]
+		)
 	);
 
 /** Runs a command in `cwd` and captures its output; a missing executable is code 127. */
 export const run = async (
 	command: readonly string[],
-	cwd: string,
+	cwd: string
 ): Promise<Run> => {
 	try {
 		const child = Bun.spawn([...command], {
 			cwd,
 			env: toolEnv(),
 			stdout: "pipe",
-			stderr: "pipe",
+			stderr: "pipe"
 		});
 		const [stdout, stderr, code] = await Promise.all([
 			new Response(child.stdout).text(),
 			new Response(child.stderr).text(),
-			child.exited,
+			child.exited
 		]);
 		return { code, stdout, stderr };
 	} catch (error) {
 		return {
 			code: 127,
 			stdout: "",
-			stderr: error instanceof Error ? error.message : String(error),
+			stderr: error instanceof Error ? error.message : String(error)
 		};
 	}
 };
@@ -53,14 +53,14 @@ export const run = async (
  */
 export const passes = async (
 	cwd: string,
-	command: readonly string[],
+	command: readonly string[]
 ): Promise<boolean> => {
 	console.error(`$ ${command.join(" ")}`);
 	try {
 		const child = Bun.spawn([...command], {
 			cwd,
 			env: toolEnv(),
-			stdio: ["inherit", "inherit", "inherit"],
+			stdio: ["inherit", "inherit", "inherit"]
 		});
 		return (await child.exited) === 0;
 	} catch (error) {

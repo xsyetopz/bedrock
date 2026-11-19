@@ -20,7 +20,7 @@ const SPECIFIER_ENDINGS = [
 	".js",
 	".mjs",
 	"/index.ts",
-	"/index.js",
+	"/index.js"
 ];
 const UNDOCUMENTED =
 	/^(.+?):(\d+):\d+: .* \[Error\/jsdoc-js\(require-jsdoc\)\]$/u;
@@ -41,7 +41,7 @@ const entryPoints = (manifest: unknown): string[] => {
 const reExported = (
 	path: string,
 	text: string,
-	sources: ReadonlySet<string>,
+	sources: ReadonlySet<string>
 ): string[] =>
 	[...text.matchAll(RE_EXPORT)].flatMap(([, specifier = ""]) => {
 		const base = join(dirname(path), specifier);
@@ -56,30 +56,30 @@ const reExported = (
  */
 const listApiFiles = async (
 	root: string,
-	ignore: readonly string[],
+	ignore: readonly string[]
 ): Promise<string[]> => {
 	const sources = new Set(await sourcesOf(root, ignore));
 	const manifestPaths = await listManifests(root, ignore);
 	const manifests = await Promise.all(
 		manifestPaths.map(async (path) =>
 			entryPoints(await readJsonc(join(root, path))).map((entry) =>
-				join(dirname(path), entry),
-			),
-		),
+				join(dirname(path), entry)
+			)
+		)
 	);
 	const found = new Set<string>();
 	const visit = async (paths: readonly string[]): Promise<void> => {
 		const fresh = [...new Set(paths)].filter(
-			(path) => sources.has(path) && !found.has(path),
+			(path) => sources.has(path) && !found.has(path)
 		);
 		for (const path of fresh) {
 			found.add(path);
 		}
 		const texts = await Promise.all(
-			fresh.map((path) => Bun.file(join(root, path)).text()),
+			fresh.map((path) => Bun.file(join(root, path)).text())
 		);
 		const next = fresh.flatMap((path, index) =>
-			reExported(path, texts[index] ?? "", sources),
+			reExported(path, texts[index] ?? "", sources)
 		);
 		if (next.length > 0) {
 			await visit(next);
@@ -91,13 +91,13 @@ const listApiFiles = async (
 
 const listManifests = (
 	root: string,
-	ignore: readonly string[],
+	ignore: readonly string[]
 ): Promise<string[]> => listSources(root, MANIFEST, ignore);
 
 /** The API config, written where oxlint resolves the jsdoc plugin from the repo's `node_modules`. */
 const apiConfig = async (
 	context: Context,
-	dir: string,
+	dir: string
 ): Promise<string | undefined> => {
 	const template = await context.templates("merge").read("oxlintrc.api.json");
 	if (template === undefined) {
@@ -111,7 +111,7 @@ const apiConfig = async (
 /** Exported declarations in the package API that lack a JSDoc comment. */
 export const findUndocumentedApi = async (
 	context: Context,
-	ignore: readonly string[],
+	ignore: readonly string[]
 ): Promise<Finding[]> => {
 	const files = await listApiFiles(context.root, ignore);
 	if (files.length === 0) {
@@ -142,7 +142,7 @@ export const findUndocumentedApi = async (
 		return result.exitCode === 0 || problems.length > 0
 			? problems.toSorted()
 			: [
-					`oxlint failed on the package API: ${result.stderr.toString().trim()}`,
+					`oxlint failed on the package API: ${result.stderr.toString().trim()}`
 				];
 	} finally {
 		await rm(dir, { recursive: true, force: true });

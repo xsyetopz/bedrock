@@ -8,7 +8,7 @@ import {
 	adoptedManifest,
 	isTypeName,
 	newManifest,
-	typeName,
+	typeName
 } from "./manifest.ts";
 
 /** The kinds `bedrock init` starts; each one includes the library. */
@@ -26,7 +26,7 @@ export const packageType = (directory: string): string => {
 	const name = typeName(directory);
 	if (!isTypeName(name)) {
 		throw new Error(
-			`${directory} cannot name a Swift package: its type name "${name}" must start with a letter and use only ASCII letters and digits. Rename the directory.`,
+			`${directory} cannot name a Swift package: its type name "${name}" must start with a letter and use only ASCII letters and digits. Rename the directory.`
 		);
 	}
 	return name;
@@ -35,17 +35,17 @@ export const packageType = (directory: string): string => {
 const treeSteps = async (
 	templates: ReturnType<typeof templateDir>,
 	root: string,
-	name: string,
+	name: string
 ): Promise<Step[]> => {
 	const variables = { typeName: name, lowerName: name.toLowerCase() };
 	const files = await templates.files(variables);
 	const steps = files.map((file): Step => ({
 		kind: "write",
 		path: file.path,
-		content: file.content,
+		content: file.content
 	}));
 	const present = await Promise.all(
-		steps.map((step) => Bun.file(join(root, step.path)).exists()),
+		steps.map((step) => Bun.file(join(root, step.path)).exists())
 	);
 	return steps.filter((_, index) => present[index] !== true);
 };
@@ -59,24 +59,24 @@ export const kitSteps = async (
 	cxx: boolean,
 	blocks: readonly Block[],
 	hasManifest: boolean,
-	directory: string,
+	directory: string
 ): Promise<Step[]> => {
 	const kinds = kindsOf(context);
 	const name = packageType(directory);
 	const trees = [
 		context.templates("kit/library"),
 		...KINDS.filter((kind) => kind !== "library" && kinds.has(kind)).map(
-			(kind) => context.templates(`kit/${kind}`),
+			(kind) => context.templates(`kit/${kind}`)
 		),
-		...(cxx ? [templateDir("cpp/kit/cxx")] : []),
+		...(cxx ? [templateDir("cpp/kit/cxx")] : [])
 	];
 	const groups = await Promise.all(
-		trees.map((tree) => treeSteps(tree, context.root, name)),
+		trees.map((tree) => treeSteps(tree, context.root, name))
 	);
 	const readme = await treeSteps(
 		context.templates("kit/new"),
 		context.root,
-		name,
+		name
 	);
 	const manifest: Step[] = hasManifest
 		? []
@@ -84,8 +84,8 @@ export const kitSteps = async (
 				{
 					kind: "write",
 					path: "Package.swift",
-					content: adoptedManifest(newManifest(name, kinds, cxx), blocks),
-				},
+					content: adoptedManifest(newManifest(name, kinds, cxx), blocks)
+				}
 			];
 	return [...groups.flat(), ...readme, ...manifest];
 };

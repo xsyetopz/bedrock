@@ -58,9 +58,9 @@ export const manifests = async (root: string): Promise<Manifest[]> => {
 				dir: dirname(path),
 				text,
 				hasPackage: isTable(at(doc, "package")),
-				hasWorkspace: isTable(at(doc, "workspace")),
+				hasWorkspace: isTable(at(doc, "workspace"))
 			};
-		}),
+		})
 	);
 	const separate = found
 		.filter((manifest) => manifest.hasWorkspace && manifest.dir !== ".")
@@ -68,8 +68,8 @@ export const manifests = async (root: string): Promise<Manifest[]> => {
 	return found.filter(
 		(manifest) =>
 			!separate.some(
-				(dir) => manifest.dir === dir || manifest.dir.startsWith(`${dir}/`),
-			),
+				(dir) => manifest.dir === dir || manifest.dir.startsWith(`${dir}/`)
+			)
 	);
 };
 
@@ -81,22 +81,22 @@ export const manifests = async (root: string): Promise<Manifest[]> => {
  */
 export const moduleMoves = async (
 	root: string,
-	found: readonly Manifest[],
+	found: readonly Manifest[]
 ): Promise<Moves> => {
 	const sources = found.map((manifest) =>
-		manifest.dir === "." ? "src/" : `${manifest.dir}/src/`,
+		manifest.dir === "." ? "src/" : `${manifest.dir}/src/`
 	);
 	const listed = await listFiles(root, MOD_FILES);
 	const candidates = listed.filter((path) =>
 		sources.some(
-			(source) => path.startsWith(source) && path !== `${source}mod.rs`,
-		),
+			(source) => path.startsWith(source) && path !== `${source}mod.rs`
+		)
 	);
 	const free = await Promise.all(
 		candidates.map(async (from) => {
 			const to = `${from.slice(0, -"/mod.rs".length)}.rs`;
 			return (await exists(join(root, to))) ? undefined : { from, to };
-		}),
+		})
 	);
 	const wanted = free.filter((move) => move !== undefined);
 	const planned = await Promise.all(
@@ -107,12 +107,12 @@ export const moduleMoves = async (
 				return undefined;
 			}
 			return prefixed === text ? move : { ...move, content: prefixed };
-		}),
+		})
 	);
 	return {
 		moves: planned.filter((move) => move !== undefined),
 		kept: wanted
 			.filter((_, index) => planned[index] === undefined)
-			.map((move) => move.from),
+			.map((move) => move.from)
 	};
 };

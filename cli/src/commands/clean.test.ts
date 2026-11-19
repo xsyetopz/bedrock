@@ -12,7 +12,7 @@ describe("removeBackups", () => {
 		await Bun.write(join(root, "node_modules/x/y.bak"), "dep\n");
 		expect(await removeBackups(root, false)).toEqual({
 			removed: ["Makefile.bak"],
-			kept: ["notes.bak"],
+			kept: ["notes.bak"]
 		});
 		expect(await findBackups(root)).toEqual(["notes.bak"]);
 	});
@@ -22,7 +22,7 @@ describe("removeBackups", () => {
 		await Bun.write(join(root, "notes.bak"), "only here\n");
 		expect(await removeBackups(root, true)).toEqual({
 			removed: ["notes.bak"],
-			kept: [],
+			kept: []
 		});
 	});
 });

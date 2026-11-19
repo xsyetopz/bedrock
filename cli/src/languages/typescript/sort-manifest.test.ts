@@ -11,7 +11,7 @@ describe("sortManifest", () => {
 			zeta: 1,
 			name: "x",
 			alpha: 2,
-			version: "1.0.0",
+			version: "1.0.0"
 		});
 
 		expect(Object.keys(sorted)).toEqual([
@@ -19,17 +19,17 @@ describe("sortManifest", () => {
 			"version",
 			"scripts",
 			"alpha",
-			"zeta",
+			"zeta"
 		]);
 	});
 
 	test("sorts script and dependency names", () => {
 		const sorted = sortManifest({
-			devDependencies: { zed: "1", "@types/bun": "1", abc: "1" },
+			devDependencies: { zed: "1", "@types/bun": "1", abc: "1" }
 		});
 
 		expect(JSON.stringify(sorted)).toBe(
-			'{"devDependencies":{"@types/bun":"1","abc":"1","zed":"1"}}',
+			'{"devDependencies":{"@types/bun":"1","abc":"1","zed":"1"}}'
 		);
 	});
 });
@@ -50,7 +50,7 @@ describe("templates against the repository", () => {
 	test("the template catalog equals the root catalog", async () => {
 		const root = await textOf("../../../../package.json");
 		const template = await textOf(
-			"../../../../templates/typescript/manifest/package.json.tmpl",
+			"../../../../templates/typescript/manifest/package.json.tmpl"
 		);
 
 		expect(catalogOf(template)).toEqual(catalogOf(root));

@@ -14,7 +14,7 @@ const FOREIGN: Readonly<Record<string, string>> = {
 	"ivy.xml": "Ivy",
 	"build.sbt": "sbt",
 	"build.gradle": "Gradle's Groovy DSL",
-	"settings.gradle": "Gradle's Groovy DSL",
+	"settings.gradle": "Gradle's Groovy DSL"
 };
 
 /** Rules that turn off what bedrock.pro is for, or keep the whole program. */
@@ -32,7 +32,7 @@ const pathFindings = (path: string): Finding[] => {
 	const found: Finding[] = [];
 	if (tool !== undefined) {
 		found.push(
-			`${path}: ${tool} build file; the Gradle Kotlin DSL build replaces it, so bedrock adopt migrates it`,
+			`${path}: ${tool} build file; the Gradle Kotlin DSL build replaces it, so bedrock adopt migrates it`
 		);
 	}
 	if (path.startsWith(".mvn/")) {
@@ -50,15 +50,15 @@ const proguardFindings = (path: string, text: string): Finding[] =>
 		.flatMap((line, index) =>
 			WEAKENING.test(line)
 				? [
-						`${path}:${index + 1}: ${line.trim()} undoes the shrinking and optimizing; keep only the classes reflection needs`,
+						`${path}:${index + 1}: ${line.trim()} undoes the shrinking and optimizing; keep only the classes reflection needs`
 					]
-				: [],
+				: []
 		);
 
 const sourceFindings = (
 	path: string,
 	text: string,
-	junit6: boolean,
+	junit6: boolean
 ): Finding[] => {
 	const lines = text.split("\n");
 	return lines.flatMap((line, index) => {
@@ -67,12 +67,12 @@ const sourceFindings = (
 			line.includes("//") || lines[index - 1]?.trim().startsWith("//") === true;
 		if (SUPPRESSION.test(line) && !reasoned) {
 			found.push(
-				`${path}:${index + 1}: say why in a // comment on the suppression or the line above it`,
+				`${path}:${index + 1}: say why in a // comment on the suppression or the line above it`
 			);
 		}
 		if (junit6 && OLD_TESTS.test(line)) {
 			found.push(
-				`${path}:${index + 1}: JUnit 4 or TestNG; write the test with JUnit 6, org.junit.jupiter.api`,
+				`${path}:${index + 1}: JUnit 4 or TestNG; write the test with JUnit 6, org.junit.jupiter.api`
 			);
 		}
 		return found;
@@ -88,13 +88,13 @@ const androidModules = (scripts: ReadonlyMap<string, string>): string[] =>
 const scriptFindings = (
 	path: string,
 	text: string,
-	hasSettings: boolean,
+	hasSettings: boolean
 ): Finding[] =>
 	// An included build, such as gradle/bedrock, has a settings file and cannot apply them.
 	hasSettings || text.includes('id("bedrock.')
 		? []
 		: [
-				`${path}: applies no bedrock.* plugin, so it skips the toolchain, Java 8 bytecode, and lints`,
+				`${path}: applies no bedrock.* plugin, so it skips the toolchain, Java 8 bytecode, and lints`
 			];
 
 const isOwn = (path: string): boolean =>
@@ -116,10 +116,10 @@ export const guardJvm = async (root: string): Promise<Finding[]> => {
 	await Promise.all(
 		relevant.map(async (path) => {
 			texts.set(path, (await readText(join(root, path))) ?? "");
-		}),
+		})
 	);
 	const scripts = new Map(
-		[...texts].filter(([path]) => nameOf(path) === "build.gradle.kts"),
+		[...texts].filter(([path]) => nameOf(path) === "build.gradle.kts")
 	);
 	const android = androidModules(scripts);
 	const fileSet = new Set(files);
@@ -129,7 +129,7 @@ export const guardJvm = async (root: string): Promise<Finding[]> => {
 		if (nameOf(path) === "build.gradle.kts") {
 			const sibling = path.replace(
 				/build\.gradle\.kts$/u,
-				"settings.gradle.kts",
+				"settings.gradle.kts"
 			);
 			found.push(...scriptFindings(path, text, fileSet.has(sibling)));
 		} else if (path.endsWith(".pro")) {

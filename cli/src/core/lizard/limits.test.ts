@@ -9,7 +9,7 @@ describe("boundsOf", () => {
 			["indent_size", "4"],
 			["bedrock_function_code_lines_warning", "40"],
 			["bedrock_function_code_lines_error", "80"],
-			["bedrock_file_code_lines_warning", "603"],
+			["bedrock_file_code_lines_warning", "603"]
 		]);
 
 		// Act
@@ -18,7 +18,7 @@ describe("boundsOf", () => {
 		// Assert
 		expect(bounds).toEqual({
 			function_code_lines: { warning: 40, error: 80 },
-			file_code_lines: { warning: 603 },
+			file_code_lines: { warning: 603 }
 		});
 	});
 });
@@ -29,7 +29,7 @@ describe("invalidBounds", () => {
 		["bedrock_function_complexity_error", "unset"],
 		["bedrock_version", "0.5.0"],
 		["bedrock_jvm_group", "com.example.app"],
-		["indent_size", "2"],
+		["indent_size", "2"]
 	])("accepts %s = %s", (key, value) => {
 		expect(invalidBounds([[key, value]])).toEqual([]);
 	});
@@ -37,7 +37,7 @@ describe("invalidBounds", () => {
 	test.each([
 		["bedrock_file_code_lines_warning", "lots"],
 		["bedrock_function_parameters_error", "0"],
-		["bedrock_function_lines_error", "56"],
+		["bedrock_function_lines_error", "56"]
 	])("rejects %s = %s", (key, value) => {
 		expect(invalidBounds([[key, value]])).toHaveLength(1);
 	});
@@ -50,7 +50,7 @@ describe("crossed", () => {
 		[700, { warning: 603 }, { level: "warning" as const, limit: 603 }],
 		[90, { warning: 40, error: 80 }, { level: "error" as const, limit: 80 }],
 		[50, { warning: 40, error: 80 }, { level: "warning" as const, limit: 40 }],
-		[1000, {}, undefined],
+		[1000, {}, undefined]
 	])("%d against %j", (value, bound, expected) => {
 		expect(crossed(value, bound)).toEqual(expected);
 	});

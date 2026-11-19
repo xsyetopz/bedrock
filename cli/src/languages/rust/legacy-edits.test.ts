@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import {
 	withoutBedrockAlias,
 	withoutBedrockGit,
-	withoutXtaskMember,
+	withoutXtaskMember
 } from "./legacy-edits.ts";
 
 const ALIAS = '[alias]\nbedrock = "run --quiet --package xtask --"\n';

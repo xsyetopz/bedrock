@@ -10,11 +10,11 @@ describe("dedupe", () => {
 		const steps: Step[] = [
 			{ kind: "write", path: "b", content: "base" },
 			{ kind: "write", path: "a", content: "a" },
-			{ kind: "write", path: "b", content: "language" },
+			{ kind: "write", path: "b", content: "language" }
 		];
 		expect(dedupe(steps)).toEqual([
 			{ kind: "write", path: "a", content: "a" },
-			{ kind: "write", path: "b", content: "language" },
+			{ kind: "write", path: "b", content: "language" }
 		]);
 	});
 });
@@ -28,10 +28,10 @@ describe("applySteps", () => {
 				kind: "write",
 				path: "hooks/run",
 				content: "#!/bin/sh\n",
-				executable: true,
+				executable: true
 			},
 			{ kind: "link", path: "CLAUDE.md", target: "AGENTS.md" },
-			{ kind: "remove", path: "dir" },
+			{ kind: "remove", path: "dir" }
 		];
 		await applySteps(root, steps);
 		expect(await Bun.file(join(root, "old.txt")).text()).toBe("new\n");
@@ -56,7 +56,7 @@ describe("move and binary steps", () => {
 		const move: Step = {
 			kind: "move",
 			path: "src/foo.rs",
-			from: "src/foo/mod.rs",
+			from: "src/foo/mod.rs"
 		};
 
 		// Act

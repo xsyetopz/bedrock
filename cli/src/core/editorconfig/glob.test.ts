@@ -32,7 +32,7 @@ test.each([
 	[String.raw`a\*.kt`, "a*.kt", true],
 	[String.raw`a\*.kt`, "ab.kt", false],
 	["a.kt", "aXkt", false],
-	["[a.kt", "[a.kt", true],
+	["[a.kt", "[a.kt", true]
 ])("%s matches %s: %p", (glob, path, expected) => {
 	expect(globMatcher(glob)(path)).toBe(expected);
 });

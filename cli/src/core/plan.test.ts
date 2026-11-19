@@ -56,14 +56,14 @@ describe("buildPlan", () => {
 		const first = await buildPlan(
 			root,
 			[...selected, { language: go, options: {} }],
-			{ init: false },
+			{ init: false }
 		);
 		await applySteps(root, first.steps);
 
 		// Act
 		const plan = await buildPlan(root, selected, {
 			init: false,
-			dropped: [go],
+			dropped: [go]
 		});
 		await applySteps(root, plan.steps);
 
@@ -82,7 +82,7 @@ describe("buildPlan", () => {
 		// Act
 		const plan = await buildPlan(root, selected, {
 			init: false,
-			dropped: [go],
+			dropped: [go]
 		});
 
 		// Assert
@@ -96,13 +96,13 @@ describe("buildPlan", () => {
 		// Act
 		const plan = await buildPlan(root, selected, {
 			init: false,
-			dropped: [typescript],
+			dropped: [typescript]
 		});
 
 		// Assert
 		expect(plan.steps).not.toContainEqual({
 			kind: "remove",
-			path: ".markdownlint-cli2.jsonc",
+			path: ".markdownlint-cli2.jsonc"
 		});
 		expect(plan.notes.join("\n")).not.toContain(".markdownlint-cli2.jsonc");
 	});

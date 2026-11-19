@@ -28,7 +28,7 @@ describe("parseEditorconfig", () => {
 		expect(sections.map((section) => section.glob)).toEqual([
 			"*.{java,kt}",
 			"gen/**",
-			"/src/Big.kt",
+			"/src/Big.kt"
 		]);
 		expect(sections[0]?.pairs[0]).toEqual(["indent_size", "4"]);
 	});
@@ -43,10 +43,10 @@ describe("propertiesFor", () => {
 		["gen/B.kt", undefined],
 		["src/Big.kt", "900"],
 		["sub/src/Big.kt", "603"],
-		["README.md", undefined],
+		["README.md", undefined]
 	])("%s gets a file bound of %s", (path, expected) => {
 		expect(
-			propertiesFor(sections, path).get("bedrock_file_code_lines_warning"),
+			propertiesFor(sections, path).get("bedrock_file_code_lines_warning")
 		).toBe(expected);
 	});
 });
@@ -58,13 +58,13 @@ describe("editorconfigTree", () => {
 		["src/A.kt", "603"],
 		["legacy/A.kt", "900"],
 		["legacy/gen/A.kt", undefined],
-		["vendor/A.kt", undefined],
+		["vendor/A.kt", undefined]
 	])("%s gets a file bound of %s", async (path, expected) => {
 		// Arrange
 		const root = await tempRepo({
 			".editorconfig": `root = true\n\n[*.kt]\n${KEY} = 603\n`,
 			"legacy/.editorconfig": `[*.kt]\n${KEY} = 900\n\n[gen/**]\n${KEY} = unset\n`,
-			"vendor/.editorconfig": "root = true\n\n[*]\nindent_size = 2\n",
+			"vendor/.editorconfig": "root = true\n\n[*]\nindent_size = 2\n"
 		});
 
 		// Act
@@ -79,7 +79,7 @@ describe("editorconfigTree", () => {
 		const root = await tempRepo({
 			".editorconfig": "root = true\n",
 			"legacy/.editorconfig": "[*]\n",
-			"other/.editorconfig": "[*]\n",
+			"other/.editorconfig": "[*]\n"
 		});
 		const tree = editorconfigTree(root);
 		await tree.properties("legacy/A.kt");
@@ -90,7 +90,7 @@ describe("editorconfigTree", () => {
 		// Assert
 		expect(files.map((file) => file.path).toSorted()).toEqual([
 			".editorconfig",
-			"legacy/.editorconfig",
+			"legacy/.editorconfig"
 		]);
 	});
 });

@@ -13,7 +13,7 @@ test.each([
 	["app/src/main/kotlin/Main.kt", false],
 	["src/testing/java/A.java", false],
 	["src/latest/java/A.java", false],
-	["test/A.java", false],
+	["test/A.java", false]
 ])("%s is in a test source set: %p", async (file, expected) => {
 	// Act
 	const picked = await jvmTestFiles("", [file]);

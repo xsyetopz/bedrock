@@ -11,7 +11,7 @@ import {
 	blockForeign,
 	foreignPackageManager,
 	register,
-	runBedrock,
+	runBedrock
 } from "./register.ts";
 import { assetName, findBedrock, VERSION } from "./runner.ts";
 
@@ -34,7 +34,7 @@ const engine = ({
 	root = ROOT,
 	files = [MAIN],
 	calls = [],
-	answer = () => OK,
+	answer = () => OK
 }: Fake = {}): Engine => ({
 	plugin: { name: "bedrock", root },
 	command: { register: () => Promise.resolve({}) },
@@ -43,9 +43,9 @@ const engine = ({
 		run: (argv) => {
 			calls.push([...argv]);
 			return Promise.resolve(answer(argv));
-		},
+		}
 	},
-	session: { cwd: () => Promise.resolve("/work") },
+	session: { cwd: () => Promise.resolve("/work") }
 });
 
 const next =
@@ -60,7 +60,7 @@ const machine =
 		const replies: Record<string, string> = {
 			"bedrock version": onPath,
 			"uname -m": "arm64",
-			"uname -s": "Darwin",
+			"uname -s": "Darwin"
 		};
 		return { ...OK, stdout: replies[argv.join(" ")] ?? "" };
 	};
@@ -85,7 +85,7 @@ describe("bedrockArgs", () => {
 	test.each([
 		["adopt", ["adopt", "--dry-run"]],
 		["init app typescript", ["init", "app", "typescript", "--dry-run"]],
-		["update .", ["update", ".", "--dry-run"]],
+		["update .", ["update", ".", "--dry-run"]]
 	])("previews %j", (input, args) => {
 		expect(bedrockArgs(input)).toEqual(args);
 	});
@@ -94,7 +94,7 @@ describe("bedrockArgs", () => {
 		["adopt --yes", ["adopt", "--yes"]],
 		["adopt --dry-run", ["adopt", "--dry-run"]],
 		["guard  base", ["guard", "base"]],
-		["", ["help"]],
+		["", ["help"]]
 	])("passes %j through", (input, args) => {
 		expect(bedrockArgs(input)).toEqual(args);
 	});
@@ -104,7 +104,7 @@ describe("assetName", () => {
 	test.each([
 		["Darwin", "arm64", "bedrock-darwin-arm64"],
 		["Linux", "aarch64", "bedrock-linux-arm64"],
-		["Linux", "x86_64", "bedrock-linux-x64"],
+		["Linux", "x86_64", "bedrock-linux-x64"]
 	])("names the %s %s asset", (system, arch, asset) => {
 		expect(assetName(system, arch)).toBe(asset);
 	});
@@ -126,7 +126,7 @@ describe("findBedrock", () => {
 			root: INSTALLED,
 			files: [],
 			calls,
-			answer: machine("0.0.1"),
+			answer: machine("0.0.1")
 		});
 		const binary = `${INSTALLED}/.bedrock/${VERSION}/bedrock-darwin-arm64`;
 
@@ -135,7 +135,7 @@ describe("findBedrock", () => {
 			"sh",
 			binary,
 			`https://github.com/xsyetopz/bedrock/releases/download/v${VERSION}`,
-			"bedrock-darwin-arm64",
+			"bedrock-darwin-arm64"
 		]);
 	});
 
@@ -146,7 +146,7 @@ describe("findBedrock", () => {
 			root: INSTALLED,
 			files: [binary],
 			calls,
-			answer: machine(""),
+			answer: machine("")
 		});
 
 		expect(await findBedrock($)).toEqual([binary]);
@@ -180,15 +180,15 @@ describe("runBedrock", () => {
 				MAIN,
 				"adopt",
 				"rust",
-				"--dry-run",
-			],
+				"--dry-run"
+			]
 		]);
 		expect(result.text).toContain("plan\n");
 	});
 
 	test("reports the exit code of a failed run", async () => {
 		const $ = engine({
-			answer: () => ({ exitCode: 2, stdout: "", stderr: "no\n" }),
+			answer: () => ({ exitCode: 2, stdout: "", stderr: "no\n" })
 		});
 
 		const { text } = await runBedrock($, "guard");
@@ -201,7 +201,7 @@ describe("runBedrock", () => {
 		const $ = engine({
 			root: INSTALLED,
 			files: [],
-			answer: offline("offline"),
+			answer: offline("offline")
 		});
 
 		const result = await runBedrock($, "guard");
@@ -218,7 +218,7 @@ describe("foreignPackageManager", () => {
 		["FOO=1 pnpm i", "pnpm"],
 		["sudo yarn add x", "yarn"],
 		["echo $(pnpx x)", "pnpx"],
-		["ls\nyarn", "yarn"],
+		["ls\nyarn", "yarn"]
 	])("finds the manager in %j", (command, manager) => {
 		expect(foreignPackageManager(command)).toBe(manager);
 	});
@@ -227,7 +227,7 @@ describe("foreignPackageManager", () => {
 		"bun add npm-run-all",
 		"bunx tsc",
 		"grep yarn README.md",
-		"cat package-lock.json",
+		"cat package-lock.json"
 	])("passes %j", (command) => {
 		expect(foreignPackageManager(command)).toBeUndefined();
 	});
@@ -242,14 +242,14 @@ describe("hooks", () => {
 				register: (command) => {
 					registered.push(command);
 					return Promise.resolve({});
-				},
-			},
+				}
+			}
 		};
 
 		expect(await announce($, {}, next())).toBe("ran");
 		expect(registered).toEqual([
 			expect.objectContaining({ name: "bedrock" }),
-			expect.objectContaining({ name: "adopt" }),
+			expect.objectContaining({ name: "adopt" })
 		]);
 	});
 
@@ -268,11 +268,11 @@ describe("hooks", () => {
 	test("blockForeign denies npm in a Bun repo only", async () => {
 		const bun = engine({ files: ["/work/bun.lock"] });
 		expect(
-			await blockForeign(bun, { command: "npm ci" }, next()),
+			await blockForeign(bun, { command: "npm ci" }, next())
 		).toHaveProperty("deny");
 		expect(await blockForeign(bun, { command: "bun ci" }, next())).toBe("ran");
 		expect(await blockForeign(engine(), { command: "npm ci" }, next())).toBe(
-			"ran",
+			"ran"
 		);
 	});
 
@@ -286,7 +286,7 @@ describe("hooks", () => {
 			["session.start", announce],
 			["command.run", { command: "bedrock" }, answerBedrock],
 			["command.run", { command: "adopt" }, answerAdopt],
-			["tool.call", { tool: "Bash" }, blockForeign],
+			["tool.call", { tool: "Bash" }, blockForeign]
 		]);
 	});
 });

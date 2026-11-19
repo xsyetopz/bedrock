@@ -8,7 +8,7 @@ import {
 	type Migration,
 	type Module,
 	newMigration,
-	newModule,
+	newModule
 } from "./model.ts";
 import { descendants, parseXml, type XmlElement } from "./xml.ts";
 
@@ -16,12 +16,12 @@ import { descendants, parseXml, type XmlElement } from "./xml.ts";
 const filesBelow = async (directory: string): Promise<string[]> => {
 	const entries = await readdir(directory, {
 		recursive: true,
-		withFileTypes: true,
+		withFileTypes: true
 	}).catch(() => []);
 	return entries
 		.filter((entry) => entry.isFile())
 		.map((entry) =>
-			join(entry.parentPath, entry.name).slice(directory.length + 1),
+			join(entry.parentPath, entry.name).slice(directory.length + 1)
 		);
 };
 
@@ -29,14 +29,14 @@ const filesBelow = async (directory: string): Promise<string[]> => {
 const moveSteps = async (
 	root: string,
 	from: string,
-	to: string,
+	to: string
 ): Promise<Step[] | undefined> => {
 	const bytes = await Bun.file(join(root, from)).bytes();
 	try {
 		const content = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 		return [
 			{ kind: "write", path: to, content },
-			{ kind: "remove", path: from },
+			{ kind: "remove", path: from }
 		];
 	} catch {
 		return undefined;
@@ -46,7 +46,7 @@ const moveSteps = async (
 const sourceDirectories = (
 	project: XmlElement,
 	resolve: (value: string) => string,
-	migration: Migration,
+	migration: Migration
 ): Set<string> => {
 	const sources = new Set<string>();
 	for (const javac of descendants(project, "javac")) {
@@ -63,13 +63,13 @@ const sourceDirectories = (
 			}
 		}
 		const level = ["release", "target", "source"].find(
-			(name) => javac.attributes[name] !== undefined,
+			(name) => javac.attributes[name] !== undefined
 		);
 		if (level !== undefined) {
 			javaLevelNote(
 				"build.xml",
 				resolve(javac.attributes[level] ?? ""),
-				migration.notes,
+				migration.notes
 			);
 		}
 	}
@@ -79,7 +79,7 @@ const sourceDirectories = (
 const moveSources = async (
 	root: string,
 	sources: ReadonlySet<string>,
-	migration: Migration,
+	migration: Migration
 ): Promise<void> => {
 	const wanted = [...sources]
 		.map((source) => source.trim().replaceAll(/^\/+|\/+$/gu, ""))
@@ -97,25 +97,25 @@ const moveSources = async (
 					const steps = await moveSteps(
 						root,
 						`${source}/${relative}`,
-						`src/${set}/${kind}/${relative}`,
+						`src/${set}/${kind}/${relative}`
 					);
 					if (steps === undefined) {
 						migration.notes.add(
-							`${source}/${relative}: not text, so adopt left it; move it to src/${set}/${kind}/${relative} by hand`,
+							`${source}/${relative}: not text, so adopt left it; move it to src/${set}/${kind}/${relative} by hand`
 						);
 					}
 					return steps ?? [];
-				}),
+				})
 			);
 			migration.steps.push(...moved.flat());
-		}),
+		})
 	);
 };
 
 const readBuild = async (
 	root: string,
 	module: Module,
-	migration: Migration,
+	migration: Migration
 ): Promise<void> => {
 	const text = await readText(join(root, "build.xml"));
 	if (text === undefined) {
@@ -132,17 +132,17 @@ const readBuild = async (
 	const resolve = (value: string): string =>
 		value.replaceAll(
 			/\$\{([^}]+)\}/gu,
-			(whole, key: string) => properties.get(key) ?? whole,
+			(whole, key: string) => properties.get(key) ?? whole
 		);
 	const main = descendants(project, "attribute").find(
-		(element) => element.attributes["name"] === "Main-Class",
+		(element) => element.attributes["name"] === "Main-Class"
 	);
 	module.mainClass =
 		main === undefined ? undefined : resolve(main.attributes["value"] ?? "");
 	await moveSources(
 		root,
 		sourceDirectories(project, resolve, migration),
-		migration,
+		migration
 	);
 	migration.steps.push({ kind: "remove", path: "build.xml" });
 };
@@ -150,7 +150,7 @@ const readBuild = async (
 const readIvy = async (
 	root: string,
 	module: Module,
-	migration: Migration,
+	migration: Migration
 ): Promise<void> => {
 	const text = await readText(join(root, "ivy.xml"));
 	if (text === undefined) {
@@ -169,7 +169,7 @@ const readIvy = async (
 			configuration,
 			group: dependency.attributes["org"] ?? "",
 			name: dependency.attributes["name"] ?? "",
-			version: nonEmpty(dependency.attributes["rev"]),
+			version: nonEmpty(dependency.attributes["rev"])
 		});
 	}
 	migration.steps.push({ kind: "remove", path: "ivy.xml" });
@@ -208,10 +208,10 @@ export const ant = async (root: string): Promise<Migration> => {
 		module.dependencies.push({
 			kind: "jars",
 			configuration: "implementation",
-			paths: jars,
+			paths: jars
 		});
 		migration.notes.add(
-			`lib/: the build uses ${jars.length} jar(s) as files(); replace each with its Maven coordinates in gradle/libs.versions.toml`,
+			`lib/: the build uses ${jars.length} jar(s) as files(); replace each with its Maven coordinates in gradle/libs.versions.toml`
 		);
 	}
 	return migration;

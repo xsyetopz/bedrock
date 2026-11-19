@@ -9,7 +9,7 @@ import { type Manifest, manifests } from "./project.ts";
 const NEXT: Readonly<Record<string, string>> = {
 	"2015": "2018",
 	"2018": "2021",
-	"2021": "2024",
+	"2021": "2024"
 };
 
 /** An `edition = "<year>"` line older than 2024, at a package, workspace package, or target. */
@@ -19,14 +19,14 @@ const OLD_EDITION = /^(\s*edition\s*=\s*)"(2015|2018|2021)"/gmu;
 export const raisedEdition = (text: string): string =>
 	text.replaceAll(
 		OLD_EDITION,
-		(_, key: string, year: string) => `${key}"${NEXT[year] ?? year}"`,
+		(_, key: string, year: string) => `${key}"${NEXT[year] ?? year}"`
 	);
 
 /** The manifests that still declare an edition older than 2024. */
 const oldManifests = async (root: string): Promise<Manifest[]> => {
 	const found = await manifests(root);
 	return found.filter(
-		(manifest) => raisedEdition(manifest.text) !== manifest.text,
+		(manifest) => raisedEdition(manifest.text) !== manifest.text
 	);
 };
 
@@ -44,7 +44,7 @@ export const editionPending = async (root: string): Promise<boolean> => {
  */
 export const migrateEditions = async (
 	root: string,
-	round = 1,
+	round = 1
 ): Promise<void> => {
 	const old = await oldManifests(root);
 	if (old.length === 0 || round > 3) {
@@ -56,20 +56,20 @@ export const migrateEditions = async (
 			.nothrow();
 	if (fix.exitCode !== 0) {
 		const declared = new Set(
-			old.flatMap((manifest) => editionsOf(manifest.text)),
+			old.flatMap((manifest) => editionsOf(manifest.text))
 		);
 		declared.delete("2024");
 		throw new Error(
 			[
 				`cargo fix --edition failed moving from edition ${[...declared].join(", ")}, which the manifests still declare.`,
-				"Fix the errors it printed, then run bedrock update to go on from there; git checkout undoes the rounds before it.",
-			].join("\n"),
+				"Fix the errors it printed, then run bedrock update to go on from there; git checkout undoes the rounds before it."
+			].join("\n")
 		);
 	}
 	await Promise.all(
 		old.map((manifest) =>
-			Bun.write(join(root, manifest.path), raisedEdition(manifest.text)),
-		),
+			Bun.write(join(root, manifest.path), raisedEdition(manifest.text))
+		)
 	);
 	// Each round depends on the code the previous one rewrote, so they run in turn.
 	await migrateEditions(root, round + 1);

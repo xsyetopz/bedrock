@@ -1,3 +1,6 @@
 edition = "2024"
 style_edition = "2024"
 newline_style = "Unix"
+# rustfmt adds the comma after a struct field or a multi-line argument itself; `trailing_comma` is
+# nightly-only, so only the stable match-arm setting is pinned.
+match_block_trailing_comma = false

@@ -12,12 +12,12 @@ const typecheck = async (project: string): Promise<string> => {
 	await adoptTypescript(root);
 	await Bun.write(
 		join(root, "justfile"),
-		'mod typescript ".just/typescript.just"\nimport? "project.just"\n',
+		'mod typescript ".just/typescript.just"\nimport? "project.just"\n'
 	);
 	await Bun.write(join(root, "project.just"), project);
 	await Bun.write(
 		join(root, "package.json"),
-		'{"scripts":{"check":"echo ran-check"}}',
+		'{"scripts":{"check":"echo ran-check"}}'
 	);
 	const result = await $`just typescript::typecheck`
 		.cwd(root)

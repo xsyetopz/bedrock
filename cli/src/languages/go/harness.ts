@@ -12,12 +12,12 @@ export const contextIn = (root: string, kind = "", init = false): Context =>
 /** Plans and applies a go adopt of `root`, as `bedrock adopt` or `init` would. */
 export const adoptGo = async (
 	root: string,
-	{ kind = "", init = false } = {},
+	{ kind = "", init = false } = {}
 ): Promise<Plan> => {
 	const plan = await buildPlan(
 		root,
 		[{ language: go, options: kind === "" ? {} : { kind } }],
-		{ init },
+		{ init }
 	);
 	await applySteps(root, plan.steps);
 	return plan;

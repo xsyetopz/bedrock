@@ -8,7 +8,7 @@ import { asRecord, readJsonc } from "../json.ts";
 /** Reports an installed `typescript` that differs from the one `bun check` runs. */
 export const findTypescriptDrift = async (root: string): Promise<Finding[]> => {
 	const manifest = await readJsonc(
-		join(root, "node_modules/typescript/package.json"),
+		join(root, "node_modules/typescript/package.json")
 	);
 	if (manifest === undefined) {
 		return [];
@@ -26,6 +26,6 @@ export const findTypescriptDrift = async (root: string): Promise<Finding[]> => {
 	return installed === builtIn
 		? []
 		: [
-				`typescript: ${String(installed)} is installed but \`bun check\` runs ${builtIn}; set the catalog to ${builtIn}`,
+				`typescript: ${String(installed)} is installed but \`bun check\` runs ${builtIn}; set the catalog to ${builtIn}`
 			];
 };

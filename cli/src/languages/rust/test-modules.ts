@@ -8,23 +8,23 @@ export const outermost = (found: readonly Module[]): Module[] =>
 	found.filter(
 		({ start }) =>
 			!found.some(
-				({ body }) => body !== undefined && body[0] < start && start < body[1],
-			),
+				({ body }) => body !== undefined && body[0] < start && start < body[1]
+			)
 	);
 
 /** The `#[cfg(test)] mod name { … }` modules of `source`, outside any other. */
 export const inlineTests = (source: string): Module[] =>
 	outermost(
 		modules(source).filter(
-			(found) => found.testOnly && found.body !== undefined,
-		),
+			(found) => found.testOnly && found.body !== undefined
+		)
 	);
 
 /** The `#[cfg(test)] #[path = "…"] mod name;` modules of `source`. */
 export const pathTests = (source: string): Module[] =>
 	modules(source).filter(
 		(found) =>
-			found.testOnly && found.body === undefined && found.path !== undefined,
+			found.testOnly && found.body === undefined && found.path !== undefined
 	);
 
 /**
@@ -33,7 +33,7 @@ export const pathTests = (source: string): Module[] =>
  */
 export const testsFile = async (
 	file: string,
-	name = "tests",
+	name = "tests"
 ): Promise<string> => join(await moduleDirectory(file), `${name}.rs`);
 
 /**
@@ -43,17 +43,17 @@ export const testsFile = async (
  */
 export const testOnlyFiles = async (
 	root: string,
-	files: readonly string[],
+	files: readonly string[]
 ): Promise<Set<string>> => {
 	const declared = await Promise.all(
 		files.map(async (file) => {
 			const path = join(root, file);
 			const source = (await readText(path)) ?? "";
 			const children = modules(source).filter(
-				(found) => found.testOnly && found.body === undefined,
+				(found) => found.testOnly && found.body === undefined
 			);
 			return Promise.all(children.map((found) => childFile(path, found)));
-		}),
+		})
 	);
 	const owners = declared
 		.flat()
@@ -62,14 +62,14 @@ export const testOnlyFiles = async (
 	const directories = await Promise.all(
 		owners.map(
 			async (owner) =>
-				`${relative(root, await moduleDirectory(join(root, owner)))}/`,
-		),
+				`${relative(root, await moduleDirectory(join(root, owner)))}/`
+		)
 	);
 	return new Set(
 		files.filter(
 			(file) =>
 				owners.includes(file) ||
-				directories.some((directory) => file.startsWith(directory)),
-		),
+				directories.some((directory) => file.startsWith(directory))
+		)
 	);
 };

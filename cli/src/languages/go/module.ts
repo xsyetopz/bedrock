@@ -20,7 +20,7 @@ export const packageOf = (name: string): string => {
 
 /** The module path a repo's `go.mod` declares, or undefined when it has none. */
 const declaredModule = async (
-	context: Context,
+	context: Context
 ): Promise<string | undefined> => {
 	const text = await readText(join(context.root, "go.mod"));
 	return text === undefined ? undefined : moduleOf(text);
@@ -29,7 +29,7 @@ const declaredModule = async (
 /** The module path: the repo's `go.mod`, else `bedrock_go_module` in `.editorconfig`, else a placeholder under `example.com`. */
 export const moduleFor = async (
 	context: Context,
-	name: string,
+	name: string
 ): Promise<{ readonly path: string; readonly placeholder: boolean }> => {
 	const declared = await declaredModule(context);
 	if (declared !== undefined) {

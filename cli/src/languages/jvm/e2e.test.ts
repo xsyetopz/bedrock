@@ -12,10 +12,10 @@ const TASKS = ["spotlessCheck", "bedrockCompile", "bedrockLint", "bedrockTest"];
 const NEEDS_ANDROID_SDK = new Set(["android", "cmp", "kmp"]);
 const hasAndroidSdk = [
 	process.env["ANDROID_HOME"],
-	process.env["ANDROID_SDK_ROOT"],
+	process.env["ANDROID_SDK_ROOT"]
 ].some((dir) => dir !== undefined && dir !== "");
 const BUILT = KINDS.filter(
-	(kind) => hasAndroidSdk || !NEEDS_ANDROID_SDK.has(kind),
+	(kind) => hasAndroidSdk || !NEEDS_ANDROID_SDK.has(kind)
 );
 const UNBUILT = KINDS.filter((kind) => !BUILT.includes(kind));
 
@@ -31,7 +31,7 @@ test.each([...KINDS])(
 
 		// Assert
 		expect(await guardJvm(root)).toEqual([]);
-	},
+	}
 );
 
 test.skipIf(jdk === undefined).each(BUILT)(
@@ -51,7 +51,7 @@ test.skipIf(jdk === undefined).each(BUILT)(
 	},
 	// The first build on a fresh machine downloads Gradle, the JDK 25 daemon, GraalVM, and the
 	// Android and Compose artifacts; a cold cmp build took 9 minutes on an emulated x64 runner.
-	1_200_000,
+	1_200_000
 );
 
 // Listed as skipped, so a run without the Android SDK shows which kinds it left out.

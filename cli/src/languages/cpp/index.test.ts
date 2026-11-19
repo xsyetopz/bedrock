@@ -8,7 +8,7 @@ import { cpp } from "./index.ts";
 
 const selected = [
 	{ language: swift, options: {} },
-	{ language: cpp, options: {} },
+	{ language: cpp, options: {} }
 ];
 
 test("adopting cpp writes the C++ files", async () => {
@@ -28,7 +28,7 @@ test("adopting cpp alone writes its files and workflow without Swift's", async (
 
 	// Act
 	const plan = await buildPlan(root, [{ language: cpp, options: {} }], {
-		init: false,
+		init: false
 	});
 
 	// Assert
@@ -44,13 +44,13 @@ test.each(["_clang-format", "_clang-tidy"])(
 	async (path) => {
 		const root = await tempRepo({
 			"Package.swift": "let package = 1\n",
-			[path]: "x\n",
+			[path]: "x\n"
 		});
 
 		const plan = await buildPlan(root, selected, { init: false });
 
 		expect(plan.steps).toContainEqual({ kind: "remove", path });
-	},
+	}
 );
 
 test("the guard recipe runs bedrock guard cpp", async () => {
@@ -59,7 +59,7 @@ test("the guard recipe runs bedrock guard cpp", async () => {
 	const plan = await buildPlan(root, selected, { init: false });
 
 	expect(written(plan.steps, ".just/cpp.just")).toContain(
-		"{{ just_executable() }} bedrock guard cpp",
+		"{{ just_executable() }} bedrock guard cpp"
 	);
 });
 

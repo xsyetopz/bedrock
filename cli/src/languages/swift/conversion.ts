@@ -13,7 +13,7 @@ export const xctestFiles = async (root: string): Promise<string[]> => {
 	const listed = await listFiles(root, new Glob("**/*.swift"));
 	const paths = listed.filter((path) => !isUITest(path));
 	const texts = await Promise.all(
-		paths.map((path) => readText(join(root, path))),
+		paths.map((path) => readText(join(root, path)))
 	);
 	return paths.filter((_, index) => importsXCTest(texts[index] ?? ""));
 };
@@ -24,8 +24,8 @@ export const conversionPlan = async (root: string): Promise<LanguagePlan> => {
 	const converted = await Promise.all(
 		paths.map(async (path) => ({
 			path,
-			result: convertXCTest((await readText(join(root, path))) ?? ""),
-		})),
+			result: convertXCTest((await readText(join(root, path))) ?? "")
+		}))
 	);
 	const steps: Step[] = [];
 	const notes: string[] = [];

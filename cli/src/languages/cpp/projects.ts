@@ -17,9 +17,8 @@ export const topProjects = (lists: readonly string[]): string[] => {
 		(project) =>
 			!projects.some(
 				(other) =>
-					other !== project &&
-					(other === "" || project.startsWith(`${other}/`)),
-			),
+					other !== project && (other === "" || project.startsWith(`${other}/`))
+			)
 	);
 };
 
@@ -30,7 +29,7 @@ export const topProjects = (lists: readonly string[]): string[] => {
  */
 export const projectsOf = async (
 	root: string,
-	name: string,
+	name: string
 ): Promise<string[]> => {
 	const listed =
 		await $`git ls-files -z --cached --others --exclude-standard -- ${name} ${`*/${name}`}`
@@ -44,7 +43,7 @@ export const projectsOf = async (
 			.split("\0")
 			// A build directory holds fetched dependencies' build files, such as
 			// CMake's _deps, until the gitignore block lists it.
-			.filter((path) => path !== "" && !inBuildDirs(path)),
+			.filter((path) => path !== "" && !inBuildDirs(path))
 	);
 };
 
@@ -56,7 +55,7 @@ export const projectsOf = async (
  */
 export const eachProject = async <T>(
 	projects: readonly string[],
-	each: (project: string) => Promise<readonly T[]>,
+	each: (project: string) => Promise<readonly T[]>
 ): Promise<T[]> => {
 	const lists = await Promise.all(
 		projects.map(async (project) => {
@@ -67,11 +66,11 @@ export const eachProject = async <T>(
 					throw error;
 				}
 				console.warn(
-					`skipped ${project}: ${error instanceof Error ? error.message : String(error)}`,
+					`skipped ${project}: ${error instanceof Error ? error.message : String(error)}`
 				);
 				return [];
 			}
-		}),
+		})
 	);
 	return lists.flat();
 };
@@ -82,7 +81,7 @@ export const eachProject = async <T>(
  * directory. Tools print `root` as given or resolved, as /private/tmp for /tmp.
  */
 export const repoPaths = async (
-	root: string,
+	root: string
 ): Promise<(path: string) => string | undefined> => {
 	const roots = [...new Set([resolve(root), await realpath(root)])];
 	return (path) =>
@@ -90,7 +89,7 @@ export const repoPaths = async (
 			.map((base) => relative(base, resolve(base, path)))
 			.find(
 				(inside) =>
-					inside !== "" && !inside.startsWith("..") && !isAbsolute(inside),
+					inside !== "" && !inside.startsWith("..") && !isAbsolute(inside)
 			);
 };
 
@@ -106,12 +105,12 @@ export const inBuildDirs = (path: string): boolean =>
 export const buildDir = (
 	root: string,
 	system: string,
-	project: string,
+	project: string
 ): string =>
 	join(
 		root,
 		BUILD_ROOT,
 		system,
 		// `+` for the root, so no subproject's name can collide with it.
-		project === "" ? "+" : project.replaceAll("/", "+"),
+		project === "" ? "+" : project.replaceAll("/", "+")
 	);

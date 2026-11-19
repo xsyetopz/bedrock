@@ -12,7 +12,7 @@ import { xmakeProjects, xmakeTargets } from "./xmake.ts";
  */
 const swiftTestFiles = async (
 	root: string,
-	files: readonly string[],
+	files: readonly string[]
 ): Promise<string[]> => {
 	const packages = new Map<string, Promise<boolean>>();
 	const isPackage = (dir: string): Promise<boolean> => {
@@ -30,11 +30,11 @@ const swiftTestFiles = async (
 				parts.map((part, index) =>
 					part === "Tests" && index < parts.length - 1
 						? isPackage(parts.slice(0, index).join("/"))
-						: Promise.resolve(false),
-				),
+						: Promise.resolve(false)
+				)
 			);
 			return owners.includes(true) ? [file] : [];
-		}),
+		})
 	);
 	return picked.flat();
 };
@@ -49,12 +49,12 @@ const buildTargets = async (root: string): Promise<Target[][]> => {
 	const [cmake, meson, xmake] = await Promise.all([
 		cmakeProjects(root),
 		mesonProjects(root),
-		xmakeProjects(root),
+		xmakeProjects(root)
 	]);
 	return Promise.all([
 		...cmake.map((project) => cmakeTargets(root, project)),
 		...meson.map((project) => mesonTargets(root, project)),
-		...xmake.map((project) => xmakeTargets(root, project)),
+		...xmake.map((project) => xmakeTargets(root, project))
 	]);
 };
 
@@ -66,11 +66,11 @@ const buildTargets = async (root: string): Promise<Target[][]> => {
  */
 export const cppTestFiles = async (
 	root: string,
-	files: readonly string[],
+	files: readonly string[]
 ): Promise<Set<string>> => {
 	const [swift, builds] = await Promise.all([
 		swiftTestFiles(root, files),
-		buildTargets(root),
+		buildTargets(root)
 	]);
 	const splits = builds.map((targets) => splitSources(targets));
 	const other = new Set<string>();

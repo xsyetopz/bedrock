@@ -4,7 +4,7 @@
  * each takes much of the machine's memory.
  */
 export const dotnetJobs = (
-	jobs: string | undefined = process.env["BEDROCK_DOTNET_JOBS"],
+	jobs: string | undefined = process.env["BEDROCK_DOTNET_JOBS"]
 ): number => {
 	const count = Number(jobs);
 	return Number.isInteger(count) && count > 0 ? count : 4;
@@ -17,5 +17,5 @@ export const dotnetJobs = (
  */
 export const msbuildBounds = (): string[] => [
 	`-maxCpuCount:${String(dotnetJobs())}`,
-	"-nodeReuse:false",
+	"-nodeReuse:false"
 ];

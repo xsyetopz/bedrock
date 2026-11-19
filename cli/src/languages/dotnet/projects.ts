@@ -25,7 +25,7 @@ export const projectFiles = (root: string): Promise<string[]> =>
 export const buildEntries = async (root: string): Promise<string[]> => {
 	const solutions = await listFiles(root, new Glob(SOLUTION_GLOB));
 	const kept = solutions.filter(
-		(path) => !(path.endsWith(".sln") && solutions.includes(`${path}x`)),
+		(path) => !(path.endsWith(".sln") && solutions.includes(`${path}x`))
 	);
 	if (kept.length > 0) {
 		return kept.toSorted();

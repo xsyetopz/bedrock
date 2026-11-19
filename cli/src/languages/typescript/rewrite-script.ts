@@ -60,7 +60,7 @@ const TOOLS: ReadonlyMap<string, (args: Tokens) => Tokens> = new Map<
 		([sub = "", ...args]) =>
 			sub === "format"
 				? ["bun", "fmt", ...(args.includes("--write") ? [] : ["--check"])]
-				: ["oxlint", ...withFix(args)],
+				: ["oxlint", ...withFix(args)]
 	],
 	["cross-env", (args) => rewriteCommand(args)],
 	["esno", runOnBun],
@@ -78,8 +78,8 @@ const TOOLS: ReadonlyMap<string, (args: Tokens) => Tokens> = new Map<
 			"bun",
 			"fmt",
 			...(args.some((arg) => PRETTIER_CHECK.has(arg)) ? ["--check"] : []),
-			...args.filter((arg) => !PRETTIER_DROPPED.has(arg)),
-		],
+			...args.filter((arg) => !PRETTIER_DROPPED.has(arg))
+		]
 	],
 	["rimraf", (args) => ["rm", "-rf", ...args]],
 	["ts-node", runOnBun],
@@ -89,7 +89,7 @@ const TOOLS: ReadonlyMap<string, (args: Tokens) => Tokens> = new Map<
 		(args) =>
 			args.includes("--noEmit")
 				? ["bun", "check", ...args.filter((arg) => arg !== "--noEmit")]
-				: ["tsc", ...args],
+				: ["tsc", ...args]
 	],
 	["tsx", runOnBun],
 	[
@@ -97,13 +97,13 @@ const TOOLS: ReadonlyMap<string, (args: Tokens) => Tokens> = new Map<
 		([sub = "", ...args]) =>
 			sub === "guard"
 				? ["just", "typescript::guard"]
-				: ["just", "bedrock", sub, ...args],
+				: ["just", "bedrock", sub, ...args]
 	],
 	[
 		"vitest",
-		(args) => ["bun", "test", ...(args[0] === "run" ? args.slice(1) : args)],
+		(args) => ["bun", "test", ...(args[0] === "run" ? args.slice(1) : args)]
 	],
-	["yarn", (args) => packageManager("yarn", args)],
+	["yarn", (args) => packageManager("yarn", args)]
 ]);
 
 export const rewriteScript = (command: string): string =>

@@ -17,13 +17,13 @@ test("adopting an old rust-bedrock repo removes the xtask crate, its member entr
 	// Assert
 	expect(await exists(join(root, "xtask"))).toBe(false);
 	expect(await readText(join(root, "Cargo.toml"))).toContain(
-		'members = ["crates/*"]',
+		'members = ["crates/*"]'
 	);
 	expect(await readText(join(root, ".cargo/config.toml"))).toBe(
-		"[build]\njobs = 4\n",
+		"[build]\njobs = 4\n"
 	);
 	expect(await readText(join(root, "deny.toml"))).toBe(
-		'[sources]\nunknown-git = "deny"\n',
+		'[sources]\nunknown-git = "deny"\n'
 	);
 });
 
@@ -36,12 +36,12 @@ test("adopting moves the crate onto the workspace lints, the layout, and the gat
 
 	// Assert
 	expect(await readText(join(root, "crates/a/Cargo.toml"))).toContain(
-		"[lints]\nworkspace = true",
+		"[lints]\nworkspace = true"
 	);
 	expect(await exists(join(root, "crates/a/src/foo/mod.rs"))).toBe(false);
 	expect(await readText(join(root, "crates/a/src/foo.rs"))).toBe("//! Foo.\n");
 	expect(await readText(join(root, "crates/a/tests/it.rs"))).toContain(
-		"#![cfg(test)]",
+		"#![cfg(test)]"
 	);
 });
 
@@ -75,7 +75,7 @@ test("a cargo config that held only the alias is removed", async () => {
 	const root = await tempRepo({
 		...OLD_BEDROCK,
 		".cargo/config.toml":
-			'[alias]\nbedrock = "run --quiet --package xtask --"\n',
+			'[alias]\nbedrock = "run --quiet --package xtask --"\n'
 	});
 
 	// Act
@@ -90,7 +90,7 @@ test("files of replaced tools go", async () => {
 	const root = await tempRepo({
 		"Cargo.toml": "[workspace]\nmembers = []\n",
 		"rust-toolchain": "stable\n",
-		".rustfmt.toml": "max_width = 80\n",
+		".rustfmt.toml": "max_width = 80\n"
 	});
 
 	// Act
@@ -107,7 +107,7 @@ test("an older edition gets a note instead of a silent change", async () => {
 		"Cargo.toml": '[workspace]\nmembers = ["a"]\n',
 		"a/Cargo.toml":
 			'[package]\nname = "a"\nversion = "0.1.0"\nedition = "2021"\n',
-		"a/src/lib.rs": "",
+		"a/src/lib.rs": ""
 	});
 
 	// Act
@@ -122,7 +122,7 @@ test("a project nested in its own workspace is left alone", async () => {
 	const root = await tempRepo({
 		"Cargo.toml": "[workspace]\nmembers = []\n",
 		"tools/Cargo.toml": '[workspace]\nmembers = ["x"]\n',
-		"tools/x/Cargo.toml": '[package]\nname = "x"\nversion = "0.1.0"\n',
+		"tools/x/Cargo.toml": '[package]\nname = "x"\nversion = "0.1.0"\n'
 	});
 
 	// Act
@@ -130,7 +130,7 @@ test("a project nested in its own workspace is left alone", async () => {
 
 	// Assert
 	expect(plan.steps.map((step) => step.path)).not.toContain(
-		"tools/x/Cargo.toml",
+		"tools/x/Cargo.toml"
 	);
 });
 
@@ -149,7 +149,7 @@ const MODULE_CRATE = {
 	"Cargo.toml": '[workspace]\nmembers = ["crates/*"]\n',
 	"crates/a/Cargo.toml":
 		'[package]\nname = "a"\nversion = "0.1.0"\n\n[lints]\nworkspace = true\n',
-	"crates/a/src/lib.rs": "//! A.\n",
+	"crates/a/src/lib.rs": "//! A.\n"
 };
 
 test("renaming foo/mod.rs to foo.rs keeps its #[path] and include! targets", async () => {
@@ -159,7 +159,7 @@ test("renaming foo/mod.rs to foo.rs keeps its #[path] and include! targets", asy
 		"crates/a/src/session/mod.rs":
 			'#[cfg(test)]\n#[path = "matrix/tests.rs"]\nmod matrix;\ninclude!("data.rs");\n',
 		"crates/a/src/session/matrix/tests.rs": "",
-		"crates/a/src/session/data.rs": "",
+		"crates/a/src/session/data.rs": ""
 	});
 
 	// Act
@@ -168,11 +168,11 @@ test("renaming foo/mod.rs to foo.rs keeps its #[path] and include! targets", asy
 	// Assert
 	expect(await exists(join(root, "crates/a/src/session/mod.rs"))).toBe(false);
 	expect(await readText(join(root, "crates/a/src/session.rs"))).toBe(
-		'#[cfg(test)]\n#[path = "session/matrix/tests.rs"]\nmod matrix;\ninclude!("session/data.rs");\n',
+		'#[cfg(test)]\n#[path = "session/matrix/tests.rs"]\nmod matrix;\ninclude!("session/data.rs");\n'
 	);
 	const again = await adoptRust(root);
 	expect(again.steps.filter((step) => step.path.includes("session"))).toEqual(
-		[],
+		[]
 	);
 });
 
@@ -180,7 +180,7 @@ test("a foo/mod.rs whose paths cannot be rewritten stays", async () => {
 	// Arrange
 	const root = await tempRepo({
 		...MODULE_CRATE,
-		"crates/a/src/odd/mod.rs": 'include!(concat!(env!("OUT_DIR"), "/x.rs"));\n',
+		"crates/a/src/odd/mod.rs": 'include!(concat!(env!("OUT_DIR"), "/x.rs"));\n'
 	});
 
 	// Act

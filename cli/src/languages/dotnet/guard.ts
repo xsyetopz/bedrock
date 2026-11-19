@@ -16,7 +16,7 @@ const FOREIGN_CONFIGS = new Set([
 	".csharpierrc.json",
 	".csharpierrc.yaml",
 	".csharpierrc.yml",
-	".fantomasrc",
+	".fantomasrc"
 ]);
 
 /**
@@ -62,25 +62,25 @@ export const guardDotnet = async (context: Context): Promise<Finding[]> => {
 	const { root } = context;
 	const [sources, all] = await Promise.all([
 		listFiles(root, new Glob("**/*.{cs,csx,fs,fsi,fsx}")),
-		listFiles(root, new Glob("**")),
+		listFiles(root, new Glob("**"))
 	]);
 	const texts = await Promise.all(
-		sources.map((path) => readText(join(root, path))),
+		sources.map((path) => readText(join(root, path)))
 	);
 	const suppressions = sources.flatMap((path, index) =>
-		suppressionFindings(path, texts[index] ?? ""),
+		suppressionFindings(path, texts[index] ?? "")
 	);
 	const configs = all
 		.filter((path) => FOREIGN_CONFIGS.has(path.split("/").at(-1) ?? path))
 		.map(
 			(path) =>
-				`${path}: the formatters read their layout from .editorconfig; move the settings there and delete this file`,
+				`${path}: the formatters read their layout from .editorconfig; move the settings there and delete this file`
 		);
 	const manifests = TOOL_MANIFESTS.filter((path) => all.includes(path));
 	const doubled =
 		manifests.length > 1
 			? [
-					`${manifests.join(", ")}: two tool manifests; keep the tools in ${manifests[0] ?? ""} and delete the other`,
+					`${manifests.join(", ")}: two tool manifests; keep the tools in ${manifests[0] ?? ""} and delete the other`
 				]
 			: [];
 	return [...suppressions, ...configs, ...doubled];

@@ -5,7 +5,7 @@ import {
 	type Config,
 	configPairs,
 	type LanguageOptions,
-	LEGACY_CONFIG_PATH,
+	LEGACY_CONFIG_PATH
 } from "./config.ts";
 import { leftoverNotes, leftovers } from "./dropped.ts";
 import { existing } from "./fs.ts";
@@ -27,7 +27,7 @@ export const REPLACED_BY_BASE = [
 	".pre-commit-config.yaml",
 	".simple-git-hooks.json",
 	"lefthook.yaml",
-	"Makefile",
+	"Makefile"
 ];
 
 /** A language picked for this run, with its settings. */
@@ -52,13 +52,13 @@ export const contextFor = (
 	selected: readonly Selected[],
 	language: Language,
 	options: LanguageOptions,
-	init: boolean,
+	init: boolean
 ): Context => ({
 	root,
 	options,
 	init,
 	languages: selected.map((entry) => entry.language.id),
-	templates: (dir) => templateDir(`${language.id}/${dir}`),
+	templates: (dir) => templateDir(`${language.id}/${dir}`)
 });
 
 const kindsOf = (options: LanguageOptions): string[] =>
@@ -70,7 +70,7 @@ const kindsOf = (options: LanguageOptions): string[] =>
 const languageSteps = async (
 	context: Context,
 	language: Language,
-	base: Variables,
+	base: Variables
 ): Promise<{
 	steps: Step[];
 	starters: Step[];
@@ -82,22 +82,22 @@ const languageSteps = async (
 	const kinds = context.init
 		? await Promise.all(
 				kindsOf(context.options).map((kind) =>
-					starterSteps(context.root, `${language.id}/kinds/${kind}`, variables),
-				),
+					starterSteps(context.root, `${language.id}/kinds/${kind}`, variables)
+				)
 			)
 		: [];
 	const starters = [
 		...(await starterSteps(context.root, `${language.id}/starter`, variables)),
-		...kinds.flat(),
+		...kinds.flat()
 	];
 	return {
 		steps: [
 			...(await copySteps(`${language.id}/files`, variables)),
-			...own.steps,
+			...own.steps
 		],
 		starters,
 		notes: own.notes,
-		projectFiles: own.projectFiles,
+		projectFiles: own.projectFiles
 	};
 };
 
@@ -105,8 +105,8 @@ const languageSteps = async (
 const configOf = (selected: readonly Selected[], version: string): Config => ({
 	version,
 	languages: Object.fromEntries(
-		selected.map(({ language, options }) => [language.id, options]),
-	),
+		selected.map(({ language, options }) => [language.id, options])
+	)
 });
 
 /**
@@ -118,7 +118,7 @@ const removalNotes = (removed: readonly string[]): string[] => {
 	const moved = removed.filter((path) => path !== LEGACY_CONFIG_PATH);
 	return moved.length > 0
 		? [
-				`Move what ${moved.join(", ")} did into project.just; git still has the removed files.`,
+				`Move what ${moved.join(", ")} did into project.just; git still has the removed files.`
 			]
 		: [];
 };
@@ -140,22 +140,22 @@ const RETIRED = [...REPLACED_BY_BASE, LEGACY_CONFIG_PATH];
 export const buildPlan = async (
 	root: string,
 	selected: readonly Selected[],
-	{ init, version = VERSION, dropped = [] }: PlanOptions,
+	{ init, version = VERSION, dropped = [] }: PlanOptions
 ): Promise<Plan> => {
 	const config = configOf(selected, version);
 	const base: Variables = {
 		name: basename(root),
 		bedrockVersion: version,
-		bedrockConfig: configPairs(config),
+		bedrockConfig: configPairs(config)
 	};
 	const parts = await Promise.all(
 		selected.map(({ language, options }) =>
 			languageSteps(
 				contextFor(root, selected, language, options, init),
 				language,
-				base,
-			),
-		),
+				base
+			)
+		)
 	);
 	const removed = await existing(root, RETIRED);
 	const leftover = await leftovers(root, dropped, base);
@@ -168,22 +168,22 @@ export const buildPlan = async (
 			root,
 			selected.map((entry) => entry.language),
 			base,
-			leftover.blocks,
+			leftover.blocks
 		)),
 		...removed.map((path): Step => ({ kind: "remove", path })),
-		...starters,
+		...starters
 	]);
 	return {
 		steps: await pending(root, steps),
 		notes: [
 			...removalNotes(removed),
 			...leftoverNotes(leftover, steps),
-			...parts.flatMap((part) => part.notes),
+			...parts.flatMap((part) => part.notes)
 		],
 		projectFiles: new Set([
 			...parts.flatMap((part) => part.projectFiles),
-			...starters.map((step) => step.path),
+			...starters.map((step) => step.path)
 		]),
-		config,
+		config
 	};
 };

@@ -10,28 +10,28 @@ import {
 	inlineTests,
 	pathTests,
 	testOnlyFiles,
-	testsFile,
+	testsFile
 } from "./test-modules.ts";
 
 /** One finding per test module that keeps its body in the file or sets its file with `#[path]`. */
 const misplaced = async (
 	root: string,
 	file: string,
-	source: string,
+	source: string
 ): Promise<Finding[]> => {
 	const destination = async (name: string): Promise<string> =>
 		relative(root, await testsFile(join(root, file), name));
 	const inline = await Promise.all(
 		inlineTests(source).map(
 			async ({ line, name }) =>
-				`${file}:${line}: mod ${name} keeps its tests in this file; move them to ${await destination(name)} and declare \`#[cfg(test)] mod ${name};\` (just lint-fix does it)`,
-		),
+				`${file}:${line}: mod ${name} keeps its tests in this file; move them to ${await destination(name)} and declare \`#[cfg(test)] mod ${name};\` (just lint-fix does it)`
+		)
 	);
 	const pathed = await Promise.all(
 		pathTests(source).map(
 			async ({ line, name }) =>
-				`${file}:${line}: mod ${name} sets its file with #[path]; drop the attribute and keep the tests in ${await destination(name)} (just lint-fix does it)`,
-		),
+				`${file}:${line}: mod ${name} sets its file with #[path]; drop the attribute and keep the tests in ${await destination(name)} (just lint-fix does it)`
+		)
 	);
 	return [...inline, ...pathed];
 };
@@ -40,14 +40,14 @@ const misplaced = async (
 const checkFile = async (
 	root: string,
 	file: string,
-	testOnly: boolean,
+	testOnly: boolean
 ): Promise<Finding[]> => {
 	const source = await Bun.file(join(root, file)).text();
 	return [
 		...(testOnly ? [] : await misplaced(root, file, source)),
 		...suppressionProblems(source).map(
-			({ line, message }) => `${file}:${line}: ${message}`,
-		),
+			({ line, message }) => `${file}:${line}: ${message}`
+		)
 	];
 };
 
@@ -70,9 +70,7 @@ const layout = async (context: Context): Promise<Finding[]> => {
 			: undefined;
 	};
 	const targets = new Set(
-		open.flatMap((step) =>
-			step.kind === "remove" ? [renamed(step.path)] : [],
-		),
+		open.flatMap((step) => (step.kind === "remove" ? [renamed(step.path)] : []))
 	);
 	return open
 		.filter((step) => !targets.has(step.path))
@@ -96,19 +94,19 @@ const layout = async (context: Context): Promise<Finding[]> => {
  */
 export const guardRust = async (
 	context: Context,
-	fix: boolean,
+	fix: boolean
 ): Promise<Finding[]> => {
 	const { root } = context;
 	const unrepaired = fix ? await repairRust(root, await rustFiles(root)) : [];
 	const current = await rustFiles(root);
 	const testOnly = await testOnlyFiles(root, current);
 	const checked = await Promise.all(
-		current.map((file) => checkFile(root, file, testOnly.has(file))),
+		current.map((file) => checkFile(root, file, testOnly.has(file)))
 	);
 	const explained = new Set(unrepaired.map((finding) => site(finding)));
 	return [
 		...unrepaired,
 		...checked.flat().filter((finding) => !explained.has(site(finding))),
-		...(await layout(context)),
+		...(await layout(context))
 	];
 };

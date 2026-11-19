@@ -10,14 +10,14 @@ const FOREIGN: Readonly<Record<string, string>> = {
 	"glide.yaml": "Glide",
 	"glide.lock": "Glide",
 	"vendor/vendor.json": "govendor",
-	"Godeps/Godeps.json": "Godep",
+	"Godeps/Godeps.json": "Godep"
 };
 
 /** Other names golangci-lint reads, which would sit beside `.golangci.yml`. */
 const OTHER_CONFIGS = new Set([
 	".golangci.yaml",
 	".golangci.toml",
-	".golangci.json",
+	".golangci.json"
 ]);
 
 /** Reports dependency manager files and a second golangci-lint config; `go mod tidy` and golangci-lint cover the rest. */
@@ -27,12 +27,12 @@ export const guardGo = async (context: Context): Promise<Finding[]> => {
 		const tool = FOREIGN[path];
 		if (tool !== undefined) {
 			return [
-				`${path}: ${tool} file; Go modules replace it, so go.mod and go.sum hold the dependencies`,
+				`${path}: ${tool} file; Go modules replace it, so go.mod and go.sum hold the dependencies`
 			];
 		}
 		return OTHER_CONFIGS.has(path)
 			? [
-					`${path}: bedrock writes .golangci.yml, so keep the settings there and delete this file`,
+					`${path}: bedrock writes .golangci.yml, so keep the settings there and delete this file`
 				]
 			: [];
 	});

@@ -13,7 +13,7 @@ const REMOVED_KEYS = [
 	"lint-staged",
 	"pnpm",
 	"prettier",
-	"simple-git-hooks",
+	"simple-git-hooks"
 ];
 // `just setup` installs the hooks lefthook.yml lists, with its pinned lefthook, so a script that installs hooks is redundant.
 const HOOK_INSTALLERS =
@@ -23,14 +23,14 @@ const SHADOWING_SCRIPTS = new Set(["check", "fmt"]);
 
 const migrateScripts = (
 	scripts: Json,
-	templateScripts: Json,
+	templateScripts: Json
 ): { scripts: Json; notes: string[] } => {
 	const notes: string[] = [];
 	const kept: Json = {};
 	for (const [name, value] of Object.entries(scripts)) {
 		if (typeof value === "string" && HOOK_INSTALLERS.test(value)) {
 			notes.push(
-				`Removed script "${name}": ${JSON.stringify(value)} installs git hooks, which \`just setup\` does now.`,
+				`Removed script "${name}": ${JSON.stringify(value)} installs git hooks, which \`just setup\` does now.`
 			);
 			continue;
 		}
@@ -38,17 +38,17 @@ const migrateScripts = (
 		const key = SHADOWING_SCRIPTS.has(name) ? `${name}:project` : name;
 		if (key !== name) {
 			notes.push(
-				`Renamed script "${name}" to "${key}": the name shadows \`bun ${name}\`.`,
+				`Renamed script "${name}" to "${key}": the name shadows \`bun ${name}\`.`
 			);
 		}
 		if (command !== value) {
 			notes.push(
-				`Script "${name}": ${JSON.stringify(value)} → ${JSON.stringify(command)}`,
+				`Script "${name}": ${JSON.stringify(value)} → ${JSON.stringify(command)}`
 			);
 		}
 		if (typeof value === "string" && /\b(?:jest|vitest)\b/u.test(value)) {
 			notes.push(
-				`Script "${name}" ran Jest or Vitest. Move its setup files and other config into bunfig.toml [test], such as preload.`,
+				`Script "${name}" ran Jest or Vitest. Move its setup files and other config into bunfig.toml [test], such as preload.`
 			);
 		}
 		kept[key] = command;
@@ -57,7 +57,7 @@ const migrateScripts = (
 	for (const [name, command] of Object.entries(tools)) {
 		if (kept[name] !== undefined && kept[name] !== command) {
 			notes.push(
-				`Replaced script "${name}" (${JSON.stringify(kept[name])}) with ${JSON.stringify(command)}. Move any step it still needs, such as a build, into a \`project-${name}\` recipe in project.just, which \`just ${name}\` runs.`,
+				`Replaced script "${name}" (${JSON.stringify(kept[name])}) with ${JSON.stringify(command)}. Move any step it still needs, such as a build, into a \`project-${name}\` recipe in project.just, which \`just ${name}\` runs.`
 			);
 		}
 	}
@@ -71,13 +71,13 @@ const isRemoved = (name: string, template: Json): boolean =>
 /** Drops the packages Bun and the bedrock tools replace, except the ones the template ships. */
 const removePackages = (
 	deps: unknown,
-	template: Json,
+	template: Json
 ): { deps: Json; removed: string[] } => {
 	const removes = (name: string): boolean => isRemoved(name, template);
 	const entries = Object.entries(asRecord(deps));
 	return {
 		deps: Object.fromEntries(entries.filter(([name]) => !removes(name))),
-		removed: entries.map(([name]) => name).filter((name) => removes(name)),
+		removed: entries.map(([name]) => name).filter((name) => removes(name))
 	};
 };
 
@@ -85,7 +85,7 @@ const removePackages = (
 const migrateWorkspaces = (
 	current: unknown,
 	pnpm: Json | undefined,
-	templateCatalog: Json,
+	templateCatalog: Json
 ): Json => {
 	const base = Array.isArray(current)
 		? { packages: current }
@@ -95,23 +95,23 @@ const migrateWorkspaces = (
 		packages: [
 			...new Set([
 				...asStrings(base["packages"]),
-				...asStrings(pnpm?.["packages"]),
-			]),
+				...asStrings(pnpm?.["packages"])
+			])
 		],
 		// `bun fmt` does not sort catalogs; the guard requires sorted keys.
 		catalog: Object.fromEntries(
 			Object.entries({
 				...asRecord(base["catalog"]),
 				...asRecord(pnpm?.["catalog"]),
-				...templateCatalog,
+				...templateCatalog
 			})
 				.filter(([name]) => name !== LEGACY_PACKAGE)
-				.toSorted(([a], [b]) => (a < b ? -1 : 1)),
-		),
+				.toSorted(([a], [b]) => (a < b ? -1 : 1))
+		)
 	};
 	const catalogs = {
 		...asRecord(base["catalogs"]),
-		...asRecord(pnpm?.["catalogs"]),
+		...asRecord(pnpm?.["catalogs"])
 	};
 	return Object.keys(catalogs).length > 0
 		? { ...workspaces, catalogs }
@@ -122,10 +122,10 @@ const migrateWorkspaces = (
 const migrateEngines = (manifest: Json, template: Json): Json => ({
 	...Object.fromEntries(
 		Object.entries(asRecord(manifest["engines"])).filter(
-			([name]) => !OTHER_ENGINES.has(name),
-		),
+			([name]) => !OTHER_ENGINES.has(name)
+		)
 	),
-	...asRecord(template["engines"]),
+	...asRecord(template["engines"])
 });
 
 /** Resolves a shared transitive version once; the template wins a conflict. */
@@ -140,20 +140,20 @@ const migrateOverrides = (manifest: Json, template: Json): Json => {
 const trustedDependencies = (
 	manifest: Json,
 	template: Json,
-	pnpm?: Json,
+	pnpm?: Json
 ): string[] => [
 	...new Set(
 		[
 			...asStrings(manifest["trustedDependencies"]),
 			...asStrings(asRecord(manifest["pnpm"])["onlyBuiltDependencies"]),
-			...asStrings(pnpm?.["onlyBuiltDependencies"]),
-		].filter((name) => !isRemoved(name, template)),
-	),
+			...asStrings(pnpm?.["onlyBuiltDependencies"])
+		].filter((name) => !isRemoved(name, template))
+	)
 ];
 
 const removedKeyNotes = (next: Json): string[] =>
 	REMOVED_KEYS.filter((name) => name in next).map(
-		(key) => `Removed the "${key}" field from package.json.`,
+		(key) => `Removed the "${key}" field from package.json.`
 	);
 
 /**
@@ -163,7 +163,7 @@ const removedKeyNotes = (next: Json): string[] =>
 export const migrateManifest = (
 	manifest: Json,
 	template: Json,
-	pnpm?: Json,
+	pnpm?: Json
 ): { manifest: Json; notes: string[] } => {
 	const notes: string[] = [];
 	const shipped = asRecord(template["devDependencies"]);
@@ -175,12 +175,12 @@ export const migrateManifest = (
 	}
 	const scripts = migrateScripts(
 		asRecord(manifest["scripts"]),
-		asRecord(template["scripts"]),
+		asRecord(template["scripts"])
 	);
 	const trusted = trustedDependencies(manifest, shipped, pnpm);
 	const next: Json = {
 		...Object.fromEntries(
-			Object.entries(manifest).filter(([key]) => key !== "trustedDependencies"),
+			Object.entries(manifest).filter(([key]) => key !== "trustedDependencies")
 		),
 		...(Object.keys(prod.deps).length > 0 ||
 		manifest["dependencies"] !== undefined
@@ -188,23 +188,23 @@ export const migrateManifest = (
 			: {}),
 		devDependencies: {
 			...dev.deps,
-			...asRecord(template["devDependencies"]),
+			...asRecord(template["devDependencies"])
 		},
 		scripts: scripts.scripts,
 		workspaces: migrateWorkspaces(
 			manifest["workspaces"],
 			pnpm,
-			asRecord(asRecord(template["workspaces"])["catalog"]),
+			asRecord(asRecord(template["workspaces"])["catalog"])
 		),
 		packageManager: template["packageManager"],
 		engines: migrateEngines(manifest, template),
 		...migrateOverrides(manifest, template),
-		...(trusted.length > 0 ? { trustedDependencies: trusted } : {}),
+		...(trusted.length > 0 ? { trustedDependencies: trusted } : {})
 	};
 	return {
 		manifest: Object.fromEntries(
-			Object.entries(next).filter(([key]) => !REMOVED_KEYS.includes(key)),
+			Object.entries(next).filter(([key]) => !REMOVED_KEYS.includes(key))
 		),
-		notes: [...notes, ...removedKeyNotes(next), ...scripts.notes],
+		notes: [...notes, ...removedKeyNotes(next), ...scripts.notes]
 	};
 };

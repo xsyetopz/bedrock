@@ -61,21 +61,21 @@ export const haxeLint: Subcommand = {
 				...sourceArgs(roots),
 				"-c",
 				"checkstyle.json",
-				"--nostyle",
+				"--nostyle"
 			],
-			root,
+			root
 		);
 		process.stdout.write(result.stdout);
 		process.stderr.write(result.stderr);
 		const errors = checkstyleErrors(result.stdout);
 		if (errors === undefined) {
 			console.error(
-				"checkstyle did not finish: run just haxe::setup, which installs it, then check checkstyle.json",
+				"checkstyle did not finish: run just haxe::setup, which installs it, then check checkstyle.json"
 			);
 			return 1;
 		}
 		return errors === 0 ? 0 : 1;
-	},
+	}
 };
 
 /**
@@ -97,8 +97,8 @@ export const haxeFormat: Subcommand = {
 			"run",
 			"formatter",
 			...sourceArgs(roots),
-			...check,
+			...check
 		]);
 		return formatted ? 0 : 1;
-	},
+	}
 };

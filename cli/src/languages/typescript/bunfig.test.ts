@@ -80,7 +80,7 @@ options = { useTabs = false }
 		const { content } = mergeBunfig(template, current);
 		expect(content).toContain('\t"gen/", # generated\n\t"out/",\n]');
 		expect(Bun.TOML.parse(content)).toMatchObject({
-			fmt: { ignorePatterns: ["**/dist/", "gen/", "out/"] },
+			fmt: { ignorePatterns: ["**/dist/", "gen/", "out/"] }
 		});
 	});
 
@@ -88,7 +88,7 @@ options = { useTabs = false }
 		const current = `[fmt]\nignorePatterns = [\n\t["a",\n\t"b"],\n]\n`;
 		const { content } = mergeBunfig(template, current);
 		expect(Bun.TOML.parse(content)).toMatchObject({
-			fmt: { ignorePatterns: ["**/dist/", ["a", "b"]] },
+			fmt: { ignorePatterns: ["**/dist/", ["a", "b"]] }
 		});
 	});
 

@@ -25,7 +25,7 @@ export const withMinimumMacOS = (text: string): string =>
 /** The manifest with the tools version, the macOS floor, and the strict blocks. */
 export const adoptedManifest = (
 	text: string,
-	blocks: readonly Block[],
+	blocks: readonly Block[]
 ): string =>
 	upsert(withMinimumMacOS(withToolsVersion(text)), "", "slash", blocks);
 
@@ -51,23 +51,23 @@ const collection = (items: readonly string[]): string =>
 export const newManifest = (
 	name: string,
 	kinds: ReadonlySet<string>,
-	cxx: boolean,
+	cxx: boolean
 ): string => {
 	const products = [`.library(name: "${name}", targets: ["${name}"])`];
 	const targets = [
 		cxx
 			? `.target(name: "${name}", dependencies: ["${name}Cxx"])`
-			: `.target(name: "${name}")`,
+			: `.target(name: "${name}")`
 	];
 	if (cxx) {
 		targets.push(`.target(name: "${name}Cxx")`);
 	}
 	if (kinds.has("executable")) {
 		products.push(
-			`.executable(name: "${name.toLowerCase()}", targets: ["${name}CLI"])`,
+			`.executable(name: "${name.toLowerCase()}", targets: ["${name}CLI"])`
 		);
 		targets.push(
-			`.executableTarget(name: "${name}CLI", dependencies: ["${name}"])`,
+			`.executableTarget(name: "${name}CLI", dependencies: ["${name}"])`
 		);
 	}
 	targets.push(`.testTarget(name: "${name}Tests", dependencies: ["${name}"])`);

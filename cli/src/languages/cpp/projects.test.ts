@@ -8,19 +8,19 @@ import {
 	eachProject,
 	projectsOf,
 	repoPaths,
-	topProjects,
+	topProjects
 } from "./projects.ts";
 
 describe("topProjects", () => {
 	test("keeps the projects no other project contains", () => {
 		expect(topProjects(["xmake.lua", "a/xmake.lua", "b/c/xmake.lua"])).toEqual([
-			"",
+			""
 		]);
 	});
 
 	test("keeps sibling projects", () => {
 		expect(
-			topProjects(["a/xmake.lua", "b/xmake.lua", "a/x/xmake.lua"]),
+			topProjects(["a/xmake.lua", "b/xmake.lua", "a/x/xmake.lua"])
 		).toEqual(["a", "b"]);
 	});
 });
@@ -29,7 +29,7 @@ test("projectsOf finds a project whose build file is below the root", async () =
 	// Arrange
 	const root = await tempRepo({
 		"port/CMakeLists.txt": "project(p)\n",
-		"port/lib/CMakeLists.txt": "add_library(l l.c)\n",
+		"port/lib/CMakeLists.txt": "add_library(l l.c)\n"
 	});
 
 	// Act
@@ -43,7 +43,7 @@ test("projectsOf leaves out a dependency fetched into a build directory", async 
 	// Arrange
 	const root = await tempRepo({
 		"port/CMakeLists.txt": "project(p)\n",
-		".cache/bedrock/cmake/port/_deps/x-src/CMakeLists.txt": "project(x)\n",
+		".cache/bedrock/cmake/port/_deps/x-src/CMakeLists.txt": "project(x)\n"
 	});
 
 	// Act
@@ -55,7 +55,7 @@ test("projectsOf leaves out a dependency fetched into a build directory", async 
 
 test("buildDir keeps the root apart from any subproject", () => {
 	expect([buildDir("/r", "cmake", ""), buildDir("/r", "cmake", "a/b")]).toEqual(
-		["/r/.cache/bedrock/cmake/+", "/r/.cache/bedrock/cmake/a+b"],
+		["/r/.cache/bedrock/cmake/+", "/r/.cache/bedrock/cmake/a+b"]
 	);
 });
 
@@ -83,10 +83,10 @@ describe("eachProject", () => {
 
 		// Act
 		const outcome = await eachProject(root, () =>
-			configureAll("sdk/template"),
+			configureAll("sdk/template")
 		).then(
 			() => "resolved",
-			(error: unknown) => (error instanceof Error ? error.message : "thrown"),
+			(error: unknown) => (error instanceof Error ? error.message : "thrown")
 		);
 
 		// Assert

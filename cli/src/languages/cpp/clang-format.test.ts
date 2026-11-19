@@ -62,11 +62,11 @@ const problem = (properties: Json, entry: Entry): string[] => {
 
 test("the .clang-format template matches the clang-format 21 schema", async () => {
 	const parsed: unknown = JSON.parse(
-		await read("./fixtures/clang-format-21.x.json"),
+		await read("./fixtures/clang-format-21.x.json")
 	);
 	const top = asRecord(asRecord(parsed)["properties"]);
 	const template = await read(
-		"../../../../templates/cpp/files/.clang-format.tmpl",
+		"../../../../templates/cpp/files/.clang-format.tmpl"
 	);
 
 	const problems = entries(template)
@@ -76,8 +76,8 @@ test("the .clang-format template matches the clang-format 21 schema", async () =
 				entry.parent === undefined
 					? top
 					: asRecord(asRecord(top[entry.parent])["properties"]),
-				entry,
-			),
+				entry
+			)
 		);
 
 	expect(problems).toEqual([]);

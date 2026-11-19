@@ -16,7 +16,7 @@ describe("parseFunctions", () => {
 
 		// Assert
 		expect(functions).toEqual([
-			{ path: "src/A.kt", line: 3, name: "a", nloc: 4, ccn: 2, params: 2 },
+			{ path: "src/A.kt", line: 3, name: "a", nloc: 4, ccn: 2, params: 2 }
 		]);
 	});
 });
@@ -52,7 +52,7 @@ describe("measure", () => {
 			// Arrange
 			const root = await tempRepo({
 				"src/A.kt":
-					"// note\n\nfun a(x: Int, y: Int): Int {\n  if (x > y) { return x }\n  return y\n}\n",
+					"// note\n\nfun a(x: Int, y: Int): Int {\n  if (x > y) { return x }\n  return y\n}\n"
 			});
 
 			// Act
@@ -61,9 +61,9 @@ describe("measure", () => {
 			// Assert
 			expect(measures.files).toEqual([{ path: "src/A.kt", nloc: 4 }]);
 			expect(measures.functions).toEqual([
-				{ path: "src/A.kt", line: 3, name: "a", nloc: 4, ccn: 2, params: 2 },
+				{ path: "src/A.kt", line: 3, name: "a", nloc: 4, ccn: 2, params: 2 }
 			]);
 		},
-		120_000,
+		120_000
 	);
 });

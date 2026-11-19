@@ -11,7 +11,7 @@ const contextIn = (root: string) =>
 const STRICT_PACKAGE = {
 	toolsVersion: { _version: "6.4.0" },
 	swiftLanguageVersions: ["6"],
-	targets: [],
+	targets: []
 };
 
 const XCTEST =
@@ -25,7 +25,7 @@ describe("manifestFindings", () => {
 	test("flags an old tools version", () => {
 		const found = manifestFindings({
 			...STRICT_PACKAGE,
-			toolsVersion: { _version: "5.9.0" },
+			toolsVersion: { _version: "5.9.0" }
 		});
 
 		expect(found).toHaveLength(1);
@@ -35,7 +35,7 @@ describe("manifestFindings", () => {
 	test("flags language modes other than 6", () => {
 		const found = manifestFindings({
 			...STRICT_PACKAGE,
-			swiftLanguageVersions: ["5", "6"],
+			swiftLanguageVersions: ["5", "6"]
 		});
 
 		expect(found).toHaveLength(1);
@@ -49,9 +49,9 @@ describe("manifestFindings", () => {
 				{
 					name: "Lib",
 					type: "regular",
-					settings: [{ kind: { unsafeFlags: { _0: ["-x"] } } }],
-				},
-			],
+					settings: [{ kind: { unsafeFlags: { _0: ["-x"] } } }]
+				}
+			]
 		});
 
 		expect(found.some((finding) => finding.includes("unsafeFlags"))).toBe(true);
@@ -88,7 +88,7 @@ describe("guardSwift", () => {
 	test("reports what conversion leaves", async () => {
 		const root = await tempRepo({
 			"Tests/ATests/A.swift":
-				'import XCTest\nfinal class A: XCTestCase {\n  func testB() throws { throw XCTSkip("x") }\n}\n',
+				'import XCTest\nfinal class A: XCTestCase {\n  func testB() throws { throw XCTSkip("x") }\n}\n'
 		});
 
 		const found = await guardSwift(contextIn(root), true);
@@ -98,7 +98,7 @@ describe("guardSwift", () => {
 
 	test("reports file-wide suppressions with the line", async () => {
 		const root = await tempRepo({
-			"Sources/A.swift": "// swiftlint:disable all\nlet a = 1\n",
+			"Sources/A.swift": "// swiftlint:disable all\nlet a = 1\n"
 		});
 
 		const found = await guardSwift(contextIn(root), false);
@@ -116,12 +116,12 @@ describe("guardSwift", () => {
 
 			expect(found).toHaveLength(1);
 			expect(found[0]?.startsWith(`${path}: `)).toBe(true);
-		},
+		}
 	);
 
 	test("flags an Xcode project that skips the xcconfig and overrides settings", async () => {
 		const root = await tempRepo({
-			"A.xcodeproj/project.pbxproj": "SWIFT_VERSION = 5.0;\n",
+			"A.xcodeproj/project.pbxproj": "SWIFT_VERSION = 5.0;\n"
 		});
 
 		const found = await guardSwift(contextIn(root), false);

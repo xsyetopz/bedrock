@@ -11,7 +11,7 @@ describe("retarget", () => {
 		["net10.0", "net10.0"],
 		["net11.0", "net11.0"],
 		["netstandard2.0", "netstandard2.0"],
-		["net48", "net48"],
+		["net48", "net48"]
 	])("%s becomes %s", (from, to) => {
 		expect(retarget(from)).toBe(to);
 	});
@@ -26,7 +26,7 @@ describe("retarget", () => {
 
 		// Assert
 		expect(next).toBe(
-			"<TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>\n<TargetFramework>$(AppTarget)</TargetFramework>\n",
+			"<TargetFrameworks>net10.0;netstandard2.0</TargetFrameworks>\n<TargetFramework>$(AppTarget)</TargetFramework>\n"
 		);
 	});
 });
@@ -36,7 +36,7 @@ describe("globalJsonStep", () => {
 		// Arrange
 		const root = await tempRepo({
 			"global.json":
-				'{ "sdk": { "version": "8.0.100" }, "msbuild-sdks": { "X": "1.0" } }\n',
+				'{ "sdk": { "version": "8.0.100" }, "msbuild-sdks": { "X": "1.0" } }\n'
 		});
 
 		// Act
@@ -44,17 +44,17 @@ describe("globalJsonStep", () => {
 
 		// Assert
 		expect(
-			step?.kind === "write" ? JSON.parse(String(step.content)) : undefined,
+			step?.kind === "write" ? JSON.parse(String(step.content)) : undefined
 		).toEqual({
 			sdk: { version: "10.0.100", rollForward: "latestFeature" },
-			"msbuild-sdks": { X: "1.0" },
+			"msbuild-sdks": { X: "1.0" }
 		});
 	});
 
 	test("leaves an SDK on 10 or later", async () => {
 		// Arrange
 		const root = await tempRepo({
-			"global.json": '{ "sdk": { "version": "11.0.100" } }\n',
+			"global.json": '{ "sdk": { "version": "11.0.100" } }\n'
 		});
 
 		// Act
@@ -67,7 +67,7 @@ describe("globalJsonStep", () => {
 	test("adds the testing platform runner beside a current SDK", async () => {
 		// Arrange
 		const root = await tempRepo({
-			"global.json": '{ "sdk": { "version": "10.0.100" } }\n',
+			"global.json": '{ "sdk": { "version": "10.0.100" } }\n'
 		});
 
 		// Act
@@ -75,10 +75,10 @@ describe("globalJsonStep", () => {
 
 		// Assert
 		expect(
-			step?.kind === "write" ? JSON.parse(String(step.content)) : undefined,
+			step?.kind === "write" ? JSON.parse(String(step.content)) : undefined
 		).toEqual({
 			sdk: { version: "10.0.100" },
-			test: { runner: "Microsoft.Testing.Platform" },
+			test: { runner: "Microsoft.Testing.Platform" }
 		});
 	});
 
@@ -86,7 +86,7 @@ describe("globalJsonStep", () => {
 		// Arrange
 		const root = await tempRepo({
 			"global.json":
-				'{ "sdk": { "version": "10.0.100" }, "test": { "runner": "Microsoft.Testing.Platform" } }\n',
+				'{ "sdk": { "version": "10.0.100" }, "test": { "runner": "Microsoft.Testing.Platform" } }\n'
 		});
 
 		// Act

@@ -20,9 +20,9 @@ const COMMAND_LINES: readonly (readonly [string, string])[] = [
 	...LANGUAGES.flatMap((language) =>
 		Object.entries(language.subcommands ?? {}).map(
 			([name, command]) =>
-				[subcommandUsage(language.id, name, command), command.summary] as const,
-		),
-	),
+				[subcommandUsage(language.id, name, command), command.summary] as const
+		)
+	)
 ];
 
 // Summaries start two spaces past the longest usage, so a new subcommand never runs into its text.
@@ -51,7 +51,7 @@ const COMMANDS: Readonly<
 	version: () => {
 		console.info(VERSION);
 		return Promise.resolve(0);
-	},
+	}
 };
 
 const run = async (argv: readonly string[]): Promise<number> => {

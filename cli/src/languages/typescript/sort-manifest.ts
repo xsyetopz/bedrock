@@ -30,7 +30,7 @@ const KEY_ORDER = [
 	"overrides",
 	"engines",
 	"packageManager",
-	"trustedDependencies",
+	"trustedDependencies"
 ];
 const SORTED_MAPS = new Set([
 	"scripts",
@@ -38,7 +38,7 @@ const SORTED_MAPS = new Set([
 	"devDependencies",
 	"peerDependencies",
 	"optionalDependencies",
-	"overrides",
+	"overrides"
 ]);
 
 // Code-unit order, the one the formatter uses; localeCompare would reorder "@scope" names.
@@ -62,12 +62,12 @@ export const sortManifest = (manifest: Json): Json =>
 	Object.fromEntries(
 		Object.entries(manifest)
 			.toSorted(
-				(left, right) => rank(left[0]) - rank(right[0]) || byName(left, right),
+				(left, right) => rank(left[0]) - rank(right[0]) || byName(left, right)
 			)
 			.map(([key, value]): [string, unknown] => [
 				key,
 				SORTED_MAPS.has(key) && isRecord(value)
 					? Object.fromEntries(Object.entries(asRecord(value)).toSorted(byName))
-					: value,
-			]),
+					: value
+			])
 	);

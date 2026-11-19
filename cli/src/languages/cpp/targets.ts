@@ -63,6 +63,6 @@ export const splitSources = (targets: readonly Target[]): Split => {
 	}
 	return {
 		test: new Set([...test].filter((source) => !other.has(source))),
-		other,
+		other
 	};
 };

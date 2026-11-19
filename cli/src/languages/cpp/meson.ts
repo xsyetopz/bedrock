@@ -8,7 +8,7 @@ import {
 	eachProject,
 	inBuildDirs,
 	projectsOf,
-	repoPaths,
+	repoPaths
 } from "./projects.ts";
 import type { Target } from "./targets.ts";
 
@@ -22,7 +22,7 @@ export const mesonProjects = (root: string): Promise<string[]> =>
  */
 export const configureMeson = async (
 	root: string,
-	project: string,
+	project: string
 ): Promise<string> => {
 	const build = buildDir(root, "meson", project);
 	const reconfigure = (await exists(join(build, "meson-private")))
@@ -30,11 +30,11 @@ export const configureMeson = async (
 		: [];
 	const result = await run(
 		["meson", "setup", ...reconfigure, build, join(root, project)],
-		root,
+		root
 	);
 	if (result.code !== 0) {
 		throw new Error(
-			`meson setup of ${project || "."} failed: ${firstLine(result.stdout + result.stderr)}`,
+			`meson setup of ${project || "."} failed: ${firstLine(result.stdout + result.stderr)}`
 		);
 	}
 	return build;
@@ -45,15 +45,13 @@ export const mesonEntries = async (root: string): Promise<unknown[]> =>
 	eachProject(await mesonProjects(root), async (project) => {
 		const build = await configureMeson(root, project);
 		return asArray(
-			JSON.parse(
-				(await readText(join(build, "compile_commands.json"))) ?? "[]",
-			),
+			JSON.parse((await readText(join(build, "compile_commands.json"))) ?? "[]")
 		);
 	});
 
 const introspect = async (
 	build: string,
-	flag: string,
+	flag: string
 ): Promise<readonly unknown[]> => {
 	const result = await run(["meson", "introspect", build, flag], build);
 	return result.code === 0 ? asArray(JSON.parse(result.stdout)) : [];
@@ -77,22 +75,22 @@ interface Build {
 const testedTargets = (
 	tests: readonly Record<string, unknown>[],
 	targets: readonly Record<string, unknown>[],
-	build: Omit<Build, "tested">,
+	build: Omit<Build, "tested">
 ): Set<string> => {
 	const installed = new Set(
 		targets
 			.filter((target) => target["installed"] === true)
-			.map((target) => asString(target["id"])),
+			.map((target) => asString(target["id"]))
 	);
 	return new Set(
 		tests.flatMap((test) => {
 			const runs = build.owners.get(
-				build.fileOf(asStrings(test["cmd"])[0] ?? ""),
+				build.fileOf(asStrings(test["cmd"])[0] ?? "")
 			);
 			return runs === undefined
 				? asStrings(test["depends"]).filter((id) => !installed.has(id))
 				: [runs];
-		}),
+		})
 	);
 };
 
@@ -103,7 +101,7 @@ const testedTargets = (
 const targetOf = (target: Record<string, unknown>, build: Build): Target => {
 	const id = asString(target["id"]);
 	const groups = asArray(target["target_sources"]).map((group) =>
-		asRecord(group),
+		asRecord(group)
 	);
 	const linked = groups
 		.filter((group) => "linker" in group)
@@ -111,7 +109,7 @@ const targetOf = (target: Record<string, unknown>, build: Build): Target => {
 			asStrings(group["parameters"]).flatMap((argument) => {
 				const owner = build.owners.get(build.fileOf(argument));
 				return owner === undefined || owner === id ? [] : [owner];
-			}),
+			})
 		);
 	return {
 		id,
@@ -119,11 +117,11 @@ const targetOf = (target: Record<string, unknown>, build: Build): Target => {
 			asStrings(group["sources"]).flatMap((source) => {
 				const path = build.inRepo(source);
 				return path === undefined || inBuildDirs(path) ? [] : [path];
-			}),
+			})
 		),
 		deps: [...new Set([...asStrings(target["depends"]), ...linked])],
 		test: build.tested.has(id),
-		installed: target["installed"] === true,
+		installed: target["installed"] === true
 	};
 };
 
@@ -134,7 +132,7 @@ const targetOf = (target: Record<string, unknown>, build: Build): Target => {
  */
 export const mesonTargets = async (
 	root: string,
-	project: string,
+	project: string
 ): Promise<Target[]> => {
 	const dir = buildDir(root, "meson", project);
 	if (!(await exists(join(dir, "meson-private")))) {
@@ -142,12 +140,12 @@ export const mesonTargets = async (
 	}
 	const [targets, tests, inRepo] = await Promise.all([
 		introspect(dir, "--targets").then((items) =>
-			items.map((item) => asRecord(item)),
+			items.map((item) => asRecord(item))
 		),
 		introspect(dir, "--tests").then((items) =>
-			items.map((item) => asRecord(item)),
+			items.map((item) => asRecord(item))
 		),
-		repoPaths(root),
+		repoPaths(root)
 	]);
 	const fileOf = (path: string): string => inRepo(resolve(dir, path)) ?? path;
 	const known = {
@@ -157,14 +155,14 @@ export const mesonTargets = async (
 			targets.flatMap((target) =>
 				asStrings(target["filename"]).map((file) => [
 					fileOf(file),
-					asString(target["id"]),
-				]),
-			),
-		),
+					asString(target["id"])
+				])
+			)
+		)
 	};
 	const build: Build = {
 		...known,
-		tested: testedTargets(tests, targets, known),
+		tested: testedTargets(tests, targets, known)
 	};
 	return targets.map((target) => targetOf(target, build));
 };

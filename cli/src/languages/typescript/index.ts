@@ -14,21 +14,21 @@ export const typescript: Language = {
 		"bun.lockb",
 		"bunfig.toml",
 		"package.json",
-		"tsconfig.json",
+		"tsconfig.json"
 	],
 	tools: {
-		bun: "curl -fsSL https://bun.sh/install | bash, or brew install oven-sh/bun/bun",
+		bun: "curl -fsSL https://bun.sh/install | bash, or brew install oven-sh/bun/bun"
 	},
 	sources: [
 		"**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}",
 		"**/package.json",
 		"bunfig.toml",
-		"**/tsconfig.json",
+		"**/tsconfig.json"
 	],
 	kinds: ["library", "cli", "plugin"],
 	variables,
 	plan: planTypescript,
 	afterApply: installDependencies,
 	runs: "bun install, then bun fmt",
-	guard: (context) => guardTypescript(context),
+	guard: (context) => guardTypescript(context)
 };

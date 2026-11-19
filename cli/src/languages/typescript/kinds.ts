@@ -5,7 +5,7 @@ import type { Json } from "./json.ts";
 const KIND_FIELDS: Readonly<Record<string, (name: string) => Json>> = {
 	cli: (name) => ({ bin: { [name]: "./src/cli.ts" } }),
 	library: () => ({ exports: { ".": "./src/index.ts" } }),
-	plugin: () => ({}),
+	plugin: () => ({})
 };
 
 /** The fields of the kinds `bedrock init` starts, for fields a manifest lacks. */
@@ -18,6 +18,6 @@ export const kindFields = (context: Context, name: string): Json => {
 		return {};
 	}
 	return Object.fromEntries(
-		kinds.flatMap((kind) => Object.entries(KIND_FIELDS[kind]?.(name) ?? {})),
+		kinds.flatMap((kind) => Object.entries(KIND_FIELDS[kind]?.(name) ?? {}))
 	);
 };

@@ -4,7 +4,7 @@ import {
 	type Entry,
 	type Path,
 	scan,
-	type Section,
+	type Section
 } from "./toml-scan.ts";
 
 interface Merge {
@@ -59,7 +59,7 @@ const raw = (merge: Merge, from: number, end: number): string =>
 const carriedLines = (
 	merge: Merge,
 	entry: Entry,
-	mine: readonly unknown[],
+	mine: readonly unknown[]
 ): { lines: string[]; values: unknown[] } => {
 	const lines: string[] = [];
 	const values: unknown[] = [];
@@ -83,7 +83,7 @@ const mergeArray = (
 	merge: Merge,
 	entry: Entry,
 	at: Entry,
-	mine: readonly unknown[],
+	mine: readonly unknown[]
 ): void => {
 	const theirs = asList(get(merge.repo, entry.path));
 	const extra = theirs.filter((value) => !has(mine, value));
@@ -100,13 +100,13 @@ const mergeArray = (
 	const rest = extra.filter((value) => !has(carried.values, value));
 	insert(merge, at.end - 1, [
 		...carried.lines,
-		...rest.map((value) => `${indent}${toml(value)},`),
+		...rest.map((value) => `${indent}${toml(value)},`)
 	]);
 };
 
 const mergeTable = (merge: Merge, section: Section, table: Section): void => {
 	const keys = new Map(
-		table.entries.map((entry) => [JSON.stringify(entry.path), entry]),
+		table.entries.map((entry) => [JSON.stringify(entry.path), entry])
 	);
 	const added: string[] = [];
 	for (const entry of section.entries) {
@@ -120,7 +120,7 @@ const mergeTable = (merge: Merge, section: Section, table: Section): void => {
 		} else if (!Bun.deepEquals(mine, theirs)) {
 			const name = entry.path.join(".");
 			merge.notes.push(
-				`bunfig.toml: kept the template's \`${name} = ${toml(mine)}\`; the repo had \`${name} = ${toml(theirs)}\`.`,
+				`bunfig.toml: kept the template's \`${name} = ${toml(mine)}\`; the repo had \`${name} = ${toml(theirs)}\`.`
 			);
 		}
 	}
@@ -130,13 +130,13 @@ const mergeTable = (merge: Merge, section: Section, table: Section): void => {
 const mergeSection = (
 	merge: Merge,
 	section: Section,
-	tables: Map<string, Section>,
+	tables: Map<string, Section>
 ): void => {
 	const table = tables.get(JSON.stringify(section.path));
 	const isNew = section.array
 		? !has(
 				asList(get(merge.base, section.path.slice(0, -1))),
-				get(merge.repo, section.path),
+				get(merge.repo, section.path)
 			)
 		: table === undefined;
 	if (isNew) {
@@ -167,7 +167,7 @@ const render = (merge: Merge): string => {
  */
 export const mergeBunfig = (
 	template: string,
-	current?: string,
+	current?: string
 ): { content: string; notes: string[] } => {
 	if (current === undefined) {
 		return { content: template, notes: [] };
@@ -179,8 +179,8 @@ export const mergeBunfig = (
 		return {
 			content: template,
 			notes: [
-				"bunfig.toml: the repo's copy is not valid TOML, so adopt wrote the template. Its settings are in git history.",
-			],
+				"bunfig.toml: the repo's copy is not valid TOML, so adopt wrote the template. Its settings are in git history."
+			]
 		};
 	}
 	const merge: Merge = {
@@ -190,10 +190,10 @@ export const mergeBunfig = (
 		repo,
 		after: new Map(),
 		appended: [],
-		notes: [],
+		notes: []
 	};
 	const tables = new Map(
-		scan(merge.lines).map((section) => [JSON.stringify(section.path), section]),
+		scan(merge.lines).map((section) => [JSON.stringify(section.path), section])
 	);
 	for (const section of scan(merge.own)) {
 		mergeSection(merge, section, tables);

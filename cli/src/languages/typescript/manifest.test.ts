@@ -9,17 +9,17 @@ const template = {
 	workspaces: { packages: [], catalog: { oxlint: "1.90.0" } },
 	overrides: { "@types/node": "26.6.6" },
 	packageManager: "bun@1.4.5",
-	engines: { bun: ">=1.4.5" },
+	engines: { bun: ">=1.4.5" }
 };
 
 describe("migrateManifest", () => {
 	test("keeps a package the template ships, even one the removals match", () => {
 		const { manifest } = migrateManifest(
 			{ devDependencies: { "eslint-plugin-jsdoc": "catalog:" } },
-			{ ...template, devDependencies: { "eslint-plugin-jsdoc": "catalog:" } },
+			{ ...template, devDependencies: { "eslint-plugin-jsdoc": "catalog:" } }
 		);
 		expect(manifest["devDependencies"]).toEqual({
-			"eslint-plugin-jsdoc": "catalog:",
+			"eslint-plugin-jsdoc": "catalog:"
 		});
 	});
 
@@ -32,20 +32,20 @@ describe("migrateManifest", () => {
 					fmt: "prettier --write .",
 					lint: "eslint .",
 					test: "jest",
-					typecheck: "bun check --cwd packages/app",
+					typecheck: "bun check --cwd packages/app"
 				},
 				dependencies: { zod: "^3.0.0" },
 				devDependencies: {
 					eslint: "^9.0.0",
 					"@typescript-eslint/parser": "^8.0.0",
 					husky: "^9.0.0",
-					vite: "^6.0.0",
+					vite: "^6.0.0"
 				},
 				engines: { node: ">=20", npm: ">=10" },
 				packageManager: "npm@10.0.0",
-				"lint-staged": { "*.ts": "eslint" },
+				"lint-staged": { "*.ts": "eslint" }
 			},
-			template,
+			template
 		);
 		expect(manifest).toEqual({
 			name: "app",
@@ -54,14 +54,14 @@ describe("migrateManifest", () => {
 				"fmt:project": "bun fmt",
 				lint: "oxlint",
 				test: "bun test",
-				typecheck: "bun check",
+				typecheck: "bun check"
 			},
 			dependencies: { zod: "^3.0.0" },
 			devDependencies: { vite: "^6.0.0", oxlint: "catalog:" },
 			workspaces: { packages: [], catalog: { oxlint: "1.90.0" } },
 			engines: { node: ">=20", bun: ">=1.4.5" },
 			overrides: { "@types/node": "26.6.6" },
-			packageManager: "bun@1.4.5",
+			packageManager: "bun@1.4.5"
 		});
 	});
 
@@ -73,16 +73,16 @@ describe("migrateManifest", () => {
 				packages: ["apps/*", "packages/*"],
 				catalog: { react: "19.0.0" },
 				catalogs: { legacy: { react: "18.3.1" } },
-				onlyBuiltDependencies: ["esbuild"],
-			},
+				onlyBuiltDependencies: ["esbuild"]
+			}
 		);
 		expect(manifest["workspaces"]).toEqual({
 			packages: ["apps/*", "packages/*"],
 			catalog: { react: "19.0.0", oxlint: "1.90.0" },
-			catalogs: { legacy: { react: "18.3.1" } },
+			catalogs: { legacy: { react: "18.3.1" } }
 		});
 		expect(
-			Object.keys(asRecord(asRecord(manifest["workspaces"])["catalog"])),
+			Object.keys(asRecord(asRecord(manifest["workspaces"])["catalog"]))
 		).toEqual(["oxlint", "react"]);
 		expect(manifest["trustedDependencies"]).toEqual(["esbuild"]);
 	});
@@ -92,7 +92,7 @@ describe("migrateManifest", () => {
 		const trusted = {
 			name: "app",
 			devDependencies: { "@biomejs/biome": "2.0.0" },
-			trustedDependencies: ["@biomejs/biome", "esbuild"],
+			trustedDependencies: ["@biomejs/biome", "esbuild"]
 		};
 		const only = { name: "app", trustedDependencies: ["@biomejs/biome"] };
 
@@ -110,17 +110,17 @@ describe("migrateManifest", () => {
 			{
 				devDependencies: { "typescript-bedrock": "catalog:", vite: "^6.0.0" },
 				workspaces: {
-					catalog: { "typescript-bedrock": "1.0.0", react: "19.0.0" },
-				},
+					catalog: { "typescript-bedrock": "1.0.0", react: "19.0.0" }
+				}
 			},
-			template,
+			template
 		);
 		expect(manifest["devDependencies"]).toEqual({
 			vite: "^6.0.0",
-			oxlint: "catalog:",
+			oxlint: "catalog:"
 		});
 		expect(
-			Object.keys(asRecord(asRecord(manifest["workspaces"])["catalog"])),
+			Object.keys(asRecord(asRecord(manifest["workspaces"])["catalog"]))
 		).toEqual(["oxlint", "react"]);
 	});
 
@@ -132,7 +132,7 @@ describe("migrateManifest", () => {
 		// Act
 		const { manifest } = migrateManifest(
 			{ name: "app", devDependencies: { "typescript-bedrock": stale } },
-			template,
+			template
 		);
 
 		// Assert
@@ -143,13 +143,13 @@ describe("migrateManifest", () => {
 		const { manifest } = migrateManifest(
 			{
 				name: "app",
-				overrides: { "@types/node": "20.0.0", lodash: "4.17.21" },
+				overrides: { "@types/node": "20.0.0", lodash: "4.17.21" }
 			},
-			template,
+			template
 		);
 		expect(manifest["overrides"]).toEqual({
 			"@types/node": "26.6.6",
-			lodash: "4.17.21",
+			lodash: "4.17.21"
 		});
 	});
 });

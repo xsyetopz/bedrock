@@ -20,7 +20,7 @@ export const METRICS = [
 	"test_file_code_lines",
 	"function_code_lines",
 	"function_complexity",
-	"function_parameters",
+	"function_parameters"
 ] as const;
 
 /** One of {@link METRICS}. */
@@ -32,14 +32,14 @@ const KEYS: ReadonlyMap<string, readonly [Metric, "warning" | "error"]> =
 	new Map(
 		METRICS.flatMap((metric) =>
 			LEVELS.map(
-				(level) => [`bedrock_${metric}_${level}`, [metric, level]] as const,
-			),
-		),
+				(level) => [`bedrock_${metric}_${level}`, [metric, level]] as const
+			)
+		)
 	);
 
 /** The bounds the `bedrock_*` properties of one file set. */
 export const boundsOf = (
-	properties: ReadonlyMap<string, string>,
+	properties: ReadonlyMap<string, string>
 ): Partial<Record<Metric, Bound>> => {
 	const bounds: Partial<Record<Metric, Bound>> = {};
 	for (const [key, value] of properties) {
@@ -60,19 +60,19 @@ export const boundsOf = (
  */
 export const invalidBounds = (
 	pairs: readonly (readonly [string, string])[],
-	file = ".editorconfig",
+	file = ".editorconfig"
 ): string[] =>
 	pairs.flatMap(([key, value]) => {
 		if (KEYS.has(key)) {
 			return /^(?:[1-9]\d*|unset)$/iu.test(value)
 				? []
 				: [
-						`${file}: ${key} = ${value}; a bound is a positive integer or unset`,
+						`${file}: ${key} = ${value}; a bound is a positive integer or unset`
 					];
 		}
 		return /^bedrock_.+_(?:warning|error)$/u.test(key)
 			? [
-					`${file}: ${key} names no bound; bedrock bounds ${METRICS.join(", ")}, each with _warning or _error`,
+					`${file}: ${key} names no bound; bedrock bounds ${METRICS.join(", ")}, each with _warning or _error`
 				]
 			: [];
 	});
@@ -80,7 +80,7 @@ export const invalidBounds = (
 /** Which bound `value` crosses, if any; an error outranks a warning. */
 export const crossed = (
 	value: number,
-	bound: Bound,
+	bound: Bound
 ):
 	| { readonly level: "error" | "warning"; readonly limit: number }
 	| undefined => {

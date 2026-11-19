@@ -58,7 +58,7 @@ const bracket = (glob: string, open: number): Token => {
 	const negated = body.startsWith("!");
 	const chars = (negated ? body.slice(1) : body).replaceAll(
 		/[\\[\]^]/gu,
-		(char) => `\\${char}`,
+		(char) => `\\${char}`
 	);
 	return [`[${negated ? "^" : ""}${chars}]`, end + 1];
 };

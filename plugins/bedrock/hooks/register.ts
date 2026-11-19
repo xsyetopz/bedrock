@@ -33,7 +33,7 @@ const applyHint = (args: readonly string[]): string =>
 /** Runs bedrock with the arguments of `/bedrock` or `/adopt`, in the session's folder. */
 export const runBedrock = async (
 	$: Engine,
-	input: string,
+	input: string
 ): Promise<{ text: string; context: string[] }> => {
 	const args = bedrockArgs(input);
 	let command: string[];
@@ -52,9 +52,9 @@ export const runBedrock = async (
 			"sh",
 			cwd,
 			...command,
-			...args,
+			...args
 		],
-		{ timeoutMs: 600_000 },
+		{ timeoutMs: 600_000 }
 	);
 	const status = exitCode === 0 ? "" : `\n(bedrock exited ${exitCode})`;
 	const text = `${`${stdout}${stderr}`.trim()}${status}${exitCode === 0 ? applyHint(args) : ""}`;
@@ -71,13 +71,13 @@ export const announce: Hook<unknown> = async ($, e, next) => {
 		$.command.register({
 			name: "bedrock",
 			description:
-				"Run bedrock: init, adopt, update, guard, clean. Plans print first; --yes applies them.",
+				"Run bedrock: init, adopt, update, guard, clean. Plans print first; --yes applies them."
 		}),
 		$.command.register({
 			name: "adopt",
 			description:
-				"Set this repo up with bedrock for its languages. Prints the plan; --yes applies it.",
-		}),
+				"Set this repo up with bedrock for its languages. Prints the plan; --yes applies it."
+		})
 	]);
 	return next(e);
 };
@@ -100,7 +100,7 @@ export const blockForeign: Hook<BashCall> = async ($, e, next) => {
 		return next(e);
 	}
 	return {
-		deny: `${$.plugin.name}: this repo uses Bun. Run bun in place of ${manager}, or bunx for a one-off package.`,
+		deny: `${$.plugin.name}: this repo uses Bun. Run bun in place of ${manager}, or bunx for a one-off package.`
 	};
 };
 

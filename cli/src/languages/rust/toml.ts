@@ -108,7 +108,7 @@ export const parseSections = (text: string): Section[] => {
 				name: tableName(unit),
 				leading,
 				header: unit,
-				units: [],
+				units: []
 			});
 		} else {
 			sections.at(-1)?.units.push(unit);
@@ -122,11 +122,11 @@ export const renderSections = (sections: readonly Section[]): string => {
 	const parts = sections.flatMap((section) => [
 		...section.leading,
 		...(section.header === "" ? [] : [section.header]),
-		...section.units,
+		...section.units
 	]);
 	return parts
 		.map((part, index) =>
-			part.endsWith("\n") || index === parts.length - 1 ? part : `${part}\n`,
+			part.endsWith("\n") || index === parts.length - 1 ? part : `${part}\n`
 		)
 		.join("");
 };
@@ -134,19 +134,19 @@ export const renderSections = (sections: readonly Section[]): string => {
 /** `section` with other units. */
 export const withUnits = (
 	section: Section,
-	units: readonly string[],
+	units: readonly string[]
 ): Section => ({
 	name: section.name,
 	leading: section.leading,
 	header: section.header,
-	units,
+	units
 });
 
 /** The key at the start of an entry, such as `edition.workspace`, or undefined for comments and blanks. */
 export const keyOf = (unit: string): string | undefined => {
 	const match =
 		/^\s*((?:"[^"]*"|'[^']*'|[\w-]+)(?:\s*\.\s*(?:"[^"]*"|'[^']*'|[\w-]+))*)\s*=/u.exec(
-			unit,
+			unit
 		);
 	return match?.[1]?.replaceAll(/\s*\.\s*/gu, ".").replaceAll(/["']/gu, "");
 };
@@ -160,20 +160,20 @@ export const hasNoEntries = (section: Section): boolean =>
 /** `section` without the entries whose key `drop` accepts. */
 export const withoutKeys = (
 	section: Section,
-	drop: (key: string) => boolean,
+	drop: (key: string) => boolean
 ): Section => ({
 	...section,
 	units: section.units.filter((unit) => {
 		const key = keyOf(unit);
 		return key === undefined || !drop(key);
-	}),
+	})
 });
 
 /** `section` with `key = value`: replaced in place, else after the last entry. */
 export const withKey = (
 	section: Section,
 	key: string,
-	value: string,
+	value: string
 ): Section => {
 	const line = `${key} = ${value}\n`;
 	const at = section.units.findIndex((unit) => keyOf(unit) === key);
@@ -187,12 +187,12 @@ export const withKey = (
 /** A section built from a header name and entry lines. */
 export const makeSection = (
 	name: string,
-	entries: readonly string[],
+	entries: readonly string[]
 ): Section => ({
 	name,
 	leading: [],
 	header: `[${name}]\n`,
-	units: entries.map((entry) => `${entry}\n`),
+	units: entries.map((entry) => `${entry}\n`)
 });
 
 /**
@@ -209,36 +209,36 @@ export const tidy = (sections: readonly Section[]): Section[] =>
 		const filled = section.header !== "" || units.length > 0;
 		return {
 			...section,
-			units: [...units, ...(followed && filled ? ["\n"] : [])],
+			units: [...units, ...(followed && filled ? ["\n"] : [])]
 		};
 	});
 
 /** Removes every section for which `drop` is true; returns where the first one sat. */
 export const removeSections = (
 	sections: readonly Section[],
-	drop: (name: string) => boolean,
+	drop: (name: string) => boolean
 ): { sections: Section[]; at: number | undefined } => {
 	const first = sections.findIndex(
-		(section) => section.name !== undefined && drop(section.name),
+		(section) => section.name !== undefined && drop(section.name)
 	);
 	return {
 		sections: sections.filter(
-			(section) => section.name === undefined || !drop(section.name),
+			(section) => section.name === undefined || !drop(section.name)
 		),
-		at: first === -1 ? undefined : first,
+		at: first === -1 ? undefined : first
 	};
 };
 
 /** The section called `name`, if the file has one. */
 export const findSection = (
 	sections: readonly Section[],
-	name: string,
+	name: string
 ): Section | undefined => sections.find((section) => section.name === name);
 
 /** `sections` with `section` replacing the one of the same name, or appended. */
 export const upsertSection = (
 	sections: readonly Section[],
-	section: Section,
+	section: Section
 ): Section[] => {
 	const at = sections.findIndex((entry) => entry.name === section.name);
 	return at === -1 ? [...sections, section] : sections.with(at, section);

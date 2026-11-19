@@ -6,7 +6,7 @@ import {
 	type Line,
 	parseLines,
 	prefixWhile,
-	scalars,
+	scalars
 } from "./lexer.ts";
 import { restructure } from "./structure.ts";
 
@@ -37,14 +37,14 @@ const MANUAL: ReadonlyMap<string, { label: string; advice: string }> = new Map(
 		[
 			"continueAfterFailure",
 			"continueAfterFailure",
-			"use #require to stop at the first failure",
+			"use #require to stop at the first failure"
 		],
 		[
 			"XCTAssertThrowsError",
 			"XCTAssertThrowsError with an error handler",
-			"use #expect(throws:) and inspect the error",
-		],
-	].map(([name = "", label = "", advice = ""]) => [name, { label, advice }]),
+			"use #expect(throws:) and inspect the error"
+		]
+	].map(([name = "", label = "", advice = ""]) => [name, { label, advice }])
 );
 
 const CALL_ONLY = new Set(["expectation", "wait", "measure", "fulfill"]);
@@ -53,7 +53,7 @@ const CALL_ONLY = new Set(["expectation", "wait", "measure", "fulfill"]);
 const isXCTestCall = (
 	name: string,
 	following: string,
-	bare: boolean,
+	bare: boolean
 ): boolean => {
 	const isCall =
 		following.startsWith(name === "wait" ? "(for:" : "(") ||
@@ -64,18 +64,18 @@ const isXCTestCall = (
 const classify = (
 	name: string,
 	previous: string,
-	entry: { label: string; advice: string } | undefined,
+	entry: { label: string; advice: string } | undefined
 ): { message: string; needsXCTest: boolean } | undefined => {
 	if (entry !== undefined) {
 		return {
 			message: `${entry.label} has no direct Swift Testing form; ${entry.advice}`,
-			needsXCTest: true,
+			needsXCTest: true
 		};
 	}
 	if (name.startsWith("XCT") && previous !== "import") {
 		return {
 			message: `${name} could not be converted; left as is`,
-			needsXCTest: true,
+			needsXCTest: true
 		};
 	}
 	if (
@@ -84,7 +84,7 @@ const classify = (
 	) {
 		return {
 			message: `${name} left as is; init and deinit appear once, and deinit cannot throw or be async`,
-			needsXCTest: false,
+			needsXCTest: false
 		};
 	}
 	return undefined;
@@ -93,7 +93,7 @@ const classify = (
 const isNoted = (
 	found: readonly Leftover[],
 	line: number,
-	message: string,
+	message: string
 ): boolean =>
 	found.some((other) => other.line === line && other.message === message);
 
@@ -117,7 +117,7 @@ const leftovers = (source: string): Leftover[] => {
 		const hit = classify(
 			name,
 			previous,
-			skipped ? undefined : MANUAL.get(name),
+			skipped ? undefined : MANUAL.get(name)
 		);
 		if (hit !== undefined && !isNoted(found, line, hit.message)) {
 			found.push({ line, ...hit });
@@ -150,7 +150,7 @@ const rewriteImports = (source: string, keepXCTest: boolean): string => {
 			hasTesting = true;
 			const indent = prefixWhile(line.text, (c) => c === " " || c === "\t");
 			out.push(
-				`${indent}import Testing${line.text.endsWith("\r") ? "\r" : ""}`,
+				`${indent}import Testing${line.text.endsWith("\r") ? "\r" : ""}`
 			);
 		}
 		if (keepXCTest) {
@@ -180,10 +180,10 @@ export const convertXCTest = (source: string): Converted | undefined => {
 	const text = rewriteImports(restructured, keep);
 	const notes = leftovers(text).map((entry): [number, string] => [
 		entry.line,
-		entry.message,
+		entry.message
 	]);
 	const kept = parseLines(text).findIndex((line) =>
-		importsModule(line, "XCTest"),
+		importsModule(line, "XCTest")
 	);
 	if (keep && kept !== -1) {
 		notes.push([kept + 1, "import XCTest kept for the constructs noted here"]);
@@ -192,7 +192,7 @@ export const convertXCTest = (source: string): Converted | undefined => {
 		text,
 		notes: notes
 			.toSorted((left, right) => left[0] - right[0])
-			.map(([line, message]) => `line ${line}: ${message}`),
+			.map(([line, message]) => `line ${line}: ${message}`)
 	};
 };
 

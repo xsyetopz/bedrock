@@ -5,7 +5,7 @@
  */
 export const inOrder = async <T>(
 	items: readonly T[],
-	run: (item: T) => Promise<void>,
+	run: (item: T) => Promise<void>
 ): Promise<void> => {
 	const [head, ...tail] = items;
 	if (head === undefined) {

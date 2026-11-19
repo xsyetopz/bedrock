@@ -25,7 +25,7 @@ const ASSERTION_CASES: readonly [string, string][] = [
 	["XCTAssertNotEqual(a, b, accuracy: e)", "#expect(abs(a - b) > e)"],
 	[
 		"XCTAssertEqual(a + 1, b, accuracy: 0.1)",
-		"#expect(abs((a + 1) - b) <= 0.1)",
+		"#expect(abs((a + 1) - b) <= 0.1)"
 	],
 	["XCTAssertEqual(a + 1, b ?? 2)", "#expect((a + 1) == (b ?? 2))"],
 	['XCTAssertEqual(x?.name, "a b")', '#expect(x?.name == "a b")'],
@@ -42,21 +42,21 @@ const ASSERTION_CASES: readonly [string, string][] = [
 	["XCTFail()", "Issue.record()"],
 	[
 		String.raw`XCTFail("boom \(x)", file: f, line: l)`,
-		String.raw`Issue.record("boom \(x)")`,
+		String.raw`Issue.record("boom \(x)")`
 	],
 	[
 		"XCTAssertThrowsError(try f())",
-		"#expect(throws: (any Error).self) { try f() }",
+		"#expect(throws: (any Error).self) { try f() }"
 	],
 	[
 		'XCTAssertThrowsError(try f(), "m")',
-		'#expect(throws: (any Error).self, "m") { try f() }',
+		'#expect(throws: (any Error).self, "m") { try f() }'
 	],
 	["XCTAssertNoThrow(try f())", "#expect(throws: Never.self) { try f() }"],
 	[
 		"XCTAssertNoThrow(try await f())",
-		"#expect(throws: Never.self) { try await f() }",
-	],
+		"#expect(throws: Never.self) { try await f() }"
+	]
 ];
 
 describe("assertions", () => {
@@ -76,7 +76,7 @@ describe("assertions", () => {
 			"/* XCTAssertTrue(x) /* nested */ XCTAssertFalse(y) */",
 			'let c = """',
 			"XCTAssertEqual(c, d)",
-			'"""',
+			'"""'
 		].join("\n");
 
 		expect(statement(source)).toBe(source);
@@ -86,25 +86,25 @@ describe("assertions", () => {
 		const code = String.raw`XCTAssertEqual("a\")), \(f("x,)"))", g(1, 2))`;
 
 		expect(statement(code)).toBe(
-			String.raw`#expect("a\")), \(f("x,)"))" == g(1, 2))`,
+			String.raw`#expect("a\")), \(f("x,)"))" == g(1, 2))`
 		);
 	});
 
 	test("keeps commas in nested arguments", () => {
 		expect(statement("XCTAssertEqual(max(1, 2), 2)")).toBe(
-			"#expect(max(1, 2) == 2)",
+			"#expect(max(1, 2) == 2)"
 		);
 		expect(
-			statement('XCTAssertEqual([1, 2], [a: 1, b: 2]["a", default: 0])'),
+			statement('XCTAssertEqual([1, 2], [a: 1, b: 2]["a", default: 0])')
 		).toBe('#expect([1, 2] == [a: 1, b: 2]["a", default: 0])');
 		expect(statement("XCTAssertEqual(xs.map { $0 + 1 }, [2, 3])")).toBe(
-			"#expect((xs.map { $0 + 1 }) == [2, 3])",
+			"#expect((xs.map { $0 + 1 }) == [2, 3])"
 		);
 		expect(statement("XCTAssertEqual(xs.reduce(0) { a, b in a + b }, 3)")).toBe(
-			"#expect((xs.reduce(0) { a, b in a + b }) == 3)",
+			"#expect((xs.reduce(0) { a, b in a + b }) == 3)"
 		);
 		expect(statement("XCTAssertEqual(Dictionary<String, Int>(), [:])")).toBe(
-			"#expect(Dictionary<String, Int>() == [:])",
+			"#expect(Dictionary<String, Int>() == [:])"
 		);
 	});
 
@@ -116,7 +116,7 @@ describe("assertions", () => {
 
 	test("rewrites assertions nested in closures", () => {
 		expect(statement("items.forEach { XCTAssertNotNil($0) }")).toBe(
-			"items.forEach { #expect($0 != nil) }",
+			"items.forEach { #expect($0 != nil) }"
 		);
 		const handler =
 			"XCTAssertThrowsError(try f()) { XCTAssertEqual($0 as? E, .bad) }";

@@ -12,7 +12,7 @@ export const rust: Language = {
 	aliases: ["rust"],
 	markers: ["Cargo.toml"],
 	tools: {
-		cargo: "rustup, from https://rustup.rs, such as brew install rustup",
+		cargo: "rustup, from https://rustup.rs, such as brew install rustup"
 	},
 	sources: [
 		"**/*.rs",
@@ -22,7 +22,7 @@ export const rust: Language = {
 		"rustfmt.toml",
 		"clippy.toml",
 		"deny.toml",
-		".cargo/**",
+		".cargo/**"
 	],
 	kinds: KINDS,
 	variables: (context) =>
@@ -40,5 +40,5 @@ export const rust: Language = {
 	guard: guardRust,
 	// Clippy has function lints (too_many_lines, too_many_arguments, cognitive_complexity) but no file-length lint.
 	lizard: ["rust"],
-	testFiles: rustTestFiles,
+	testFiles: rustTestFiles
 };

@@ -18,7 +18,7 @@ const REMOVED_OPTIONS = new Set([
 	"prepend",
 	"preserveValueImports",
 	"suppressExcessPropertyErrors",
-	"suppressImplicitAnyIndexErrors",
+	"suppressImplicitAnyIndexErrors"
 ]);
 /** Project facts the base config cannot know. */
 const PROJECT_OPTIONS = new Set(["jsx", "lib", "types"]);
@@ -29,7 +29,7 @@ const EMIT_OPTIONS = [
 	"composite",
 	"declaration",
 	"emitDeclarationOnly",
-	"outDir",
+	"outDir"
 ];
 
 const rebasePaths = (paths: unknown, baseUrl: string): Json => {
@@ -40,30 +40,30 @@ const rebasePaths = (paths: unknown, baseUrl: string): Json => {
 		: Object.fromEntries(
 				entries.map(([key, targets]) => [
 					key,
-					asStrings(targets).map((target) => rebase(target)),
-				]),
+					asStrings(targets).map((target) => rebase(target))
+				])
 			);
 };
 
 const migrateOptions = (
 	compilerOptions: Json,
-	policy: Json,
+	policy: Json
 ): { options: Json; notes: string[] } => {
 	const notes: string[] = [];
 	const options: Json = {};
 	for (const [key, value] of Object.entries(compilerOptions)) {
 		if (REMOVED_OPTIONS.has(key)) {
 			notes.push(
-				`tsconfig: removed "${key}"; TypeScript 7 rejects it or always behaves as if it were on.`,
+				`tsconfig: removed "${key}"; TypeScript 7 rejects it or always behaves as if it were on.`
 			);
 		} else if (key === "baseUrl" && typeof value === "string") {
 			notes.push(
-				`tsconfig: replaced "baseUrl" with "paths"; TypeScript 7 removed it.`,
+				`tsconfig: replaced "baseUrl" with "paths"; TypeScript 7 removed it.`
 			);
 		} else if (key in policy && !PROJECT_OPTIONS.has(key)) {
 			if (JSON.stringify(policy[key]) !== JSON.stringify(value)) {
 				notes.push(
-					`tsconfig: "${key}": ${JSON.stringify(value)} is now ${JSON.stringify(policy[key])}, as in ${BASE_FILE}.`,
+					`tsconfig: "${key}": ${JSON.stringify(value)} is now ${JSON.stringify(policy[key])}, as in ${BASE_FILE}.`
 				);
 			}
 		} else {
@@ -79,15 +79,15 @@ const migrateOptions = (
 		options["types"] = [
 			...new Set([
 				...asStrings(options["types"]),
-				...asStrings(policy["types"]),
-			]),
+				...asStrings(policy["types"])
+			])
 		];
 	}
 	if (EMIT_OPTIONS.some((key) => key in options)) {
 		options["noEmit"] = false;
 		options["allowImportingTsExtensions"] = false;
 		notes.push(
-			`tsconfig: the project emits with tsc, so "noEmit" is off. Check "module" and "target" from ${BASE_FILE}.`,
+			`tsconfig: the project emits with tsc, so "noEmit" is off. Check "module" and "target" from ${BASE_FILE}.`
 		);
 	}
 	return { options, notes };
@@ -96,7 +96,7 @@ const migrateOptions = (
 /** The template's options, with the project's own `jsx`, `lib`, `types` and extras on top. */
 const inlineOptions = (options: Json, policy: Json): Json => ({
 	...policy,
-	...options,
+	...options
 });
 
 /**
@@ -106,12 +106,12 @@ const inlineOptions = (options: Json, policy: Json): Json => ({
  */
 export const migrateTsconfig = (
 	tsconfig: Json,
-	base: Json,
+	base: Json
 ): { tsconfig: Json; notes: string[] } => {
 	const policy = asRecord(base["compilerOptions"]);
 	const migrated = migrateOptions(
 		asRecord(tsconfig["compilerOptions"]),
-		policy,
+		policy
 	);
 	const options = inlineOptions(migrated.options, policy);
 	const notes = migrated.notes;
@@ -123,24 +123,24 @@ export const migrateTsconfig = (
 	const parents = own.filter((path) => !LEGACY_BASE.test(path));
 	if (parents.length > 0) {
 		notes.push(
-			`tsconfig: still extends ${parents.join(", ")}. If one sets an option TypeScript 7 removed, \`bun check\` names it.`,
+			`tsconfig: still extends ${parents.join(", ")}. If one sets an option TypeScript 7 removed, \`bun check\` names it.`
 		);
 	}
 	return {
 		tsconfig: {
 			$schema: "https://json.schemastore.org/tsconfig.json",
 			...Object.fromEntries(
-				Object.entries(tsconfig).filter(([key]) => key !== "extends"),
+				Object.entries(tsconfig).filter(([key]) => key !== "extends")
 			),
 			...(parents.length > 0 ? { extends: parents } : {}),
 			compilerOptions: options,
 			exclude: [
 				...new Set([
 					...asStrings(tsconfig["exclude"]),
-					...asStrings(base["exclude"]),
-				]),
-			],
+					...asStrings(base["exclude"])
+				])
+			]
 		},
-		notes,
+		notes
 	};
 };

@@ -4,15 +4,15 @@ import { render } from "./render.ts";
 /** The rendered build scripts and catalog of a migration, keyed by path. */
 export const rendered = async (
 	root: string,
-	migration: Migration,
+	migration: Migration
 ): Promise<Record<string, string>> => {
 	const steps = await render(root, migration);
 	return Object.fromEntries(
 		steps.flatMap((step) =>
 			step.kind === "write" && typeof step.content === "string"
 				? [[step.path, step.content]]
-				: [],
-		),
+				: []
+		)
 	);
 };
 

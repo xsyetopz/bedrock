@@ -25,7 +25,7 @@ export interface Module {
 /** The index of the bracket that closes the `[` or `(` at `openAt`. */
 export const closing = (
 	all: readonly Token[],
-	openAt: number,
+	openAt: number
 ): number | undefined => {
 	const open = all[openAt]?.text;
 	const close = open === "[" ? "]" : ")";
@@ -103,7 +103,7 @@ const pathValue = (inner: readonly Token[]): string | undefined => {
 /** The attributes in front of an item, and the index of the item's first token. */
 const attributes = (
 	all: readonly Token[],
-	from: number,
+	from: number
 ): Pick<Module, "testOnly" | "path" | "pathAttribute"> & {
 	next: number;
 } => {
@@ -144,7 +144,7 @@ const skipModifiers = (all: readonly Token[], from: number): number => {
 /** The index of the `}` that closes the `{` at `openAt`. */
 const bracesEnd = (
 	all: readonly Token[],
-	openAt: number,
+	openAt: number
 ): number | undefined => {
 	let depth = 0;
 	for (let index = openAt; index < all.length; index += 1) {
@@ -195,7 +195,7 @@ export const modules = (source: string): Module[] => {
 				testOnly: attrs.testOnly,
 				start: keyword.start,
 				body: close === undefined ? undefined : [after.start, close.start],
-				depth: enclosing[cursor] ?? 0,
+				depth: enclosing[cursor] ?? 0
 			});
 			at = cursor + 3;
 		} else {
@@ -222,7 +222,7 @@ const ownsDirectory = async (file: string): Promise<boolean> => {
 		tests: dirname(parent),
 		examples: dirname(parent),
 		benches: dirname(parent),
-		bin: dirname(dirname(parent)),
+		bin: dirname(dirname(parent))
 	};
 	const owner = targets[kind];
 	return owner !== undefined && (await exists(join(owner, "Cargo.toml")));
@@ -240,7 +240,7 @@ export const moduleDirectory = async (file: string): Promise<string> =>
 /** The file that holds the body of `declaration`, declared in `file`. */
 export const childFile = async (
 	file: string,
-	declaration: Module,
+	declaration: Module
 ): Promise<string | undefined> => {
 	if (declaration.path !== undefined) {
 		const candidate = join(dirname(file), declaration.path);
@@ -249,7 +249,7 @@ export const childFile = async (
 	const base = await moduleDirectory(file);
 	const candidates = [
 		join(base, `${declaration.name}.rs`),
-		join(base, declaration.name, "mod.rs"),
+		join(base, declaration.name, "mod.rs")
 	];
 	const present = await Promise.all(candidates.map((path) => exists(path)));
 	return candidates.find((_, index) => present[index] === true);

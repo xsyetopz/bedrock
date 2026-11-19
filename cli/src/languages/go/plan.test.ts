@@ -12,7 +12,7 @@ describe("adopt", () => {
 	test("writes the recipes, workflow, and starter config for the module", async () => {
 		// Arrange
 		const root = await tempRepo({
-			"go.mod": "module github.com/acme/app\n\ngo 1.27\n",
+			"go.mod": "module github.com/acme/app\n\ngo 1.27\n"
 		});
 
 		// Act
@@ -24,7 +24,7 @@ describe("adopt", () => {
 		expect(paths).toContain(".github/workflows/go.yml");
 		expect(paths).not.toContain("go.mod");
 		expect(written(plan.steps, ".golangci.yml")).toContain(
-			"- github.com/acme/app",
+			"- github.com/acme/app"
 		);
 	});
 
@@ -57,14 +57,14 @@ describe("adopt", () => {
 describe("init", () => {
 	test.each([
 		["command", "internal/greeting/greeting.go"],
-		["library", ".golangci.yml"],
+		["library", ".golangci.yml"]
 	])("%s starts a module with its starter files", async (kind, starter) => {
 		// Arrange
 		const root = await tempRepo();
 
 		// Act
 		const plan = await buildPlan(root, [{ language: go, options: { kind } }], {
-			init: true,
+			init: true
 		});
 
 		// Assert
@@ -83,15 +83,15 @@ describe("init", () => {
 			[
 				{
 					language: go,
-					options: { kind: "library", module: "github.com/acme/lib" },
-				},
+					options: { kind: "library", module: "github.com/acme/lib" }
+				}
 			],
-			{ init: true },
+			{ init: true }
 		);
 
 		// Assert
 		expect(written(plan.steps, "go.mod")).toContain(
-			"module github.com/acme/lib",
+			"module github.com/acme/lib"
 		);
 		expect(plan.notes).toEqual([]);
 	});

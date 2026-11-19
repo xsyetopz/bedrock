@@ -4,7 +4,7 @@ import type { Step } from "../../core/steps.ts";
 import { listSources, readBunfigTestIgnores } from "./ignores.ts";
 
 const TEST_FILES = new Bun.Glob(
-	"**/*.{spec,test}.{cjs,cts,js,jsx,mjs,mts,ts,tsx}",
+	"**/*.{spec,test}.{cjs,cts,js,jsx,mjs,mts,ts,tsx}"
 );
 const FRAMEWORK =
 	/(\bfrom\s*|\b(?:import|require)\s*\(\s*)(["'])(?:@jest\/globals|vitest)\2/gu;
@@ -18,7 +18,7 @@ const GLOBALS = [
 	"it",
 	"jest",
 	"test",
-	"vi",
+	"vi"
 ];
 // A call or member access that is not itself a member, so `regex.test(…)` is no use.
 const usesGlobal = (text: string, name: string): boolean =>
@@ -29,7 +29,7 @@ const IMPORT_CLAUSES = /\bimport\s+(?:type\s+)?([^"';]*?)\s*from\s*["']/gu;
 const binds = (text: string, name: string): boolean => {
 	const declared = new RegExp(
 		`\\b(?:const|let|var|function|class)\\s+${name}\\b`,
-		"u",
+		"u"
 	);
 	const imported = [...text.matchAll(IMPORT_CLAUSES)].some(([, clause]) =>
 		(clause ?? "")
@@ -41,8 +41,8 @@ const binds = (text: string, name: string): boolean => {
 						.trim()
 						.split(/\s+as\s+/u)
 						.at(-1)
-						?.trim() === name,
-			),
+						?.trim() === name
+			)
 	);
 	return imported || declared.test(text);
 };
@@ -58,7 +58,7 @@ export const migrateTestFile = (text: string): string => {
 		return imported;
 	}
 	const used = GLOBALS.filter(
-		(name) => usesGlobal(text, name) && !binds(imported, name),
+		(name) => usesGlobal(text, name) && !binds(imported, name)
 	);
 	return used.length > 0
 		? `import { ${used.join(", ")} } from "bun:test";\n\n${text}`
@@ -73,10 +73,10 @@ export const testSteps = async (target: string): Promise<Step[]> => {
 	const paths = await listSources(
 		target,
 		TEST_FILES,
-		await readBunfigTestIgnores(target),
+		await readBunfigTestIgnores(target)
 	);
 	const texts = await Promise.all(
-		paths.map((path) => Bun.file(join(target, path)).text()),
+		paths.map((path) => Bun.file(join(target, path)).text())
 	);
 	return paths.flatMap((path, index): Step[] => {
 		const text = texts[index] ?? "";

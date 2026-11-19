@@ -21,23 +21,23 @@ language's own rules. Without a scope, it checks base and every language
  */
 const guardSizes = async (
 	root: string,
-	selected: readonly Selected[],
+	selected: readonly Selected[]
 ): Promise<Finding[]> => {
 	const tree = editorconfigTree(root);
 	const reports = await Promise.all(
 		selected.flatMap(({ language }) =>
 			language.lizard === undefined
 				? []
-				: [checkSize(root, language.lizard, tree, language.testFiles)],
-		),
+				: [checkSize(root, language.lizard, tree, language.testFiles)]
+		)
 	);
 	// A malformed bound leaves the reports untrustworthy, so it alone is reported.
 	const files = await tree.files();
 	const invalid = files.flatMap((file) =>
 		invalidBounds(
 			file.sections.flatMap((section) => section.pairs),
-			file.path,
-		),
+			file.path
+		)
 	);
 	if (invalid.length > 0) {
 		return invalid;
@@ -51,18 +51,18 @@ const guardSizes = async (
 /** The scopes to check: those named, or base and every adopted language. */
 const scopesOf = (
 	positionals: readonly string[],
-	selected: readonly Selected[],
+	selected: readonly Selected[]
 ): Set<string> => {
 	const ids = selected.map((entry) => entry.language.id);
 	const scopes = new Set(
-		positionals.length === 0 ? ["base", ...ids] : positionals,
+		positionals.length === 0 ? ["base", ...ids] : positionals
 	);
 	const unknown = [...scopes].filter(
-		(scope) => scope !== "base" && !ids.includes(scope),
+		(scope) => scope !== "base" && !ids.includes(scope)
 	);
 	if (unknown.length > 0) {
 		throw new Error(
-			`Not adopted here: ${unknown.join(", ")}. Scopes: base, ${ids.join(", ")}.`,
+			`Not adopted here: ${unknown.join(", ")}. Scopes: base, ${ids.join(", ")}.`
 		);
 	}
 	return scopes;
@@ -75,8 +75,8 @@ export const guard = async (args: readonly string[]): Promise<number> => {
 		allowPositionals: true,
 		options: {
 			fix: { type: "boolean", default: false },
-			help: { type: "boolean", short: "h", default: false },
-		},
+			help: { type: "boolean", short: "h", default: false }
+		}
 	});
 	if (values.help) {
 		console.info(USAGE);
@@ -86,7 +86,7 @@ export const guard = async (args: readonly string[]): Promise<number> => {
 	const config = await readConfig(root);
 	if (config === undefined) {
 		throw new Error(
-			`${root} records no \`bedrock_version\` in \`.editorconfig\`. Run \`bedrock adopt\` first.`,
+			`${root} records no \`bedrock_version\` in \`.editorconfig\`. Run \`bedrock adopt\` first.`
 		);
 	}
 	const selected = select(config, []);
@@ -97,9 +97,9 @@ export const guard = async (args: readonly string[]): Promise<number> => {
 		...inScope.map(({ language, options }) =>
 			language.guard(
 				contextFor(root, selected, language, options, false),
-				values.fix,
-			),
-		),
+				values.fix
+			)
+		)
 	]);
 	// --fix moves files, such as Rust tests out of the file they test, so the
 	// sizes are measured once it is done.

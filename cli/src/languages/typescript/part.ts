@@ -13,7 +13,7 @@ export interface Part {
 export const jsonWrite = async (
 	root: string,
 	path: string,
-	next: Json,
+	next: Json
 ): Promise<Step[]> =>
 	Bun.deepEquals(await readJsonc(join(root, path)), next)
 		? []

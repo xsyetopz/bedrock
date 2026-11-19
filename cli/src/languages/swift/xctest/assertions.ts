@@ -4,7 +4,7 @@ import {
 	matchClose,
 	type Scalars,
 	scalars,
-	trivia,
+	trivia
 } from "./lexer.ts";
 import { parseArguments, splitArguments, wrap } from "./operands.ts";
 
@@ -37,7 +37,7 @@ const ASSERTIONS: ReadonlyMap<string, Assertion> = new Map([
 	["XCTUnwrap", { kind: "unwrap" }],
 	["XCTFail", { kind: "fail" }],
 	["XCTAssertThrowsError", { kind: "closure", type: "(any Error).self" }],
-	["XCTAssertNoThrow", { kind: "closure", type: "Never.self" }],
+	["XCTAssertNoThrow", { kind: "closure", type: "Never.self" }]
 ]);
 
 /** The text a call is replaced by, and the index after the call. */
@@ -86,7 +86,7 @@ class Builder {
 		head: string,
 		count: number,
 		first: () => string,
-		tail = ")",
+		tail = ")"
 	): string | undefined {
 		if (![count, count + 1].includes(this.positional.length)) {
 			return undefined;
@@ -117,14 +117,14 @@ class Builder {
 		switch (kind.kind) {
 			case "truth": {
 				return this.call("#expect(", 1, () =>
-					kind.negated ? `!${this.operand(0)}` : this.operand(0, false),
+					kind.negated ? `!${this.operand(0)}` : this.operand(0, false)
 				);
 			}
 			case "nilCheck": {
 				return this.call(
 					"#expect(",
 					1,
-					() => `${this.operand(0)} ${kind.op} nil`,
+					() => `${this.operand(0)} ${kind.op} nil`
 				);
 			}
 			case "unwrap": {
@@ -138,7 +138,7 @@ class Builder {
 					"#expect(",
 					1,
 					() => `throws: ${kind.type}`,
-					`) { ${this.positional[0] ?? ""} }`,
+					`) { ${this.positional[0] ?? ""} }`
 				);
 			}
 			case "compare": {
@@ -154,7 +154,7 @@ class Builder {
 const convertCall = (
 	kind: Assertion,
 	b: Scalars,
-	open: number,
+	open: number
 ): Replacement | undefined => {
 	const close = matchClose(b, open);
 	const parts =
@@ -175,7 +175,7 @@ const convertCall = (
 const callAfter = (
 	kind: Assertion,
 	b: Scalars,
-	from: number,
+	from: number
 ): Replacement | undefined => {
 	let open = from;
 	while (open < b.length && isSpace(b[open])) {

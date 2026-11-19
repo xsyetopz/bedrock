@@ -7,13 +7,13 @@ import { tempRepo } from "./testing.ts";
 
 const CONFIG = {
 	version: "1.0.0",
-	languages: { jvm: { group: "com.example.App" }, swift: { cxx: true } },
+	languages: { jvm: { group: "com.example.App" }, swift: { cxx: true } }
 };
 
 test("readConfig reads back the pairs configPairs writes", async () => {
 	// Arrange
 	const root = await tempRepo({
-		".editorconfig": `root = true\n\n[*]\n${configPairs(CONFIG)}\n`,
+		".editorconfig": `root = true\n\n[*]\n${configPairs(CONFIG)}\n`
 	});
 
 	// Act
@@ -26,7 +26,7 @@ test("readConfig reads back the pairs configPairs writes", async () => {
 test("the justfile's sed finds the version configPairs writes", async () => {
 	// Arrange
 	const root = await tempRepo({
-		".editorconfig": `[*]\n${configPairs(CONFIG)}\n`,
+		".editorconfig": `[*]\n${configPairs(CONFIG)}\n`
 	});
 
 	// Act
@@ -43,7 +43,7 @@ test("readConfig falls back to the .bedrock.json of an older release", async () 
 	// Arrange
 	const root = await tempRepo({
 		".editorconfig": "root = true\n",
-		".bedrock.json": JSON.stringify({ version: "0.5.0", languages: {} }),
+		".bedrock.json": JSON.stringify({ version: "0.5.0", languages: {} })
 	});
 
 	// Act

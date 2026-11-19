@@ -46,7 +46,7 @@ const brackets = (line: string): number => {
 const valueEnd = (
 	lines: readonly string[],
 	start: number,
-	key: string,
+	key: string
 ): number => {
 	let end = start;
 	let depth = brackets((lines[start] ?? "").slice(key.length));
@@ -61,7 +61,7 @@ const startSection = (
 	header: RegExpExecArray,
 	from: number,
 	start: number,
-	counts: Map<string, number>,
+	counts: Map<string, number>
 ): Section => {
 	const name = header[2] ?? "";
 	const array = header[1] === "[[";
@@ -72,7 +72,7 @@ const startSection = (
 		array,
 		from,
 		entries: [],
-		end: start,
+		end: start
 	};
 };
 
@@ -83,7 +83,7 @@ export const scan = (lines: readonly string[]): Section[] => {
 		array: false,
 		from: 0,
 		entries: [],
-		end: -1,
+		end: -1
 	};
 	const sections = [section];
 	const counts = new Map<string, number>();
@@ -106,7 +106,7 @@ export const scan = (lines: readonly string[]): Section[] => {
 				key: key[1] ?? "",
 				from: from < 0 ? index : from,
 				start: index,
-				end,
+				end
 			});
 			section.end = end;
 			index = end;

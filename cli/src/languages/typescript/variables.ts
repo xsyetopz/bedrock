@@ -8,5 +8,5 @@ export const BUN_VERSION = "1.4.5";
 export const variables = (_context: Context): Promise<Variables> =>
 	Promise.resolve({
 		bunVersion: BUN_VERSION,
-		packageManager: `bun@${BUN_VERSION}`,
+		packageManager: `bun@${BUN_VERSION}`
 	});

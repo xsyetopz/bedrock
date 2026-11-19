@@ -17,13 +17,13 @@ export const LANGUAGES: readonly Language[] = [
 	jvm,
 	go,
 	haxe,
-	dotnet,
+	dotnet
 ];
 
 /** The language a command-line name means, or undefined. */
 export const findLanguage = (name: string): Language | undefined => {
 	const wanted = name.toLowerCase();
 	return LANGUAGES.find(
-		(language) => language.id === wanted || language.aliases.includes(wanted),
+		(language) => language.id === wanted || language.aliases.includes(wanted)
 	);
 };

@@ -10,7 +10,7 @@ test("moves the body out and leaves the declaration", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"src/foo.rs":
-			"fn f() {}\n\n#[cfg(test)]\nmod tests {\n    use super::f;\n\n    #[test]\n    fn t() {\n        f();\n    }\n}\n",
+			"fn f() {}\n\n#[cfg(test)]\nmod tests {\n    use super::f;\n\n    #[test]\n    fn t() {\n        f();\n    }\n}\n"
 	});
 
 	// Act
@@ -19,10 +19,10 @@ test("moves the body out and leaves the declaration", async () => {
 	// Assert
 	expect(problems).toEqual([]);
 	expect(await Bun.file(join(root, "src/foo.rs")).text()).toBe(
-		"fn f() {}\n\n#[cfg(test)]\nmod tests;\n",
+		"fn f() {}\n\n#[cfg(test)]\nmod tests;\n"
 	);
 	expect(await Bun.file(join(root, "src/foo/tests.rs")).text()).toBe(
-		"    use super::f;\n\n    #[test]\n    fn t() {\n        f();\n    }\n",
+		"    use super::f;\n\n    #[test]\n    fn t() {\n        f();\n    }\n"
 	);
 });
 
@@ -30,7 +30,7 @@ test("keeps the relative paths of a moved body pointing at the same files", asyn
 	// Arrange
 	const root = await tempRepo({
 		"src/foo.rs":
-			'#[cfg(test)]\nmod tests {\n#[path = "a.rs"]\nmod a;\nconst D: &str = include_str!("d.txt");\n}\n',
+			'#[cfg(test)]\nmod tests {\n#[path = "a.rs"]\nmod a;\nconst D: &str = include_str!("d.txt");\n}\n'
 	});
 
 	// Act
@@ -39,14 +39,14 @@ test("keeps the relative paths of a moved body pointing at the same files", asyn
 	// Assert
 	expect(problems).toEqual([]);
 	expect(await Bun.file(join(root, "src/foo/tests.rs")).text()).toBe(
-		'#[path = "tests/a.rs"]\nmod a;\nconst D: &str = include_str!("../d.txt");\n',
+		'#[path = "tests/a.rs"]\nmod a;\nconst D: &str = include_str!("../d.txt");\n'
 	);
 });
 
 test("moves the body of a crate root beside it", async () => {
 	// Arrange
 	const root = await tempRepo({
-		"src/lib.rs": "#[cfg(test)]\nmod tests {\n    fn t() {}\n}\n",
+		"src/lib.rs": "#[cfg(test)]\nmod tests {\n    fn t() {}\n}\n"
 	});
 
 	// Act
@@ -59,8 +59,7 @@ test("moves the body of a crate root beside it", async () => {
 test("moves a test module with another name to a file of that name", async () => {
 	// Arrange
 	const root = await tempRepo({
-		"src/foo.rs":
-			"#[cfg(test)]\npub(crate) mod r#support {\npub fn f() {}\n}\n",
+		"src/foo.rs": "#[cfg(test)]\npub(crate) mod r#support {\npub fn f() {}\n}\n"
 	});
 
 	// Act
@@ -69,10 +68,10 @@ test("moves a test module with another name to a file of that name", async () =>
 	// Assert
 	expect(problems).toEqual([]);
 	expect(await Bun.file(join(root, "src/foo.rs")).text()).toBe(
-		"#[cfg(test)]\npub(crate) mod r#support;\n",
+		"#[cfg(test)]\npub(crate) mod r#support;\n"
 	);
 	expect(await Bun.file(join(root, "src/foo/support.rs")).text()).toBe(
-		"pub fn f() {}\n",
+		"pub fn f() {}\n"
 	);
 });
 
@@ -80,7 +79,7 @@ test("moves a test module with the test modules nested in it", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"src/foo.rs":
-			"#[cfg(test)]\nmod tests {\n    #[cfg(test)]\n    mod deep { }\n}\n",
+			"#[cfg(test)]\nmod tests {\n    #[cfg(test)]\n    mod deep { }\n}\n"
 	});
 
 	// Act
@@ -89,7 +88,7 @@ test("moves a test module with the test modules nested in it", async () => {
 	// Assert
 	expect(problems).toEqual([]);
 	expect(await Bun.file(join(root, "src/foo/tests.rs")).text()).toBe(
-		"    #[cfg(test)]\n    mod deep { }\n",
+		"    #[cfg(test)]\n    mod deep { }\n"
 	);
 });
 
@@ -114,7 +113,7 @@ test("does not overwrite a tests.rs that exists", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"src/bar.rs": "#[cfg(test)]\nmod tests { }\n",
-		"src/bar/tests.rs": "// mine\n",
+		"src/bar/tests.rs": "// mine\n"
 	});
 
 	// Act
@@ -123,7 +122,7 @@ test("does not overwrite a tests.rs that exists", async () => {
 	// Assert
 	expect(problems).toHaveLength(1);
 	expect(await Bun.file(join(root, "src/bar/tests.rs")).text()).toBe(
-		"// mine\n",
+		"// mine\n"
 	);
 });
 
@@ -131,7 +130,7 @@ test("drops the path attribute and moves the file to the default place", async (
 	// Arrange
 	const root = await tempRepo({
 		"src/foo.rs": '#[cfg(test)]\n#[path = "checks.rs"]\nmod tests;\n',
-		"src/checks.rs": "fn t() {}\n",
+		"src/checks.rs": "fn t() {}\n"
 	});
 
 	// Act
@@ -140,10 +139,10 @@ test("drops the path attribute and moves the file to the default place", async (
 	// Assert
 	expect(problems).toEqual([]);
 	expect(await Bun.file(join(root, "src/foo.rs")).text()).toBe(
-		"#[cfg(test)]\nmod tests;\n",
+		"#[cfg(test)]\nmod tests;\n"
 	);
 	expect(await Bun.file(join(root, "src/foo/tests.rs")).text()).toBe(
-		"fn t() {}\n",
+		"fn t() {}\n"
 	);
 	expect(await exists(join(root, "src/checks.rs"))).toBe(false);
 });
@@ -152,7 +151,7 @@ test("only drops the path attribute when the file already sits in the default pl
 	// Arrange
 	const root = await tempRepo({
 		"src/foo.rs": '#[cfg(test)]\n#[path = "foo/tests.rs"]\nmod tests;\n',
-		"src/foo/tests.rs": "fn t() {}\n",
+		"src/foo/tests.rs": "fn t() {}\n"
 	});
 
 	// Act
@@ -161,10 +160,10 @@ test("only drops the path attribute when the file already sits in the default pl
 	// Assert
 	expect(problems).toEqual([]);
 	expect(await Bun.file(join(root, "src/foo.rs")).text()).toBe(
-		"#[cfg(test)]\nmod tests;\n",
+		"#[cfg(test)]\nmod tests;\n"
 	);
 	expect(await Bun.file(join(root, "src/foo/tests.rs")).text()).toBe(
-		"fn t() {}\n",
+		"fn t() {}\n"
 	);
 });
 
@@ -173,7 +172,7 @@ test("leaves a path attribute whose file names others by relative path", async (
 	const source = '#[cfg(test)]\n#[path = "checks.rs"]\nmod tests;\n';
 	const root = await tempRepo({
 		"src/foo.rs": source,
-		"src/checks.rs": 'const D: &str = include_str!("data.txt");\n',
+		"src/checks.rs": 'const D: &str = include_str!("data.txt");\n'
 	});
 
 	// Act
@@ -191,7 +190,7 @@ test("leaves a path attribute when tests.rs is taken", async () => {
 	const root = await tempRepo({
 		"src/foo.rs": source,
 		"src/checks.rs": "fn t() {}\n",
-		"src/foo/tests.rs": "// mine\n",
+		"src/foo/tests.rs": "// mine\n"
 	});
 
 	// Act

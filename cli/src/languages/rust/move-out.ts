@@ -36,7 +36,7 @@ const planPathModule = async (
 	source: string,
 	found: Module,
 	destination: string,
-	plan: Plan,
+	plan: Plan
 ): Promise<void> => {
 	const place = `${file}:${found.line}`;
 	const current = await childFile(file, found);
@@ -64,7 +64,7 @@ const planPathModule = async (
 	const rewritable = prefixPaths(text, "moved/") === text;
 	if (taken) {
 		plan.problems.push(
-			`${place}: cannot move ${current}: ${destination} exists`,
+			`${place}: cannot move ${current}: ${destination} exists`
 		);
 	} else if (rewritable) {
 		plan.edits.push(dropAttribute);
@@ -72,7 +72,7 @@ const planPathModule = async (
 		plan.removals.push(current);
 	} else {
 		plan.problems.push(
-			`${place}: cannot move ${current}: it names files by relative path, which would stop resolving`,
+			`${place}: cannot move ${current}: it names files by relative path, which would stop resolving`
 		);
 	}
 };
@@ -82,12 +82,12 @@ const planModule = async (
 	file: string,
 	source: string,
 	found: Module,
-	plan: Plan,
+	plan: Plan
 ): Promise<void> => {
 	const place = `${file}:${found.line}`;
 	if (found.depth > 0) {
 		plan.problems.push(
-			`${place}: cannot move \`mod ${found.name}\` out of another module; declare \`#[cfg(test)] mod ${found.name};\` at the top level of the file`,
+			`${place}: cannot move \`mod ${found.name}\` out of another module; declare \`#[cfg(test)] mod ${found.name};\` at the top level of the file`
 		);
 		return;
 	}
@@ -101,7 +101,7 @@ const planModule = async (
 		plan.writes.some((write) => write.path === destination);
 	if (taken) {
 		plan.problems.push(
-			`${place}: cannot move \`mod ${found.name}\`: ${destination} exists`,
+			`${place}: cannot move \`mod ${found.name}\`: ${destination} exists`
 		);
 		return;
 	}
@@ -112,11 +112,11 @@ const planModule = async (
 	const up = relative(dirname(destination), dirname(file));
 	const text = prefixPaths(body, {
 		include: up === "" ? "" : `${up}/`,
-		path: `${found.name}/`,
+		path: `${found.name}/`
 	});
 	if (text === undefined) {
 		plan.problems.push(
-			`${place}: cannot move \`mod ${found.name}\`: it names a file by a path that cannot be rewritten`,
+			`${place}: cannot move \`mod ${found.name}\`: it names a file by a path that cannot be rewritten`
 		);
 		return;
 	}
@@ -131,9 +131,8 @@ const planFile = async (file: string, source: string): Promise<Plan> => {
 	const movable = outermost(
 		modules(source).filter(
 			(found) =>
-				found.testOnly &&
-				(found.body !== undefined || found.path !== undefined),
-		),
+				found.testOnly && (found.body !== undefined || found.path !== undefined)
+		)
 	);
 	// One at a time: each module's check sees the files the earlier ones claim.
 	const planFrom = async (rest: readonly Module[]): Promise<void> => {
@@ -151,7 +150,7 @@ const planFile = async (file: string, source: string): Promise<Plan> => {
 const attempted = async (
 	operation: string,
 	path: string,
-	attempt: () => Promise<unknown>,
+	attempt: () => Promise<unknown>
 ): Promise<string | undefined> => {
 	try {
 		await attempt();
@@ -187,9 +186,9 @@ export const moveOut = async (file: string): Promise<string[]> => {
 				attempted("write", write.path, async () => {
 					await mkdir(dirname(write.path), { recursive: true });
 					await Bun.write(write.path, write.text);
-				}),
-			),
-		),
+				})
+			)
+		)
 	);
 	if (written.length > 0) {
 		return [...problems, ...written];
@@ -203,7 +202,7 @@ export const moveOut = async (file: string): Promise<string[]> => {
 		return [...problems, parent];
 	}
 	const removed = await Promise.all(
-		removals.map((old) => attempted("remove", old, () => unlink(old))),
+		removals.map((old) => attempted("remove", old, () => unlink(old)))
 	);
 	return [...problems, ...present(removed)];
 };

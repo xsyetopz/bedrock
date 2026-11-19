@@ -34,7 +34,7 @@ describe("select", () => {
 		// Assert
 		expect(jvm?.options).toEqual({
 			kind: "kotlin-library",
-			group: "org.acme.app",
+			group: "org.acme.app"
 		});
 	});
 
@@ -66,7 +66,7 @@ describe("detect", () => {
 		// Arrange
 		const root = await tempRepo({
 			"Package.swift": "// swift-tools-version:6.0\n",
-			"Sources/Core/core.cpp": "int one() { return 1; }\n",
+			"Sources/Core/core.cpp": "int one() { return 1; }\n"
 		});
 
 		// Act
@@ -80,7 +80,7 @@ describe("detect", () => {
 		// Arrange
 		const root = await tempRepo({
 			"Package.swift": "// swift-tools-version:6.0\n",
-			"Sources/App/main.swift": "print(1)\n",
+			"Sources/App/main.swift": "print(1)\n"
 		});
 
 		// Act
@@ -94,7 +94,7 @@ describe("detect", () => {
 		// Arrange
 		const root = await tempRepo({
 			"Cargo.toml": "[package]\n",
-			"CMakeLists.txt": "project(native C)\n",
+			"CMakeLists.txt": "project(native C)\n"
 		});
 
 		// Act
@@ -108,7 +108,7 @@ describe("detect", () => {
 		// Arrange
 		const root = await tempRepo({
 			Makefile: "all:\n",
-			"py/obj.c": "int x;\n",
+			"py/obj.c": "int x;\n"
 		});
 
 		// Act
@@ -122,7 +122,7 @@ describe("detect", () => {
 		// Arrange
 		const root = await tempRepo({
 			"package.json": '{ "name": "game" }\n',
-			"services/api/build.hxml": "-cp src\n-js out.js\n",
+			"services/api/build.hxml": "-cp src\n-js out.js\n"
 		});
 
 		// Act
@@ -131,7 +131,7 @@ describe("detect", () => {
 		// Assert
 		expect(found.map((language) => language.id)).toEqual([
 			"typescript",
-			"haxe",
+			"haxe"
 		]);
 	});
 
@@ -150,7 +150,7 @@ describe("detect", () => {
 		// Arrange
 		const root = await tempRepo({
 			"package.json": '{ "name": "tools" }\n',
-			"src/App/App.fsproj": '<Project Sdk="Microsoft.NET.Sdk" />\n',
+			"src/App/App.fsproj": '<Project Sdk="Microsoft.NET.Sdk" />\n'
 		});
 
 		// Act
@@ -159,7 +159,7 @@ describe("detect", () => {
 		// Assert
 		expect(found.map((language) => language.id)).toEqual([
 			"typescript",
-			"dotnet",
+			"dotnet"
 		]);
 	});
 
@@ -167,7 +167,7 @@ describe("detect", () => {
 		// Arrange
 		const root = await tempRepo({
 			"App.slnx": "<Solution />\n",
-			"global.json": '{ "sdk": { "version": "10.0.100" } }\n',
+			"global.json": '{ "sdk": { "version": "10.0.100" } }\n'
 		});
 
 		// Act
@@ -189,7 +189,7 @@ describe("dropped", () => {
 			"cpp",
 			"jvm",
 			"haxe",
-			"dotnet",
+			"dotnet"
 		]);
 	});
 
@@ -201,7 +201,7 @@ describe("dropped", () => {
 			".just/haxe.just": "",
 			".clang-format": "",
 			gradlew: "",
-			"Cargo.toml": "[package]\n",
+			"Cargo.toml": "[package]\n"
 		});
 		const selected = select(undefined, [parseNamed("go")]);
 
@@ -215,7 +215,7 @@ describe("dropped", () => {
 			"cpp",
 			"jvm",
 			"haxe",
-			"dotnet",
+			"dotnet"
 		]);
 	});
 });

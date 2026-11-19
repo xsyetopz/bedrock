@@ -8,7 +8,7 @@ import {
 	gradlePath,
 	type Library,
 	type Migration,
-	type Module,
+	type Module
 } from "./model.ts";
 
 /** Libraries the bedrock plugins already add. */
@@ -52,7 +52,7 @@ class Aliases {
 			(key) =>
 				key === alias ||
 				key.startsWith(`${alias}-`) ||
-				alias.startsWith(`${key}-`),
+				alias.startsWith(`${key}-`)
 		);
 	}
 }
@@ -86,7 +86,7 @@ const notationOf = (dependency: Dependency, aliases: Aliases): string => {
 const dependencyLines = (
 	module: Module,
 	aliases: Aliases,
-	notes: Set<string>,
+	notes: Set<string>
 ): string[] => {
 	const lines: string[] = [];
 	for (const dependency of module.dependencies) {
@@ -94,7 +94,7 @@ const dependencyLines = (
 			const coordinates = moduleOf(dependency);
 			if (OLD_TESTS.has(coordinates)) {
 				notes.add(
-					`${gradlePath(module.directory)}: tests used ${coordinates}; bedrock runs JUnit 6, so port them to org.junit.jupiter.api, which just guard checks`,
+					`${gradlePath(module.directory)}: tests used ${coordinates}; bedrock runs JUnit 6, so port them to org.junit.jupiter.api, which just guard checks`
 				);
 			}
 			if (PROVIDED.test(coordinates)) {
@@ -102,7 +102,7 @@ const dependencyLines = (
 			}
 		}
 		lines.push(
-			`  ${dependency.configuration}(${notationOf(dependency, aliases)})`,
+			`  ${dependency.configuration}(${notationOf(dependency, aliases)})`
 		);
 	}
 	return [...new Set(lines)];
@@ -111,7 +111,7 @@ const dependencyLines = (
 const scriptOf = (module: Module, lines: readonly string[]): string => {
 	const plugins = [
 		module.kotlin ? "bedrock.kotlin" : "bedrock.java",
-		...(module.mainClass === undefined ? [] : ["bedrock.application"]),
+		...(module.mainClass === undefined ? [] : ["bedrock.application"])
 	];
 	const head =
 		plugins.length === 1
@@ -138,7 +138,7 @@ const catalogStep = async (root: string, aliases: Aliases): Promise<Step[]> => {
 					library.version === undefined
 						? ""
 						: `, version = "${library.version}"`
-				} }`,
+				} }`
 		)
 		.join("\n");
 	return [
@@ -148,15 +148,15 @@ const catalogStep = async (root: string, aliases: Aliases): Promise<Step[]> => {
 			content:
 				catalog === undefined
 					? `[libraries]\n${entries}\n`
-					: `${catalog.trimEnd()}\n\n# Added by bedrock adopt.\n${entries}\n`,
-		},
+					: `${catalog.trimEnd()}\n\n# Added by bedrock adopt.\n${entries}\n`
+		}
 	];
 };
 
 /** The steps that write a migration's build files, with each library in gradle/libs.versions.toml. */
 export const render = async (
 	root: string,
-	migration: Migration,
+	migration: Migration
 ): Promise<Step[]> => {
 	const aliases = new Aliases();
 	const scripts = migration.modules
@@ -169,13 +169,13 @@ export const render = async (
 					module.directory === ""
 						? "build.gradle.kts"
 						: `${module.directory}/build.gradle.kts`,
-				content: scriptOf(module, lines),
+				content: scriptOf(module, lines)
 			};
 		});
 	return [
 		...migration.steps,
 		...scripts,
-		...(await catalogStep(root, aliases)),
+		...(await catalogStep(root, aliases))
 	];
 };
 

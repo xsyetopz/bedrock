@@ -31,7 +31,7 @@ test("strings, raw strings, and byte strings stay whole", () => {
 		'br##"e"#f"##',
 		'b"g"',
 		'c"h"',
-		"y",
+		"y"
 	]);
 });
 
@@ -50,7 +50,7 @@ test("char literals are literals and lifetimes are identifiers", () => {
 		"literal",
 		"punct",
 		"ident",
-		"ident",
+		"ident"
 	]);
 });
 

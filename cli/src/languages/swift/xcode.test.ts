@@ -6,7 +6,7 @@ import {
 	overrides,
 	wired,
 	XCCONFIG_REFERENCE,
-	xcodeProjects,
+	xcodeProjects
 } from "./xcode.ts";
 
 const PBXPROJ = `// !$*UTF8*$!
@@ -66,7 +66,7 @@ describe("xcodeProjects", () => {
 		const root = await tempRepo({
 			"B.xcodeproj/project.pbxproj": "",
 			"A.xcodeproj/project.pbxproj": "",
-			"Sub/C.xcodeproj/project.pbxproj": "",
+			"Sub/C.xcodeproj/project.pbxproj": ""
 		});
 
 		expect(await xcodeProjects(root)).toEqual(["A.xcodeproj", "B.xcodeproj"]);
@@ -78,7 +78,7 @@ describe("wired", () => {
 		const result = required(wired(PBXPROJ));
 
 		const references = result.split(
-			`baseConfigurationReference = ${XCCONFIG_REFERENCE}`,
+			`baseConfigurationReference = ${XCCONFIG_REFERENCE}`
 		);
 		expect(references).toHaveLength(3);
 		expect(result).toContain("path = Config/Bedrock.xcconfig");
@@ -94,7 +94,7 @@ describe("wired", () => {
 	test("leaves a project that has another base configuration", () => {
 		const other = PBXPROJ.replace(
 			"isa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n\t\t\t};\n\t\t\tname = Debug;",
-			"isa = XCBuildConfiguration;\n\t\t\tbaseConfigurationReference = ZZZ1;\n\t\t\tbuildSettings = {\n\t\t\t};\n\t\t\tname = Debug;",
+			"isa = XCBuildConfiguration;\n\t\t\tbaseConfigurationReference = ZZZ1;\n\t\t\tbuildSettings = {\n\t\t\t};\n\t\t\tname = Debug;"
 		);
 
 		expect(wired(other)).toBeUndefined();

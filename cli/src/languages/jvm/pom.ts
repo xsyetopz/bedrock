@@ -8,7 +8,7 @@ import {
 	childrenOf,
 	parseXml,
 	textOf,
-	type XmlElement,
+	type XmlElement
 } from "./xml.ts";
 
 /** A parsed pom.xml: its own elements, and the properties and managed versions it inherits. */
@@ -26,9 +26,9 @@ export interface Pom {
 }
 
 export const dependenciesOf = (
-	element: XmlElement | undefined,
+	element: XmlElement | undefined
 ): XmlElement[] => [
-	...childrenOf(childOf(element, "dependencies"), "dependency"),
+	...childrenOf(childOf(element, "dependencies"), "dependency")
 ];
 
 const inherited = (element: XmlElement, parent: Pom | undefined) => {
@@ -51,7 +51,7 @@ const inherited = (element: XmlElement, parent: Pom | undefined) => {
 const propertiesOf = (
 	element: XmlElement,
 	parent: Pom | undefined,
-	own: { groupId: string; artifactId: string; version: string },
+	own: { groupId: string; artifactId: string; version: string }
 ): Map<string, string> => {
 	const properties = new Map(parent?.properties);
 	for (const property of childrenOf(childOf(element, "properties"))) {
@@ -66,7 +66,7 @@ const propertiesOf = (
 const managedVersions = (
 	parent: Pom | undefined,
 	management: XmlElement | undefined,
-	resolve: (value: string | undefined) => string | undefined,
+	resolve: (value: string | undefined) => string | undefined
 ): Map<string, string> => {
 	const managed = new Map(parent?.managed);
 	for (const dependency of dependenciesOf(management)) {
@@ -74,7 +74,7 @@ const managedVersions = (
 		if (version !== undefined && textOf(dependency, "scope") !== "import") {
 			managed.set(
 				`${resolve(textOf(dependency, "groupId"))}:${resolve(textOf(dependency, "artifactId"))}`,
-				version,
+				version
 			);
 		}
 	}
@@ -84,7 +84,7 @@ const managedVersions = (
 const makePom = (
 	directory: string,
 	element: XmlElement,
-	parent: Pom | undefined,
+	parent: Pom | undefined
 ): Pom => {
 	const own = inherited(element, parent);
 	const management = childOf(element, "dependencyManagement");
@@ -92,7 +92,7 @@ const makePom = (
 	const resolve = (value: string | undefined): string | undefined =>
 		value?.replaceAll(
 			/\$\{([^}]+)\}/gu,
-			(whole, key: string) => properties.get(key) ?? whole,
+			(whole, key: string) => properties.get(key) ?? whole
 		);
 	const managed = managedVersions(parent, management, resolve);
 	const library = (configuration: string, dependency: XmlElement): Library => {
@@ -105,14 +105,14 @@ const makePom = (
 			name,
 			version:
 				resolve(textOf(dependency, "version")) ??
-				managed.get(`${group}:${name}`),
+				managed.get(`${group}:${name}`)
 		};
 	};
 	const boms = [
 		...(parent?.boms ?? []),
 		...dependenciesOf(management)
 			.filter((dependency) => textOf(dependency, "scope") === "import")
-			.map((dependency) => library("implementation", dependency)),
+			.map((dependency) => library("implementation", dependency))
 	];
 	return {
 		directory,
@@ -124,7 +124,7 @@ const makePom = (
 		resolve,
 		library,
 		groupId: own.groupId,
-		artifactId: own.artifactId,
+		artifactId: own.artifactId
 	};
 };
 
@@ -133,7 +133,7 @@ export const readPoms = async (
 	root: string,
 	directory: string,
 	parent: Pom | undefined,
-	migration: Migration,
+	migration: Migration
 ): Promise<Pom[]> => {
 	const file = directory === "" ? "pom.xml" : `${directory}/pom.xml`;
 	const text = await readText(join(root, file));
@@ -147,8 +147,8 @@ export const readPoms = async (
 		normalize(
 			directory === ""
 				? module.text.trim()
-				: `${directory}/${module.text.trim()}`,
-		).replace(/\/?pom\.xml$/u, ""),
+				: `${directory}/${module.text.trim()}`
+		).replace(/\/?pom\.xml$/u, "")
 	);
 	await inOrder(paths, async (path) => {
 		nested.push(...(await readPoms(root, path, pom, migration)));

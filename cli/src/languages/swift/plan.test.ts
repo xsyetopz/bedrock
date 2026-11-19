@@ -15,15 +15,15 @@ const writes = (steps: readonly Step[]): Map<string, string> =>
 		steps.flatMap((step) =>
 			step.kind === "write" && typeof step.content === "string"
 				? [[step.path, step.content] as const]
-				: [],
-		),
+				: []
+		)
 	);
 
 describe("planSwift", () => {
 	test("adopts the Package.swift with the strict block and the tools version", async () => {
 		const root = await tempRepo({
 			"Package.swift":
-				'// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: "X", platforms: [.macOS(.v10_15)])\n',
+				'// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: "X", platforms: [.macOS(.v10_15)])\n'
 		});
 
 		const plan = await planSwift(contextIn(root));
@@ -37,13 +37,13 @@ describe("planSwift", () => {
 	test("converts XCTest files and keeps them the project's", async () => {
 		const root = await tempRepo({
 			"Package.swift": "let package = 1\n",
-			"Tests/ATests/A.swift": XCTEST,
+			"Tests/ATests/A.swift": XCTEST
 		});
 
 		const plan = await planSwift(contextIn(root));
 
 		expect(writes(plan.steps).get("Tests/ATests/A.swift")).toContain(
-			"import Testing",
+			"import Testing"
 		);
 		expect(plan.projectFiles).toContain("Tests/ATests/A.swift");
 	});
@@ -51,7 +51,7 @@ describe("planSwift", () => {
 	test("writes the test lint config only where Tests exists", async () => {
 		const withTests = await tempRepo({
 			"Package.swift": "let package = 1\n",
-			"Tests/ATests/A.swift": "import Testing\n",
+			"Tests/ATests/A.swift": "import Testing\n"
 		});
 		const without = await tempRepo({ "Package.swift": "let package = 1\n" });
 
@@ -64,7 +64,7 @@ describe("planSwift", () => {
 
 	test("writes Config/Bedrock.xcconfig and wires an Xcode project", async () => {
 		const root = await tempRepo({
-			"A.xcodeproj/project.pbxproj": "// empty\n",
+			"A.xcodeproj/project.pbxproj": "// empty\n"
 		});
 
 		const plan = await planSwift(contextIn(root));
@@ -84,7 +84,7 @@ describe("planSwift", () => {
 	test("includes the legacy cleanup", async () => {
 		const root = await tempRepo({
 			"Package.swift": "let package = 1\n",
-			".swiftformat": "",
+			".swiftformat": ""
 		});
 
 		const plan = await planSwift(contextIn(root));
@@ -126,12 +126,12 @@ describe("init", () => {
 		await adoptSwift(root, { kind: "app", init: true });
 
 		const projects = await Array.fromAsync(
-			new Bun.Glob("*.xcodeproj/project.pbxproj").scan(root),
+			new Bun.Glob("*.xcodeproj/project.pbxproj").scan(root)
 		);
 		expect(projects).toHaveLength(1);
 		expect(await textOf(root, projects.join(""))).toContain("Bedrock.xcconfig");
 		expect(await Bun.file(`${root}/Config/Bedrock.xcconfig`).exists()).toBe(
-			true,
+			true
 		);
 	});
 
@@ -139,12 +139,12 @@ describe("init", () => {
 		const root = await tempRepo();
 		const context = {
 			...contextIn(root, "library", true),
-			root: `${root}/1bad`,
+			root: `${root}/1bad`
 		};
 
 		const outcome = await swift.plan(context).then(
 			() => "planned",
-			(error_: unknown) => error_,
+			(error_: unknown) => error_
 		);
 
 		expect(outcome).toBeInstanceOf(Error);

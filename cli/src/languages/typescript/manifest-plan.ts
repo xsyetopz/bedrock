@@ -14,7 +14,7 @@ export const planManifest = async (context: Context): Promise<Part> => {
 	const { root, templates } = context;
 	const template = await templates("manifest").read(
 		"package.json",
-		await variables(context),
+		await variables(context)
 	);
 	const name = basename(root);
 	const manifest = {
@@ -23,21 +23,21 @@ export const planManifest = async (context: Context): Promise<Part> => {
 			name,
 			version: "0.0.0",
 			private: true,
-			type: "module",
-		}),
+			type: "module"
+		})
 	};
 	const pnpmText = await readText(join(root, "pnpm-workspace.yaml"));
 	const migrated = migrateManifest(
 		manifest,
 		asRecord(Bun.JSONC.parse(template ?? "{}")),
-		pnpmText === undefined ? undefined : asRecord(Bun.YAML.parse(pnpmText)),
+		pnpmText === undefined ? undefined : asRecord(Bun.YAML.parse(pnpmText))
 	);
 	return {
 		steps: await jsonWrite(
 			root,
 			"package.json",
-			sortManifest(migrated.manifest),
+			sortManifest(migrated.manifest)
 		),
-		notes: migrated.notes,
+		notes: migrated.notes
 	};
 };

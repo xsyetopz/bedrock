@@ -4,7 +4,7 @@ import {
 	buildPlan,
 	contextFor,
 	type Plan,
-	type Selected,
+	type Selected
 } from "../../core/plan.ts";
 import { applySteps } from "../../core/steps.ts";
 import { rust } from "./index.ts";
@@ -13,7 +13,7 @@ import { rust } from "./index.ts";
 export const contextIn = (
 	root: string,
 	init = false,
-	options: LanguageOptions = {},
+	options: LanguageOptions = {}
 ): Context => {
 	const selected: Selected[] = [{ language: rust, options }];
 	return contextFor(root, selected, rust, options, init);
@@ -23,7 +23,7 @@ export const contextIn = (
 export const adoptRust = async (
 	root: string,
 	init = false,
-	options: LanguageOptions = {},
+	options: LanguageOptions = {}
 ): Promise<Plan> => {
 	const plan = await buildPlan(root, [{ language: rust, options }], { init });
 	await applySteps(root, plan.steps);

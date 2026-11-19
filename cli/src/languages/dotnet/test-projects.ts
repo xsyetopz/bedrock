@@ -35,7 +35,7 @@ const MTP_PACKAGES = [
 	"xunit.v3.mtp-v1",
 	"xunit.v3.mtp-v2",
 	"tunit",
-	"tunit.engine",
+	"tunit.engine"
 ];
 
 /**
@@ -49,7 +49,7 @@ const VSTEST_PACKAGES = [
 	"mstest.testadapter",
 	"nunit3testadapter",
 	"xunit.runner.visualstudio",
-	"yolodev.expecto.testsdk",
+	"yolodev.expecto.testsdk"
 ];
 
 /**
@@ -59,7 +59,7 @@ const VSTEST_PACKAGES = [
  */
 const RUNNER_SWITCHES: Readonly<Record<string, readonly string[]>> = {
 	enablemstestrunner: ["mstest", "mstest.testadapter"],
-	enablenunitrunner: ["nunit3testadapter"],
+	enablenunitrunner: ["nunit3testadapter"]
 };
 
 /**
@@ -74,14 +74,14 @@ const PROPERTIES = [
 	"EnableNUnitRunner",
 	"IsTestingPlatformApplication",
 	"IsTestProject",
-	"UseVSTest",
+	"UseVSTest"
 ];
 
 /** The runner {@link Facts} call for, or undefined for a project with no tests. */
 const runnerOf = ({
 	mstestSdk,
 	packages,
-	flags,
+	flags
 }: Facts): TestRunner | undefined => {
 	if (mstestSdk) {
 		return flags.has("usevstest") ? "vstest" : "mtp";
@@ -89,7 +89,7 @@ const runnerOf = ({
 	const references = (names: readonly string[]): boolean =>
 		names.some((name) => packages.has(name));
 	const switched = Object.entries(RUNNER_SWITCHES).some(
-		([flag, adapters]) => flags.has(flag) && references(adapters),
+		([flag, adapters]) => flags.has(flag) && references(adapters)
 	);
 	if (
 		references(MTP_PACKAGES) ||
@@ -109,15 +109,15 @@ const textFacts = (text: string): Facts => ({
 	packages: new Set(
 		[
 			...text.matchAll(
-				/<(?:Global)?PackageReference\b[^>]*?\bInclude="([^"]+)"/giu,
-			),
-		].map((match) => (match[1] ?? "").toLowerCase()),
+				/<(?:Global)?PackageReference\b[^>]*?\bInclude="([^"]+)"/giu
+			)
+		].map((match) => (match[1] ?? "").toLowerCase())
 	),
 	flags: new Set(
 		PROPERTIES.filter((name) =>
-			new RegExp(`<${name}>\\s*true\\s*</${name}>`, "iu").test(text),
-		).map((name) => name.toLowerCase()),
-	),
+			new RegExp(`<${name}>\\s*true\\s*</${name}>`, "iu").test(text)
+		).map((name) => name.toLowerCase())
+	)
 });
 
 /**
@@ -142,16 +142,16 @@ export const isTestProject = (text: string): boolean =>
 const CENTRAL_FILES = [
 	"Directory.Build.props",
 	"Directory.Build.targets",
-	"Directory.Packages.props",
+	"Directory.Packages.props"
 ];
 
 /** Text that shows a central file may change a project's runner. */
 const CENTRAL_TRIGGER = new RegExp(
 	[
 		`Include="(?:${[...MTP_PACKAGES, ...VSTEST_PACKAGES].map((name) => name.replaceAll(".", String.raw`\.`)).join("|")})"`,
-		`<(?:${PROPERTIES.join("|")})>`,
+		`<(?:${PROPERTIES.join("|")})>`
 	].join("|"),
-	"iu",
+	"iu"
 );
 
 /** The text of the central files in the directories from `path`'s up to the root. */
@@ -165,8 +165,8 @@ const centralText = async (root: string, path: string): Promise<string> => {
 	}
 	const texts = await Promise.all(
 		dirs.flatMap((dir) =>
-			CENTRAL_FILES.map((name) => readText(join(root, dir, name))),
-		),
+			CENTRAL_FILES.map((name) => readText(join(root, dir, name)))
+		)
 	);
 	return texts.join("\n");
 };
@@ -180,7 +180,7 @@ const centralText = async (root: string, path: string): Promise<string> => {
 const evaluatedFacts = async (
 	root: string,
 	path: string,
-	text: string,
+	text: string
 ): Promise<Facts | undefined> => {
 	const { code, stdout } = await run(
 		[
@@ -189,11 +189,11 @@ const evaluatedFacts = async (
 			path,
 			"-getItem:PackageReference",
 			...[...PROPERTIES, "UsingMSTestSdk"].map(
-				(name) => `-getProperty:${name}`,
+				(name) => `-getProperty:${name}`
 			),
-			"-nodeReuse:false",
+			"-nodeReuse:false"
 		],
-		root,
+		root
 	);
 	if (code !== 0) {
 		return undefined;
@@ -213,14 +213,14 @@ const evaluatedFacts = async (
 		mstestSdk: isTrue("UsingMSTestSdk") || textFacts(text).mstestSdk,
 		packages: new Set(
 			(Array.isArray(items) ? items : []).map((item) =>
-				String(asRecord(item)["Identity"]).toLowerCase(),
-			),
+				String(asRecord(item)["Identity"]).toLowerCase()
+			)
 		),
 		flags: new Set(
 			PROPERTIES.filter((name) => isTrue(name)).map((name) =>
-				name.toLowerCase(),
-			),
-		),
+				name.toLowerCase()
+			)
+		)
 	};
 };
 
@@ -231,11 +231,11 @@ const evaluatedFacts = async (
  */
 const projectRunner = async (
 	root: string,
-	path: string,
+	path: string
 ): Promise<TestRunner | undefined> => {
 	const [text, central] = await Promise.all([
 		readText(join(root, path)),
-		centralText(root, path),
+		centralText(root, path)
 	]);
 	const own = text ?? "";
 	const evaluated = CENTRAL_TRIGGER.test(central)
@@ -248,7 +248,7 @@ const projectRunner = async (
 const inBatches = async <T, R>(
 	items: readonly T[],
 	size: number,
-	map: (item: T) => Promise<R>,
+	map: (item: T) => Promise<R>
 ): Promise<R[]> => {
 	if (items.length === 0) {
 		return [];
@@ -259,12 +259,12 @@ const inBatches = async <T, R>(
 
 /** Each test project under `root` with the runner it needs, sorted by path. */
 export const testProjects = async (
-	root: string,
+	root: string
 ): Promise<{ path: string; runner: TestRunner }[]> => {
 	const found = await projectFiles(root);
 	const projects = found.toSorted();
 	const runners = await inBatches(projects, dotnetJobs(), (path) =>
-		projectRunner(root, path),
+		projectRunner(root, path)
 	);
 	return projects.flatMap((path, index) => {
 		const runner = runners[index];
@@ -285,12 +285,12 @@ export const testProjectDirs = async (root: string): Promise<string[]> => {
  */
 export const dotnetTestFiles = async (
 	root: string,
-	files: readonly string[],
+	files: readonly string[]
 ): Promise<Set<string>> => {
 	const dirs = await testProjectDirs(root);
 	return new Set(
 		files.filter((file) =>
-			dirs.some((dir) => dir === "." || file.startsWith(`${dir}/`)),
-		),
+			dirs.some((dir) => dir === "." || file.startsWith(`${dir}/`))
+		)
 	);
 };

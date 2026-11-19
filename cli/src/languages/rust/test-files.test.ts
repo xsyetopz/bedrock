@@ -16,7 +16,7 @@ test("picks the files rustc compiles only under test", async () => {
 		"src/quoted.rs": "// #![cfg(test)]\npub fn quoted() {}\n",
 		"tests/api.rs": "fn helper() {}\n",
 		"tests/common/mod.rs": "pub fn setup() {}\n",
-		"src/tests/more.rs": "pub fn more() {}\n",
+		"src/tests/more.rs": "pub fn more() {}\n"
 	};
 	const root = await tempRepo(files);
 	const rust = Object.keys(files).filter((file) => file.endsWith(".rs"));
@@ -30,6 +30,6 @@ test("picks the files rustc compiles only under test", async () => {
 		"src/test_support.rs",
 		"src/test_support/data.rs",
 		"tests/api.rs",
-		"tests/common/mod.rs",
+		"tests/common/mod.rs"
 	]);
 });

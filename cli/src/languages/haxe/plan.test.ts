@@ -40,7 +40,7 @@ describe("adopt", () => {
 		// Arrange
 		const root = await tempRepo({
 			"build.hxml": "-cp src\n-js out.js\n",
-			".github/workflows/haxe.yml": "name: Haxe\n",
+			".github/workflows/haxe.yml": "name: Haxe\n"
 		});
 
 		// Act
@@ -50,7 +50,7 @@ describe("adopt", () => {
 
 		// Assert
 		expect(first.notes.join("\n")).toContain(
-			".github/workflows/haxe.yml: replaced with bedrock's",
+			".github/workflows/haxe.yml: replaced with bedrock's"
 		);
 		expect(again.notes).toEqual([]);
 	});
@@ -59,7 +59,7 @@ describe("adopt", () => {
 		// Arrange
 		const root = await tempRepo({
 			"test.hxml": "-cp test\n--main TestMain\n-lib utest\n",
-			"test-interp.hxml": "-cp test\n--main TestMain\n--interp\n",
+			"test-interp.hxml": "-cp test\n--main TestMain\n--interp\n"
 		});
 
 		// Act
@@ -67,7 +67,7 @@ describe("adopt", () => {
 
 		// Assert
 		expect(plan.notes).toEqual([
-			"test.hxml: names no --interp, --run, or --cmd, so just haxe::test does not run it; a project-test recipe in project.just runs it on its target.",
+			"test.hxml: names no --interp, --run, or --cmd, so just haxe::test does not run it; a project-test recipe in project.just runs it on its target."
 		]);
 	});
 
@@ -75,11 +75,11 @@ describe("adopt", () => {
 		// Arrange
 		const root = await tempRepo({
 			"package.json": '{ "name": "app" }\n',
-			"build.hxml": "-cp src\n-js out.js\n",
+			"build.hxml": "-cp src\n-js out.js\n"
 		});
 		const both = [
 			{ language: typescript, options: {} },
-			{ language: haxe, options: {} },
+			{ language: haxe, options: {} }
 		];
 
 		// Act

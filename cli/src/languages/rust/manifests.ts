@@ -9,7 +9,7 @@ import {
 	tidy,
 	upsertSection,
 	withKey,
-	withoutKeys,
+	withoutKeys
 } from "./toml.ts";
 
 /** A parsed TOML table. */
@@ -52,10 +52,10 @@ export const readManaged = (workspaceToml: string): Managed => {
 	const release = at(parsed, "profile", "release");
 	return {
 		lints: parseSections(workspaceToml).filter(
-			(section) => section.name?.startsWith("workspace.lints") === true,
+			(section) => section.name?.startsWith("workspace.lints") === true
 		),
 		lintValues: at(parsed, "workspace", "lints"),
-		release: isTable(release) ? release : {},
+		release: isTable(release) ? release : {}
 	};
 };
 
@@ -66,17 +66,17 @@ const isLintsName = (name: string, prefix: string): boolean =>
 const REPLACED_DEV_DEPENDENCIES = ["cargo-husky"];
 
 const dropReplacedDevDependencies = (
-	sections: readonly Section[],
+	sections: readonly Section[]
 ): Section[] => {
 	const kept = removeSections(sections, (name) =>
-		REPLACED_DEV_DEPENDENCIES.some((dep) => name === `dev-dependencies.${dep}`),
+		REPLACED_DEV_DEPENDENCIES.some((dep) => name === `dev-dependencies.${dep}`)
 	).sections;
 	return kept.flatMap((section) => {
 		if (section.name !== "dev-dependencies") {
 			return [section];
 		}
 		const cleaned = withoutKeys(section, (key) =>
-			REPLACED_DEV_DEPENDENCIES.includes(key),
+			REPLACED_DEV_DEPENDENCIES.includes(key)
 		);
 		const emptied =
 			cleaned.units.length < section.units.length && hasNoEntries(cleaned);
@@ -87,7 +87,7 @@ const dropReplacedDevDependencies = (
 /** Points the package at the workspace lints, which replace its own. */
 const useWorkspaceLints = (sections: readonly Section[]): Section[] => {
 	const { sections: rest, at: position } = removeSections(sections, (name) =>
-		isLintsName(name, "lints"),
+		isLintsName(name, "lints")
 	);
 	const lints = makeSection("lints", ["workspace = true"]);
 	const without = dropReplacedDevDependencies(rest);
@@ -98,7 +98,7 @@ const packageSatisfied = (doc: Table): boolean =>
 	at(doc, "package", "edition") !== undefined &&
 	Bun.deepEquals(doc["lints"], { workspace: true }) &&
 	REPLACED_DEV_DEPENDENCIES.every(
-		(dep) => at(doc, "dev-dependencies", dep) === undefined,
+		(dep) => at(doc, "dev-dependencies", dep) === undefined
 	);
 
 /**
@@ -108,7 +108,7 @@ const packageSatisfied = (doc: Table): boolean =>
  */
 const withDeclaredEdition = (
 	doc: Table,
-	sections: readonly Section[],
+	sections: readonly Section[]
 ): Section[] => {
 	const found = findSection(sections, "package");
 	return found === undefined || at(doc, "package", "edition") !== undefined
@@ -134,7 +134,7 @@ const rootSatisfied = (doc: Table, managed: Managed): boolean =>
 	at(doc, "workspace", "resolver") === "3" &&
 	Bun.deepEquals(at(doc, "workspace", "lints"), managed.lintValues) &&
 	Object.keys(managed.release).every(
-		(key) => at(doc, "profile", "release", key) !== undefined,
+		(key) => at(doc, "profile", "release", key) !== undefined
 	);
 
 const withResolver = (sections: readonly Section[]): Section[] => {
@@ -148,13 +148,13 @@ const withResolver = (sections: readonly Section[]): Section[] => {
 
 const withManagedLints = (
 	sections: readonly Section[],
-	managed: Managed,
+	managed: Managed
 ): Section[] => {
 	const { sections: rest, at: position } = removeSections(sections, (name) =>
-		isLintsName(name, "workspace.lints"),
+		isLintsName(name, "workspace.lints")
 	);
 	const profile = rest.findIndex(
-		(section) => section.name?.startsWith("profile") === true,
+		(section) => section.name?.startsWith("profile") === true
 	);
 	const place = position ?? (profile === -1 ? rest.length : profile);
 	return rest.toSpliced(place, 0, ...managed.lints);
@@ -164,7 +164,7 @@ const withManagedLints = (
 const withReleaseProfile = (
 	doc: Table,
 	sections: readonly Section[],
-	managed: Managed,
+	managed: Managed
 ): Section[] => {
 	const found = findSection(sections, "profile.release");
 	const base = found ?? makeSection("profile.release", []);
@@ -203,7 +203,7 @@ export const editionsOf = (text: string): string[] => {
 	const doc = parseToml(text);
 	return [
 		at(doc, "package", "edition"),
-		at(doc, "workspace", "package", "edition"),
+		at(doc, "workspace", "package", "edition")
 	].filter((edition) => typeof edition === "string");
 };
 
@@ -211,7 +211,7 @@ export const editionsOf = (text: string): string[] => {
 export const toolchainFile = (
 	template: string,
 	current: string | undefined,
-	extra: readonly string[],
+	extra: readonly string[]
 ): string => {
 	const listed = at(parseToml(current ?? ""), "toolchain", "targets");
 	const kept = Array.isArray(listed)

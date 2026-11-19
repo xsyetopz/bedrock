@@ -23,7 +23,7 @@ const ENTITIES: Readonly<Record<string, string>> = {
 	apos: "'",
 	gt: ">",
 	lt: "<",
-	quot: '"',
+	quot: '"'
 };
 
 const decode = (text: string): string =>
@@ -42,15 +42,15 @@ const attributesOf = (source: string): Record<string, string> =>
 	Object.fromEntries(
 		[...source.matchAll(ATTRIBUTE)].map((match) => [
 			match[1] ?? "",
-			decode(match[2] ?? match[3] ?? ""),
-		]),
+			decode(match[2] ?? match[3] ?? "")
+		])
 	);
 
 const freeze = (open: Open): XmlElement => ({
 	name: open.name,
 	attributes: open.attributes,
 	children: open.children.map((child) => freeze(child)),
-	text: open.text,
+	text: open.text
 });
 
 /**
@@ -72,7 +72,7 @@ export const parseXml = (source: string): XmlElement => {
 				name: opening,
 				attributes: attributesOf(attributes),
 				children: [],
-				text: "",
+				text: ""
 			};
 			if (current === undefined) {
 				root ??= element;
@@ -100,27 +100,27 @@ export const parseXml = (source: string): XmlElement => {
 /** The elements directly below `element`, all of them or only those called `name`. */
 export const childrenOf = (
 	element: XmlElement | undefined,
-	name?: string,
+	name?: string
 ): readonly XmlElement[] =>
 	(element?.children ?? []).filter(
-		(child) => name === undefined || child.name === name,
+		(child) => name === undefined || child.name === name
 	);
 
 /** The first child called `name`. */
 export const childOf = (
 	element: XmlElement | undefined,
-	name: string,
+	name: string
 ): XmlElement | undefined => childrenOf(element, name)[0];
 
 /** The trimmed text of the child called `name`. */
 export const textOf = (
 	element: XmlElement | undefined,
-	name: string,
+	name: string
 ): string | undefined => childOf(element, name)?.text.trim();
 
 /** Every element called `name` below `element`, in document order. */
 export const descendants = (element: XmlElement, name: string): XmlElement[] =>
 	element.children.flatMap((child) => [
 		...(child.name === name ? [child] : []),
-		...descendants(child, name),
+		...descendants(child, name)
 	]);

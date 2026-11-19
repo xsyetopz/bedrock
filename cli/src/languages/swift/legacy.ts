@@ -15,7 +15,7 @@ const PROJECT_FILES = [
 	"project.just",
 	".gitignore",
 	".just/*.just",
-	".github/**/*.{yml,yaml}",
+	".github/**/*.{yml,yaml}"
 ];
 
 /** Whether the old bedrock wrote BuildTools: its package depends on swift-bedrock. */
@@ -35,25 +35,25 @@ const outsideBlocks = (text: string): string => {
 
 const referenceNotes = async (root: string): Promise<string[]> => {
 	const listed = await Promise.all(
-		PROJECT_FILES.map((pattern) => listFiles(root, new Glob(pattern))),
+		PROJECT_FILES.map((pattern) => listFiles(root, new Glob(pattern)))
 	);
 	const paths = listed
 		.flat()
 		.filter(
 			(path) =>
 				!/^\.just\/(?:swift|cpp)\.just$|^\.github\/workflows\/swift\.yml$/u.test(
-					path,
-				),
+					path
+				)
 		);
 	const notes = await Promise.all(
 		paths.map(async (path) => {
 			const text = await readText(join(root, path));
 			return text !== undefined && outsideBlocks(text).includes("BuildTools")
 				? [
-						`${path}: mentions BuildTools, which bedrock no longer uses; remove the reference`,
+						`${path}: mentions BuildTools, which bedrock no longer uses; remove the reference`
 					]
 				: [];
-		}),
+		})
 	);
 	return notes.flat();
 };
@@ -65,7 +65,7 @@ const referenceNotes = async (root: string): Promise<string[]> => {
 export const legacyPlan = async (root: string): Promise<LanguagePlan> => {
 	const [legacy, replaced] = await Promise.all([
 		isBedrockBuildTools(root),
-		existing(root, REPLACED),
+		existing(root, REPLACED)
 	]);
 	const steps: Step[] = replaced.map((path) => ({ kind: "remove", path }));
 	if (!legacy) {

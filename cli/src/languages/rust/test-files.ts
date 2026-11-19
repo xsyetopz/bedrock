@@ -11,14 +11,14 @@ import { testOnlyFiles } from "./test-modules.ts";
  */
 const inIntegrationTests = (
 	file: string,
-	crates: ReadonlySet<string>,
+	crates: ReadonlySet<string>
 ): boolean => {
 	const parts = file.split("/");
 	return parts.some(
 		(part, index) =>
 			part === "tests" &&
 			index < parts.length - 1 &&
-			crates.has(index === 0 ? "." : parts.slice(0, index).join("/")),
+			crates.has(index === 0 ? "." : parts.slice(0, index).join("/"))
 	);
 };
 
@@ -30,7 +30,7 @@ const inIntegrationTests = (
  */
 export const rustTestFiles = async (
 	root: string,
-	files: readonly string[],
+	files: readonly string[]
 ): Promise<Set<string>> => {
 	const found = await manifests(root);
 	const crates = new Set(found.map(({ dir }) => dir));
@@ -42,7 +42,7 @@ export const rustTestFiles = async (
 			}
 			const source = await readText(join(root, file));
 			return source !== undefined && hasGate(source) ? [file] : [];
-		}),
+		})
 	);
 	return new Set(picked.flat());
 };

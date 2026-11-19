@@ -10,7 +10,7 @@ describe("suppressionFindings", () => {
 			"#pragma warning disable CA1822",
 			"#pragma warning disable CA1822 // instance method for the test runner",
 			'[SuppressMessage("Design", "CA1031")]',
-			'[SuppressMessage("Design", "CA1031", Justification = "top-level handler")]',
+			'[SuppressMessage("Design", "CA1031", Justification = "top-level handler")]'
 		].join("\n");
 
 		// Act
@@ -18,7 +18,7 @@ describe("suppressionFindings", () => {
 
 		// Assert
 		expect(
-			findings.map((finding) => finding.split(":").slice(0, 2).join(":")),
+			findings.map((finding) => finding.split(":").slice(0, 2).join(":"))
 		).toEqual(["src/A.cs:1", "src/A.cs:3"]);
 	});
 
@@ -32,7 +32,7 @@ describe("suppressionFindings", () => {
 
 		// Assert
 		expect(findings).toEqual([
-			"src/A.fs:1: #nowarn without a reason; add `// <reason>` after the ids",
+			"src/A.fs:1: #nowarn without a reason; add `// <reason>` after the ids"
 		]);
 	});
 });
@@ -43,7 +43,7 @@ describe("guardDotnet", () => {
 		const root = await tempRepo({
 			".csharpierrc.json": "{}\n",
 			"dotnet-tools.json": "{}\n",
-			".config/dotnet-tools.json": "{}\n",
+			".config/dotnet-tools.json": "{}\n"
 		});
 
 		// Act
@@ -54,13 +54,13 @@ describe("guardDotnet", () => {
 			init: false,
 			templates: () => {
 				throw new Error("unused");
-			},
+			}
 		});
 
 		// Assert
 		expect(findings).toEqual([
 			".csharpierrc.json: the formatters read their layout from .editorconfig; move the settings there and delete this file",
-			".config/dotnet-tools.json, dotnet-tools.json: two tool manifests; keep the tools in .config/dotnet-tools.json and delete the other",
+			".config/dotnet-tools.json, dotnet-tools.json: two tool manifests; keep the tools in .config/dotnet-tools.json and delete the other"
 		]);
 	});
 });

@@ -9,7 +9,7 @@ import { hxmlBuilds, isTestHxml } from "./hxml.ts";
  */
 const everyPasses = async (
 	root: string,
-	commands: readonly (readonly string[])[],
+	commands: readonly (readonly string[])[]
 ): Promise<boolean> => {
 	const [first, ...rest] = commands;
 	if (first === undefined) {
@@ -35,7 +35,7 @@ export const haxeTypecheck: Subcommand = {
 			.filter((build) => build.target)
 			.map((build) => ["haxe", "--no-output", "--each", build.path]);
 		return (await everyPasses(root, commands)) ? 0 : 1;
-	},
+	}
 };
 
 /**
@@ -51,12 +51,12 @@ export const haxeTest: Subcommand = {
 		const tests = found.filter((build) => isTestHxml(build.path));
 		for (const build of tests.filter((test) => !test.runs)) {
 			console.error(
-				`not run ${build.path}: it names no --interp, --run, or --cmd, so a recipe in project.just runs it`,
+				`not run ${build.path}: it names no --interp, --run, or --cmd, so a recipe in project.just runs it`
 			);
 		}
 		const commands = tests
 			.filter((build) => build.runs)
 			.map((build) => ["haxe", build.path]);
 		return (await everyPasses(root, commands)) ? 0 : 1;
-	},
+	}
 };

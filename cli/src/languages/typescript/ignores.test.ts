@@ -4,7 +4,7 @@ import { tempRepo } from "../../core/testing.ts";
 import {
 	isIgnored,
 	readBunfigTestIgnores,
-	readOxlintIgnores,
+	readOxlintIgnores
 } from "./ignores.ts";
 
 const repo = tempRepo;
@@ -31,7 +31,7 @@ describe("isIgnored", () => {
 describe("readers", () => {
 	test("read the oxlint ignorePatterns, comments allowed", async () => {
 		const root = await repo({
-			".oxlintrc.json": '{ // c\n "ignorePatterns": ["a/**"] }',
+			".oxlintrc.json": '{ // c\n "ignorePatterns": ["a/**"] }'
 		});
 		expect(await readOxlintIgnores(root)).toEqual(["a/**"]);
 		expect(await readOxlintIgnores(await repo({}))).toEqual([]);
@@ -39,10 +39,10 @@ describe("readers", () => {
 
 	test("read the bunfig test pathIgnorePatterns, a string or an array", async () => {
 		const array = await repo({
-			"bunfig.toml": '[test]\npathIgnorePatterns = ["a/**", "b/**"]\n',
+			"bunfig.toml": '[test]\npathIgnorePatterns = ["a/**", "b/**"]\n'
 		});
 		const string = await repo({
-			"bunfig.toml": '[test]\npathIgnorePatterns = "a/**"\n',
+			"bunfig.toml": '[test]\npathIgnorePatterns = "a/**"\n'
 		});
 		expect(await readBunfigTestIgnores(array)).toEqual(["a/**", "b/**"]);
 		expect(await readBunfigTestIgnores(string)).toEqual(["a/**"]);

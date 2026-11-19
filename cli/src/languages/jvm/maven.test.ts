@@ -30,7 +30,7 @@ const fixture = () =>
 		"core/pom.xml": CORE,
 		"app/pom.xml": APP,
 		mvnw: "",
-		".mvn/wrapper/maven-wrapper.properties": "",
+		".mvn/wrapper/maven-wrapper.properties": ""
 	});
 
 test("maps reactor modules to Gradle projects with managed versions", async () => {
@@ -45,13 +45,13 @@ test("maps reactor modules to Gradle projects with managed versions", async () =
 	expect(migration.group).toBe("org.acme");
 	expect(files["core/build.gradle.kts"]).toContain("api(libs.guava)");
 	expect(files["core/build.gradle.kts"]).toContain(
-		"compileOnly(libs.slf4j.api)",
+		"compileOnly(libs.slf4j.api)"
 	);
 	expect(files["app/build.gradle.kts"]).toContain(
-		'implementation(project(":core"))',
+		'implementation(project(":core"))'
 	);
 	expect(files["gradle/libs.versions.toml"]).toContain(
-		'guava = { module = "com.google.guava:guava", version = "33.0.0-jre" }',
+		'guava = { module = "com.google.guava:guava", version = "33.0.0-jre" }'
 	);
 });
 
@@ -68,7 +68,7 @@ test("removes every pom and the Maven wrapper", async () => {
 		"app/pom.xml",
 		"core/pom.xml",
 		"mvnw",
-		"pom.xml",
+		"pom.xml"
 	]);
 });
 
@@ -83,7 +83,7 @@ test("notes a Java level above 8", async () => {
 	expect(migration.notes.size).toBeGreaterThan(0);
 	expect(migration.modules.map((module) => module.mainClass)).toEqual([
 		undefined,
-		"org.acme.Main",
+		"org.acme.Main"
 	]);
 });
 

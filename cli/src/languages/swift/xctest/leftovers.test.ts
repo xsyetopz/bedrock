@@ -17,16 +17,14 @@ describe("leftovers", () => {
 		"let app = XCUIApplication()",
 		"addTeardownBlock { cleanup() }",
 		"continueAfterFailure = false",
-		"XCTAssertThrowsError(try f()) { _ in }",
+		"XCTAssertThrowsError(try f()) { _ in }"
 	])("notes %s and keeps XCTest", (input) => {
 		const source = `import XCTest\nfinal class T: XCTestCase {\n  func testA() {\n    ${input}\n  }\n}\n`;
 
 		const result = converted(source);
 
 		expect(
-			result.text.startsWith(
-				"import Testing\nimport XCTest\nfinal class T {\n",
-			),
+			result.text.startsWith("import Testing\nimport XCTest\nfinal class T {\n")
 		).toBe(true);
 		expect(result.text).toContain(`@Test\n  func a() {\n    ${input}\n`);
 		expect(result.notes.some((note) => note.startsWith("line 6: "))).toBe(true);
@@ -52,7 +50,7 @@ describe("leftovers", () => {
 
 	test("reuses an existing Testing import", () => {
 		expect(
-			converted("import Testing\nimport XCTest\nXCTAssertTrue(a)\n").text,
+			converted("import Testing\nimport XCTest\nXCTAssertTrue(a)\n").text
 		).toBe("import Testing\n#expect(a)\n");
 	});
 });
@@ -63,7 +61,7 @@ describe("whole files", () => {
 			"import Testing\n@Test func a() {}\n",
 			'let s = "import XCTest"\n',
 			"// import XCTest\n",
-			"",
+			""
 		]) {
 			expect(convertXCTest(source)).toBeUndefined();
 		}
@@ -91,7 +89,7 @@ describe("whole files", () => {
 			"import XCTest\r\nclass T: XCTestCase {\r\n  func testA() {}\r\n}\r\n";
 
 		expect(converted(source).text).toBe(
-			"import Testing\r\nfinal class T {\r\n  @Test\r\n  func a() {}\r\n}\r\n",
+			"import Testing\r\nfinal class T {\r\n  @Test\r\n  func a() {}\r\n}\r\n"
 		);
 	});
 

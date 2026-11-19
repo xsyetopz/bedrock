@@ -12,7 +12,7 @@ import {
 	buildEntries,
 	CSHARP_GLOB,
 	FSHARP_GLOB,
-	projectFiles,
+	projectFiles
 } from "./projects.ts";
 import { testProjects } from "./test-projects.ts";
 
@@ -20,7 +20,7 @@ import { testProjects } from "./test-projects.ts";
 const msbuild = (
 	verb: string,
 	entry: string,
-	flags: readonly string[] = [],
+	flags: readonly string[] = []
 ): string[] => ["dotnet", verb, entry, ...flags, ...msbuildBounds()];
 
 /**
@@ -29,7 +29,7 @@ const msbuild = (
  */
 const everyPasses = async (
 	root: string,
-	commands: readonly (readonly string[])[],
+	commands: readonly (readonly string[])[]
 ): Promise<boolean> => {
 	const [first, ...rest] = commands;
 	if (first === undefined) {
@@ -54,7 +54,7 @@ export const dotnetRestore: Subcommand = {
 		const entries = await buildEntries(root);
 		const commands = entries.map((entry) => msbuild("restore", entry));
 		return (await everyPasses(root, commands)) ? 0 : 1;
-	},
+	}
 };
 
 /**
@@ -66,14 +66,14 @@ export const dotnetRestore: Subcommand = {
 export const formatCommands = (
 	check: boolean,
 	hasCsharp: boolean,
-	fsharp: readonly string[],
+	fsharp: readonly string[]
 ): string[][] => [
 	...(hasCsharp
 		? [["dotnet", "csharpier", check ? "check" : "format", "."]]
 		: []),
 	...(fsharp.length > 0
 		? [["dotnet", "fantomas", ...(check ? ["check"] : []), ...fsharp]]
-		: []),
+		: [])
 ];
 
 /** Runs the formatters, or with `check` fails when a file is not formatted. */
@@ -81,12 +81,12 @@ const format = async (root: string, check: boolean): Promise<number> => {
 	const [csharp, projects, fsharp] = await Promise.all([
 		csharpFiles(root),
 		projectFiles(root),
-		fsharpFiles(root),
+		fsharpFiles(root)
 	]);
 	const commands = formatCommands(
 		check,
 		csharp.length > 0 || projects.length > 0,
-		fsharp,
+		fsharp
 	);
 	return (await everyPasses(root, commands)) ? 0 : 1;
 };
@@ -99,7 +99,7 @@ export const dotnetFormat: Subcommand = {
 	args: "[--check]",
 	summary:
 		"Format the C#, F#, and MSBuild files, or with --check fail if one is not.",
-	run: ({ root }, args) => format(root, args.includes("--check")),
+	run: ({ root }, args) => format(root, args.includes("--check"))
 };
 
 /**
@@ -113,10 +113,10 @@ export const dotnetTypecheck: Subcommand = {
 	run: async ({ root }) => {
 		const entries = await buildEntries(root);
 		const commands = entries.map((entry) =>
-			msbuild("build", entry, ["-warnaserror", "-p:RunAnalyzers=false"]),
+			msbuild("build", entry, ["-warnaserror", "-p:RunAnalyzers=false"])
 		);
 		return (await everyPasses(root, commands)) ? 0 : 1;
-	},
+	}
 };
 
 /**
@@ -127,16 +127,16 @@ export const dotnetTypecheck: Subcommand = {
  */
 export const lintCommands = (
 	entries: readonly string[],
-	fsprojs: readonly string[],
+	fsprojs: readonly string[]
 ): string[][] => [
 	...entries.map((entry) =>
 		msbuild("build", entry, [
 			"--no-incremental",
 			"-warnaserror",
-			"-p:EnforceCodeStyleInBuild=true",
-		]),
+			"-p:EnforceCodeStyleInBuild=true"
+		])
 	),
-	...fsprojs.map((project) => ["dotnet", "fsharplint", "lint", project]),
+	...fsprojs.map((project) => ["dotnet", "fsharplint", "lint", project])
 ];
 
 /**
@@ -150,8 +150,8 @@ export const fixCommands = (entries: readonly string[]): string[][] =>
 			? []
 			: [
 					["dotnet", "format", "style", entry, "--severity", "warn"],
-					["dotnet", "format", "analyzers", entry, "--severity", "warn"],
-				],
+					["dotnet", "format", "analyzers", entry, "--severity", "warn"]
+				]
 	);
 
 /**
@@ -167,7 +167,7 @@ export const dotnetLint: Subcommand = {
 		const [entries, projects, csharp] = await Promise.all([
 			buildEntries(root),
 			projectFiles(root),
-			csharpFiles(root),
+			csharpFiles(root)
 		]);
 		if (args.includes("--fix")) {
 			const fixes = csharp.length > 0 ? fixCommands(entries) : [];
@@ -176,7 +176,7 @@ export const dotnetLint: Subcommand = {
 		}
 		const fsprojs = projects.filter((path) => path.endsWith(".fsproj"));
 		return (await everyPasses(root, lintCommands(entries, fsprojs))) ? 0 : 1;
-	},
+	}
 };
 
 /**
@@ -215,8 +215,8 @@ export const testCommands = (entry: string, platform: boolean): string[][] => {
 			// that has none yet, so this runner does too; a failing test
 			// still fails.
 			"--ignore-exit-code",
-			"8",
-		],
+			"8"
+		]
 	];
 };
 
@@ -228,7 +228,7 @@ export const testCommands = (entry: string, platform: boolean): string[][] => {
 const testEntries = async (root: string): Promise<string[]> => {
 	const [entries, tests] = await Promise.all([
 		buildEntries(root),
-		testProjects(root),
+		testProjects(root)
 	]);
 	if (tests.length === 0) {
 		return [];
@@ -248,16 +248,16 @@ export const dotnetTest: Subcommand = {
 	run: async ({ root }) => {
 		const [entries, platform] = await Promise.all([
 			testEntries(root),
-			usesTestingPlatform(root),
+			usesTestingPlatform(root)
 		]);
 		return (await testEach(root, entries, platform)) ? 0 : 1;
-	},
+	}
 };
 
 /** Whether each command passes, stopping at the first that fails. */
 const inTurn = async (
 	root: string,
-	commands: readonly (readonly string[])[],
+	commands: readonly (readonly string[])[]
 ): Promise<boolean> => {
 	const [first, ...rest] = commands;
 	if (first === undefined) {
@@ -270,7 +270,7 @@ const inTurn = async (
 const testEach = async (
 	root: string,
 	entries: readonly string[],
-	platform: boolean,
+	platform: boolean
 ): Promise<boolean> => {
 	const [first, ...rest] = entries;
 	if (first === undefined) {

@@ -15,7 +15,7 @@ const SOURCES = {
 		"int demo(void);\nint main(void) { return demo() == 1 ? 0 : 1; }\n",
 	"tests/fixture.c": "int expected(void) { return 1; }\n",
 	"tests/demo_test.c":
-		"int demo(void);\nint expected(void);\nint main(void) { return demo() == expected() ? 0 : 1; }\n",
+		"int demo(void);\nint expected(void);\nint main(void) { return demo() == expected() ? 0 : 1; }\n"
 };
 
 const CMAKE = `cmake_minimum_required(VERSION 3.20)
@@ -64,7 +64,7 @@ const contextIn = (root: string): Context =>
 const BUILDS = [
 	{ system: "CMake", tool: "cmake", file: "CMakeLists.txt", text: CMAKE },
 	{ system: "Meson", tool: "meson", file: "meson.build", text: MESON },
-	{ system: "xmake", tool: "xmake", file: "xmake.lua", text: XMAKE },
+	{ system: "xmake", tool: "xmake", file: "xmake.lua", text: XMAKE }
 ];
 
 for (const { system, tool, file, text } of BUILDS) {
@@ -86,11 +86,11 @@ for (const { system, tool, file, text } of BUILDS) {
 			expect(commands).toBe(0);
 			expect([...picked].toSorted()).toEqual([
 				"tests/demo_test.c",
-				"tests/fixture.c",
+				"tests/fixture.c"
 			]);
 			expect(tested).toBe(0);
 		},
-		300_000,
+		300_000
 	);
 
 	test.skipIf(absent)(
@@ -100,7 +100,7 @@ for (const { system, tool, file, text } of BUILDS) {
 			const root = await tempRepo({
 				[file]: text,
 				...SOURCES,
-				"tests/fixture.c": "int expected(void) { return 2; }\n",
+				"tests/fixture.c": "int expected(void) { return 2; }\n"
 			});
 
 			// Act
@@ -109,6 +109,6 @@ for (const { system, tool, file, text } of BUILDS) {
 			// Assert
 			expect(tested).toBe(1);
 		},
-		300_000,
+		300_000
 	);
 }

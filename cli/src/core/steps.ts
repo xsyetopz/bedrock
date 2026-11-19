@@ -5,7 +5,7 @@ import {
 	readlink,
 	rename,
 	rm,
-	symlink,
+	symlink
 } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
@@ -50,7 +50,7 @@ export const describe = async (root: string, step: Step): Promise<string> => {
 /** Whether the file at `path` holds exactly `content`. */
 const holds = async (
 	path: string,
-	content: string | Uint8Array,
+	content: string | Uint8Array
 ): Promise<boolean> => {
 	const file = Bun.file(path);
 	return typeof content === "string"
@@ -83,7 +83,7 @@ export const isDone = async (root: string, step: Step): Promise<boolean> => {
 /** Drops the steps `root` already matches. */
 export const pending = async (
 	root: string,
-	steps: readonly Step[],
+	steps: readonly Step[]
 ): Promise<Step[]> => {
 	const done = await Promise.all(steps.map((step) => isDone(root, step)));
 	return steps.filter((_, index) => done[index] !== true);
@@ -125,7 +125,7 @@ const applyStep = async (root: string, step: Step): Promise<void> => {
  */
 export const applySteps = async (
 	root: string,
-	steps: readonly Step[],
+	steps: readonly Step[]
 ): Promise<void> => {
 	const removals = steps.filter((step) => step.kind === "remove");
 	await Promise.all(removals.map((step) => applyStep(root, step)));
@@ -139,5 +139,5 @@ export const applySteps = async (
  */
 export const dedupe = (steps: readonly Step[]): Step[] =>
 	[...new Map(steps.map((step) => [step.path, step])).values()].toSorted(
-		(left, right) => left.path.localeCompare(right.path),
+		(left, right) => left.path.localeCompare(right.path)
 	);

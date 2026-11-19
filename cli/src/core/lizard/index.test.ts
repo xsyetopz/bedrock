@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	editorconfigTree,
 	parseEditorconfig,
-	propertiesFor,
+	propertiesFor
 } from "../editorconfig/index.ts";
 import { tempRepo } from "../testing.ts";
 import { checkSize, judge } from "./index.ts";
@@ -32,12 +32,12 @@ const boundsOf = (path: string): Map<string, string> =>
 const MEASURES = {
 	files: [
 		{ path: "src/Big.kt", nloc: 700 },
-		{ path: "src/Small.kt", nloc: 20 },
+		{ path: "src/Small.kt", nloc: 20 }
 	],
 	functions: [
 		{ path: "src/Big.kt", line: 9, name: "run", nloc: 80, ccn: 3, params: 8 },
-		{ path: "src/Small.kt", line: 1, name: "ok", nloc: 5, ccn: 1, params: 1 },
-	],
+		{ path: "src/Small.kt", line: 1, name: "ok", nloc: 5, ccn: 1, params: 1 }
+	]
 };
 
 describe("judge", () => {
@@ -48,10 +48,10 @@ describe("judge", () => {
 		// Assert
 		expect(report.errors).toEqual([
 			"src/Big.kt:9: run code lines is 80, over 56",
-			"src/Big.kt:9: run parameters is 8, over 7",
+			"src/Big.kt:9: run parameters is 8, over 7"
 		]);
 		expect(report.warnings).toEqual([
-			"src/Big.kt: file code lines is 700, over 603",
+			"src/Big.kt: file code lines is 700, over 603"
 		]);
 	});
 
@@ -61,9 +61,9 @@ describe("judge", () => {
 			files: [
 				{ path: "src/lib.rs", nloc: 700 },
 				{ path: "src/a/checks.rs", nloc: 700 },
-				{ path: "src/b/tests.rs", nloc: 1200 },
+				{ path: "src/b/tests.rs", nloc: 1200 }
 			],
-			functions: [],
+			functions: []
 		};
 		const tests = new Set(["src/a/checks.rs", "src/b/tests.rs"]);
 
@@ -73,7 +73,7 @@ describe("judge", () => {
 		// Assert
 		expect(report.warnings).toEqual([
 			"src/lib.rs: file code lines is 700, over 603",
-			"src/b/tests.rs: test file code lines is 1200, over 1000",
+			"src/b/tests.rs: test file code lines is 1200, over 1000"
 		]);
 	});
 
@@ -88,9 +88,9 @@ describe("judge", () => {
 					name: "run",
 					nloc: 90,
 					ccn: 30,
-					params: 9,
-				},
-			],
+					params: 9
+				}
+			]
 		};
 
 		// Act
@@ -99,7 +99,7 @@ describe("judge", () => {
 		// Assert
 		expect(report.errors).toEqual([]);
 		expect(report.warnings).toEqual([
-			"src/lib.rs: file code lines is 700, over 603",
+			"src/lib.rs: file code lines is 700, over 603"
 		]);
 	});
 });
@@ -107,7 +107,7 @@ describe("judge", () => {
 const longMethod = (name: string): string => {
 	const body = Array.from(
 		{ length: 60 },
-		(_, index) => `    int v${String(index)} = ${String(index)};`,
+		(_, index) => `    int v${String(index)} = ${String(index)};`
 	);
 	return `class ${name} {\n  void run() {\n${body.join("\n")}\n  }\n}\n`;
 };
@@ -118,7 +118,7 @@ const rustFile = (lines: number, attribute: string): string =>
 /** Picks `checks.rs` as the one test file, in place of a language's picker. */
 const checksOnly = (
 	_root: string,
-	files: readonly string[],
+	files: readonly string[]
 ): Promise<Set<string>> =>
 	Promise.resolve(new Set(files.filter((file) => file.endsWith("checks.rs"))));
 
@@ -131,21 +131,21 @@ describe("checkSize", () => {
 				".editorconfig":
 					"root = true\n\n[*.rs]\nbedrock_file_code_lines_warning = 20\nbedrock_test_file_code_lines_warning = 50\n",
 				"src/live.rs": rustFile(30, "#[inline]"),
-				"src/checks.rs": rustFile(30, "#[test]"),
+				"src/checks.rs": rustFile(30, "#[test]")
 			});
 			// Act
 			const report = await checkSize(
 				root,
 				["rust"],
 				editorconfigTree(root),
-				checksOnly,
+				checksOnly
 			);
 
 			// Assert
 			expect(report.warnings).toHaveLength(1);
 			expect(report.warnings[0]).toStartWith("src/live.rs: file code lines");
 		},
-		120_000,
+		120_000
 	);
 
 	test.skipIf(!hasLizard)(
@@ -157,7 +157,7 @@ describe("checkSize", () => {
 				"src/A.java": longMethod("A"),
 				"legacy/.editorconfig":
 					"[*.java]\nbedrock_function_code_lines_error = unset\n",
-				"legacy/B.java": longMethod("B"),
+				"legacy/B.java": longMethod("B")
 			});
 
 			// Act
@@ -167,6 +167,6 @@ describe("checkSize", () => {
 			expect(report.errors).toHaveLength(1);
 			expect(report.errors[0]).toStartWith("src/A.java:2: ");
 		},
-		120_000,
+		120_000
 	);
 });

@@ -10,7 +10,7 @@ import {
 	langVersionNotes,
 	retargetSteps,
 	TESTING_PLATFORM,
-	toolManifestStep,
+	toolManifestStep
 } from "./manifests.ts";
 import { testProjects, type TestRunner } from "./test-projects.ts";
 
@@ -27,7 +27,7 @@ const workflowNote = async (root: string): Promise<string[]> => {
 		return [];
 	}
 	return [
-		`${WORKFLOW}: replaced with bedrock's; git has yours. Move the steps it still needs into .github/actions/project-setup/action.yml and the recipes it ran into project.just.`,
+		`${WORKFLOW}: replaced with bedrock's; git has yours. Move the steps it still needs into .github/actions/project-setup/action.yml and the recipes it ran into project.just.`
 	];
 };
 
@@ -39,11 +39,11 @@ const workflowNote = async (root: string): Promise<string[]> => {
 const duplicateWorkflowNotes = async (root: string): Promise<string[]> => {
 	const paths = await listFiles(
 		root,
-		new Glob(".github/workflows/*.{yml,yaml}"),
+		new Glob(".github/workflows/*.{yml,yaml}")
 	);
 	const others = paths.filter((path) => path !== WORKFLOW);
 	const texts = await Promise.all(
-		others.map((path) => readText(join(root, path))),
+		others.map((path) => readText(join(root, path)))
 	);
 	return others.flatMap((path, index) => {
 		const text = texts[index] ?? "";
@@ -51,7 +51,7 @@ const duplicateWorkflowNotes = async (root: string): Promise<string[]> => {
 			text.includes("actions/setup-dotnet") || /\bdotnet\s+\w/u.test(text);
 		return runsDotnet && !text.startsWith("# Managed by bedrock.")
 			? [
-					`${path}: sets up .NET or runs dotnet, which ${WORKFLOW} now does on the SDK global.json pins; remove the steps it duplicates.`,
+					`${path}: sets up .NET or runs dotnet, which ${WORKFLOW} now does on the SDK global.json pins; remove the steps it duplicates.`
 				]
 			: [];
 	});
@@ -69,7 +69,7 @@ const PROPS_SETTINGS: Readonly<Record<string, RegExp>> = {
 	"<TreatWarningsAsErrors>true</TreatWarningsAsErrors>":
 		/<TreatWarningsAsErrors>\s*true\s*<\/TreatWarningsAsErrors>/u,
 	"<GenerateDocumentationFile>true</GenerateDocumentationFile>":
-		/<GenerateDocumentationFile>\s*true\s*<\/GenerateDocumentationFile>/u,
+		/<GenerateDocumentationFile>\s*true\s*<\/GenerateDocumentationFile>/u
 };
 
 /**
@@ -87,7 +87,7 @@ export const propsNote = (text: string | undefined): string[] => {
 	return missing.length === 0
 		? []
 		: [
-				`${PROPS}: kept as yours; bedrock's starter also sets ${missing.join(", ")}, which the lint build and the .editorconfig rules rely on.`,
+				`${PROPS}: kept as yours; bedrock's starter also sets ${missing.join(", ")}, which the lint build and the .editorconfig rules rely on.`
 			];
 };
 
@@ -100,7 +100,7 @@ export const propsNote = (text: string | undefined): string[] => {
  */
 export const runnerNote = (
 	tests: readonly { path: string; runner: TestRunner }[],
-	platform: boolean,
+	platform: boolean
 ): string[] => {
 	const vstest = tests.filter(({ runner }) => runner === "vstest");
 	const mtp = tests.filter(({ runner }) => runner === "mtp");
@@ -108,12 +108,12 @@ export const runnerNote = (
 		list.map(({ path }) => path).join(", ");
 	if (vstest.length > 0 && mtp.length > 0) {
 		return [
-			`${GLOBAL_JSON}: ${names(mtp)} run on Microsoft.Testing.Platform and ${names(vstest)} on VSTest; dotnet test runs one, so move the VSTest projects over and set test.runner to ${TESTING_PLATFORM}.`,
+			`${GLOBAL_JSON}: ${names(mtp)} run on Microsoft.Testing.Platform and ${names(vstest)} on VSTest; dotnet test runs one, so move the VSTest projects over and set test.runner to ${TESTING_PLATFORM}.`
 		];
 	}
 	if (vstest.length > 0 && platform) {
 		return [
-			`${GLOBAL_JSON}: test.runner is ${TESTING_PLATFORM}, but ${names(vstest)} run on VSTest; move them over or drop test.runner.`,
+			`${GLOBAL_JSON}: test.runner is ${TESTING_PLATFORM}, but ${names(vstest)} run on VSTest; move them over or drop test.runner.`
 		];
 	}
 	return [];
@@ -129,7 +129,7 @@ export const planDotnet = async (context: Context): Promise<LanguagePlan> => {
 	const { root } = context;
 	const [tests, current] = await Promise.all([
 		testProjects(root),
-		readText(join(root, GLOBAL_JSON)),
+		readText(join(root, GLOBAL_JSON))
 	]);
 	const runners = new Set(tests.map(({ runner }) => runner));
 	const onlyPlatform = runners.has("mtp") && !runners.has("vstest");
@@ -142,7 +142,7 @@ export const planDotnet = async (context: Context): Promise<LanguagePlan> => {
 			langVersionNotes(root),
 			workflowNote(root),
 			duplicateWorkflowNotes(root),
-			readText(join(root, PROPS)),
+			readText(join(root, PROPS))
 		]);
 	const steps = [...globalJson, ...manifest, ...retargets];
 	return {
@@ -152,11 +152,11 @@ export const planDotnet = async (context: Context): Promise<LanguagePlan> => {
 			...others,
 			...langNotes,
 			...propsNote(props),
-			...runnerNote(tests, platform),
+			...runnerNote(tests, platform)
 		],
 		projectFiles: [
 			GLOBAL_JSON,
-			...steps.flatMap((step) => (step.kind === "write" ? [step.path] : [])),
-		],
+			...steps.flatMap((step) => (step.kind === "write" ? [step.path] : []))
+		]
 	};
 };

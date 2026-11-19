@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { mergeIgnoreList } from "./ignore-lists.ts";
 
 describe("mergeIgnoreList", () => {
-	test("keeps a multi-line list's trailing comma, as the formatter writes it", () => {
+	test("drops a multi-line list's trailing comma, as the formatter does", () => {
 		// Arrange
 		const template = '{\n\t"ignores": [\n\t\t"a/**",\n\t],\n}\n';
 
@@ -12,7 +12,7 @@ describe("mergeIgnoreList", () => {
 
 		// Assert
 		expect(merged).toBe(
-			'{\n\t"ignores": [\n\t\t"a/**",\n\t\t"b/**",\n\t],\n}\n',
+			'{\n\t"ignores": [\n\t\t"a/**",\n\t\t"b/**"\n\t],\n}\n'
 		);
 	});
 
@@ -24,12 +24,12 @@ describe("mergeIgnoreList", () => {
 		const merged = mergeIgnoreList(
 			template,
 			{ ignorePatterns: ["b/**"] },
-			"ignorePatterns",
+			"ignorePatterns"
 		);
 
 		// Assert
 		expect(merged).toBe(
-			'{\n\t"ignorePatterns": [\n\t\t"a/**",\n\t\t"b/**"\n\t]\n}\n',
+			'{\n\t"ignorePatterns": [\n\t\t"a/**",\n\t\t"b/**"\n\t]\n}\n'
 		);
 	});
 });

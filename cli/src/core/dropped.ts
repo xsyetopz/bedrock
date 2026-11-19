@@ -16,16 +16,16 @@ export interface Leftovers {
 export const leftovers = async (
 	root: string,
 	dropped: readonly Language[],
-	variables: Variables,
+	variables: Variables
 ): Promise<Leftovers> => {
 	// Paths only: a dropped language's templates need variables this run does not compute.
 	const written = await Promise.all(
-		dropped.map((language) => templateDir(`${language.id}/files`).paths()),
+		dropped.map((language) => templateDir(`${language.id}/files`).paths())
 	);
 	const paths = written.flat().map((path) => renderPath(path, variables));
 	return {
 		blocks: await withBlocks(root, dropped),
-		files: await existing(root, [...new Set(paths)]),
+		files: await existing(root, [...new Set(paths)])
 	};
 };
 
@@ -36,22 +36,22 @@ export const leftovers = async (
  */
 export const leftoverNotes = (
 	found: Leftovers,
-	steps: readonly Step[],
+	steps: readonly Step[]
 ): string[] => {
 	const reason =
 		"neither .editorconfig nor a marker file at the root names the language";
 	const removed = new Set(
-		steps.filter((step) => step.kind === "remove").map((step) => step.path),
+		steps.filter((step) => step.kind === "remove").map((step) => step.path)
 	);
 	const files = found.files.filter((path) => removed.has(path));
 	return [
 		...(found.blocks.length > 0
 			? [
-					`Removed the blocks of ${found.blocks.map((language) => language.id).join(", ")} from the shared files: ${reason}.`,
+					`Removed the blocks of ${found.blocks.map((language) => language.id).join(", ")} from the shared files: ${reason}.`
 				]
 			: []),
 		...(files.length > 0
 			? [`Removed ${files.join(", ")}: ${reason}. git still has them.`]
-			: []),
+			: [])
 	];
 };

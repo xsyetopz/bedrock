@@ -35,7 +35,7 @@ export const isWord = (c: string | undefined): boolean =>
 /** The longest prefix of `text` whose characters satisfy `test`. */
 export const prefixWhile = (
 	text: string,
-	test: (c: string) => boolean,
+	test: (c: string) => boolean
 ): string => {
 	let length = 0;
 	for (const c of text) {
@@ -251,7 +251,7 @@ export const parseLines = (source: string): Line[] => {
 			text: b.slice(start, end).join(""),
 			code: first === undefined ? false : mask[first] === true,
 			depth,
-			opens,
+			opens
 		});
 		depth = Math.max(0, depth + 2 * opens - braces);
 		start = end + 1;

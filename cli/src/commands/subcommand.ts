@@ -8,13 +8,13 @@ import { resolveRoot, select } from "./select.ts";
 export const subcommandUsage = (
 	id: string,
 	name: string,
-	command: Subcommand,
+	command: Subcommand
 ): string => [id, name, command.args ?? ""].join(" ").trim();
 
 /** Runs `bedrock <language> <subcommand>` in the current repository. */
 export const runSubcommand = async (
 	id: string,
-	args: readonly string[],
+	args: readonly string[]
 ): Promise<number | undefined> => {
 	const language = findLanguage(id);
 	const [name = "", ...rest] = args;
@@ -25,7 +25,7 @@ export const runSubcommand = async (
 	// Without this, `--help` reaches the subcommand as a path to convert.
 	if (rest.some((arg) => arg === "-h" || arg === "--help")) {
 		console.info(
-			`Usage: bedrock ${subcommandUsage(language.id, name, command)}\n\n${command.summary}`,
+			`Usage: bedrock ${subcommandUsage(language.id, name, command)}\n\n${command.summary}`
 		);
 		return 0;
 	}
@@ -35,6 +35,6 @@ export const runSubcommand = async (
 		selected.find((entry) => entry.language.id === language.id)?.options ?? {};
 	return command.run(
 		contextFor(root, selected, language, options, false),
-		rest,
+		rest
 	);
 };

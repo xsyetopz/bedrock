@@ -12,7 +12,7 @@ test("a path attribute on an out-of-line module and an include gain the prefix",
 
 	// Assert
 	expect(result).toBe(
-		'#[cfg(test)]\n#[path = "session/matrix/tests.rs"]\nmod matrix;\ninclude!("session/data.rs");\nconst D: &str = include_str!("session/d.txt");\n',
+		'#[cfg(test)]\n#[path = "session/matrix/tests.rs"]\nmod matrix;\ninclude!("session/data.rs");\nconst D: &str = include_str!("session/d.txt");\n'
 	);
 });
 
@@ -26,7 +26,7 @@ test("includes and path attributes can gain different prefixes", () => {
 
 	// Assert
 	expect(result).toBe(
-		'#[path = "tests/a.rs"]\nmod a;\nconst D: &str = include_str!("../d.txt");\n',
+		'#[path = "tests/a.rs"]\nmod a;\nconst D: &str = include_str!("../d.txt");\n'
 	);
 });
 
@@ -59,7 +59,7 @@ test("a path it cannot rewrite safely gives up", () => {
 		'#[cfg_attr(test, path = "a.rs")]\nmod a;',
 		'#[path = "a.rs"]\nmod a { }',
 		'#[path = "a\\\\b.rs"]\nmod a;',
-		'include!(r"a.rs");',
+		'include!(r"a.rs");'
 	];
 
 	// Act

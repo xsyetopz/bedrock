@@ -10,25 +10,25 @@ const JEST = ["@jest", "globals"].join("/");
 describe("migrateTestFile", () => {
 	test("moves a framework import to bun:test", () => {
 		expect(
-			migrateTestFile(`import { describe, it, vi } from "${VITEST}";\n`),
+			migrateTestFile(`import { describe, it, vi } from "${VITEST}";\n`)
 		).toBe('import { describe, it, vi } from "bun:test";\n');
 		expect(migrateTestFile(`const { jest } = require('${JEST}');\n`)).toBe(
-			"const { jest } = require('bun:test');\n",
+			"const { jest } = require('bun:test');\n"
 		);
 	});
 
 	test("ignores the name outside an import", () => {
 		const text = `const name = "${VITEST}";\ntest("x", () => {});\n`;
 		expect(migrateTestFile(text)).toStartWith(
-			'import { test } from "bun:test";\n\n',
+			'import { test } from "bun:test";\n\n'
 		);
 	});
 
 	test("imports the globals a file calls", () => {
 		expect(
 			migrateTestFile(
-				"describe.each([1])('x', () => {\n\tit('y', () => expect(/a/.test('a')).toBe(true));\n});\n",
-			),
+				"describe.each([1])('x', () => {\n\tit('y', () => expect(/a/.test('a')).toBe(true));\n});\n"
+			)
 		).toStartWith('import { describe, expect, it } from "bun:test";\n\n');
 	});
 
@@ -45,7 +45,7 @@ describe("migrateTestFile", () => {
 
 		// Assert
 		expect(migrated).toStartWith(
-			'import { test } from "bun:test";\n\nimport { expect, it, mockHost }',
+			'import { test } from "bun:test";\n\nimport { expect, it, mockHost }'
 		);
 		expect(migrateTestFile(bound)).toBe(bound);
 		expect(migrateTestFile(local)).toBe(local);
@@ -55,7 +55,7 @@ describe("migrateTestFile", () => {
 		const bun = 'import { test } from "bun:test";\ntest("x", () => {});\n';
 		expect(migrateTestFile(bun)).toBe(bun);
 		expect(migrateTestFile("export const submit = () => it;\n")).toBe(
-			"export const submit = () => it;\n",
+			"export const submit = () => it;\n"
 		);
 	});
 });
@@ -66,14 +66,14 @@ describe("testSteps", () => {
 		const root = await tempRepo({
 			"src/a.test.ts": jest,
 			"src/b.test.ts": `import "bun:test";\n${jest}`,
-			"node_modules/dep/c.test.ts": jest,
+			"node_modules/dep/c.test.ts": jest
 		});
 		expect(await testSteps(root)).toEqual([
 			{
 				kind: "write",
 				path: "src/a.test.ts",
-				content: `import { test } from "bun:test";\n\n${jest}`,
-			},
+				content: `import { test } from "bun:test";\n\n${jest}`
+			}
 		]);
 	});
 
@@ -82,7 +82,7 @@ describe("testSteps", () => {
 		const root = await tempRepo({
 			".gitignore": "captures/\n",
 			"src/a.test.ts": jest,
-			"captures/dep/c.test.ts": jest,
+			"captures/dep/c.test.ts": jest
 		});
 		const steps = await testSteps(root);
 		expect(steps.map((step) => step.path)).toEqual(["src/a.test.ts"]);
@@ -93,7 +93,7 @@ describe("testSteps", () => {
 		const root = await tempRepo({
 			"bunfig.toml": '[test]\npathIgnorePatterns = ["plugins/**"]\n',
 			"src/a.test.ts": jest,
-			"plugins/lab/c.test.ts": jest,
+			"plugins/lab/c.test.ts": jest
 		});
 		const steps = await testSteps(root);
 		expect(steps.map((step) => step.path)).toEqual(["src/a.test.ts"]);

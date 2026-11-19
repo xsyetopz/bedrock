@@ -18,7 +18,7 @@ interface Needs {
 const repairFile = async (
 	root: string,
 	file: string,
-	{ testOnly, integration }: Needs,
+	{ testOnly, integration }: Needs
 ): Promise<Finding[]> => {
 	const path = join(root, file);
 	// Moving an earlier file's tests can remove a later one in the list.
@@ -47,7 +47,7 @@ const repairFile = async (
  */
 export const repairRust = async (
 	root: string,
-	files: readonly string[],
+	files: readonly string[]
 ): Promise<Finding[]> => {
 	const testOnly = await testOnlyFiles(root, files);
 	const found = await manifests(root);

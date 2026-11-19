@@ -44,10 +44,10 @@ const languageFlags = (extension: string, standard: string): string[] => {
  */
 export const swiftEntries = (
 	root: string,
-	inputs: Inputs,
+	inputs: Inputs
 ): CompileCommand[] => {
 	const resources = asString(
-		asRecord(inputs.info["paths"])["runtimeResourcePath"],
+		asRecord(inputs.info["paths"])["runtimeResourcePath"]
 	);
 	// <swift/bridging> lives in the toolchain's usr/include, beside usr/lib/swift.
 	const toolchainInclude = resolve(resources, "../../include");
@@ -58,14 +58,14 @@ export const swiftEntries = (
 		.filter((target) => target["module_type"] === "ClangTarget");
 	const includes = targets.flatMap((target) => [
 		"-I",
-		`${root}/${asString(target["path"])}/include`,
+		`${root}/${asString(target["path"])}/include`
 	]);
 	const common = [
 		...(inputs.sdk === "" ? [] : ["-isysroot", inputs.sdk]),
 		"-isystem",
 		toolchainInclude,
 		"-mmacosx-version-min=12.0",
-		...includes,
+		...includes
 	];
 	return targets.flatMap((target) =>
 		asArray(target["sources"]).map((source) => {
@@ -76,18 +76,18 @@ export const swiftEntries = (
 					...languageFlags(extname(relative), standard),
 					...common,
 					"-c",
-					file,
+					file
 				],
 				directory: root,
-				file,
+				file
 			};
-		}),
+		})
 	);
 };
 
 const swiftJson = async (
 	root: string,
-	command: readonly string[],
+	command: readonly string[]
 ): Promise<Record<string, unknown>> => {
 	const result = await run(command, root);
 	if (result.code !== 0) {
@@ -100,7 +100,7 @@ const swiftJson = async (
 const sorted = (entry: unknown): unknown =>
 	typeof entry === "object" && entry !== null && !Array.isArray(entry)
 		? Object.fromEntries(
-				Object.entries(entry).toSorted(([a], [b]) => a.localeCompare(b)),
+				Object.entries(entry).toSorted(([a], [b]) => a.localeCompare(b))
 			)
 		: entry;
 
@@ -116,15 +116,15 @@ const packageEntries = async (root: string): Promise<CompileCommand[]> => {
 			"--disable-sandbox",
 			"describe",
 			"--type",
-			"json",
+			"json"
 		]),
 		swiftJson(root, ["swift", "-print-target-info"]),
-		run(["xcrun", "--show-sdk-path"], root),
+		run(["xcrun", "--show-sdk-path"], root)
 	]);
 	return swiftEntries(root, {
 		describe,
 		info,
-		sdk: sdk.code === 0 ? sdk.stdout.trim() : "",
+		sdk: sdk.code === 0 ? sdk.stdout.trim() : ""
 	});
 };
 
@@ -144,7 +144,7 @@ export const compileCommands: Subcommand = {
 				packageEntries(root),
 				cmakeEntries(root),
 				mesonEntries(root),
-				xmakeEntries(root),
+				xmakeEntries(root)
 			]);
 			const entries = lists.flat();
 			await Bun.write(
@@ -152,13 +152,13 @@ export const compileCommands: Subcommand = {
 				`${JSON.stringify(
 					entries.map((entry) => sorted(entry)),
 					undefined,
-					2,
-				)}\n`,
+					2
+				)}\n`
 			);
 			return 0;
 		} catch (error) {
 			console.error(error instanceof Error ? error.message : String(error));
 			return 1;
 		}
-	},
+	}
 };

@@ -14,19 +14,19 @@ export const contextIn = (root: string, kind = "", init = false): Context =>
 		[{ language: typescript, options: { kind } }],
 		typescript,
 		{ kind },
-		init,
+		init
 	);
 
 /** Plans and applies a TypeScript adopt of `root`, as `bedrock adopt` or `init` would. */
 export const adoptTypescript = async (
 	root: string,
 	kind = "",
-	init = false,
+	init = false
 ): Promise<Plan> => {
 	const plan = await buildPlan(
 		root,
 		[{ language: typescript, options: { kind } }],
-		{ init },
+		{ init }
 	);
 	await applySteps(root, plan.steps);
 	return plan;

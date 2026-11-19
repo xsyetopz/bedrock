@@ -17,12 +17,12 @@ const repo = async (files: Readonly<Record<string, string>> = {}) => {
 
 const commit = async (
 	root: string,
-	files: Readonly<Record<string, string>>,
+	files: Readonly<Record<string, string>>
 ) => {
 	await Promise.all(
 		Object.entries(files).map(([path, content]) =>
-			Bun.write(join(root, path), content),
-		),
+			Bun.write(join(root, path), content)
+		)
 	);
 	await $`git add -A`.cwd(root).quiet();
 	await $`git -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit -q -m next --no-verify`
@@ -40,7 +40,7 @@ const lefthookHook = (hook: string) =>
 
 afterAll(async () => {
 	await Promise.all(
-		roots.map((root) => rm(root, { recursive: true, force: true })),
+		roots.map((root) => rm(root, { recursive: true, force: true }))
 	);
 });
 
@@ -88,7 +88,7 @@ describe("hooksOn", () => {
 		const root = await repo({
 			".git/hooks/pre-commit": lefthookHook("pre-commit"),
 			".git/hooks/commit-msg": lefthookHook("commit-msg"),
-			".git/hooks/pre-push": lefthookHook("pre-push"),
+			".git/hooks/pre-push": lefthookHook("pre-push")
 		});
 
 		// Act
@@ -102,7 +102,7 @@ describe("hooksOn", () => {
 		// Arrange
 		const root = await repo({
 			".git/hooks/pre-commit": lefthookHook("pre-commit"),
-			".git/hooks/commit-msg": lefthookHook("commit-msg"),
+			".git/hooks/commit-msg": lefthookHook("commit-msg")
 		});
 
 		// Act
@@ -117,7 +117,7 @@ describe("hooksOn", () => {
 		const root = await repo({
 			".git/hooks/pre-commit": lefthookHook("pre-commit"),
 			".git/hooks/commit-msg": lefthookHook("commit-msg"),
-			".git/hooks/pre-push": lefthookHook("pre-push"),
+			".git/hooks/pre-push": lefthookHook("pre-push")
 		});
 		await $`git config core.hooksPath .githooks`.cwd(root).quiet();
 

@@ -23,10 +23,10 @@ test.each([...KINDS])(
 
 		// Assert
 		expect(
-			found.filter((finding) => !finding.startsWith("Package.swift:")),
+			found.filter((finding) => !finding.startsWith("Package.swift:"))
 		).toEqual([]);
 	},
-	60_000,
+	60_000
 );
 
 test.skipIf(!hasSwift).each(BUILT)(
@@ -48,7 +48,7 @@ test.skipIf(!hasSwift).each(BUILT)(
 		expect(tests.code).toBe(0);
 		expect(found).toEqual([]);
 	},
-	600_000,
+	600_000
 );
 
 test.skipIf(!hasSwift)(
@@ -67,5 +67,5 @@ test.skipIf(!hasSwift)(
 		expect(build.code).toBe(0);
 		expect(tests.code).toBe(0);
 	},
-	600_000,
+	600_000
 );

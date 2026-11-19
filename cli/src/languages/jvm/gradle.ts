@@ -8,7 +8,7 @@ import {
 	type Migration,
 	type Module,
 	newMigration,
-	newModule,
+	newModule
 } from "./model.ts";
 
 const QUOTED = String.raw`['"]([^'"]+)['"]`;
@@ -17,20 +17,20 @@ const DEPENDENCY = /^\s*(\w+)\s*[ (]\s*(.+?)\s*$/u;
 const COORDINATES = new RegExp(String.raw`^\(?${QUOTED}\)?$`, "u");
 const MAP = new RegExp(
 	String.raw`group\s*[:=]\s*${QUOTED}\s*,\s*name\s*[:=]\s*${QUOTED}(?:\s*,\s*version\s*[:=]\s*${QUOTED})?`,
-	"u",
+	"u"
 );
 const PROJECT = new RegExp(
 	String.raw`project\s*\(\s*(?:path\s*[:=]\s*)?${QUOTED}\s*\)`,
-	"u",
+	"u"
 );
 const PLATFORM = new RegExp(
 	String.raw`^\(?(?:enforced)?[pP]latform\s*\(\s*${QUOTED}\s*\)\)?$`,
-	"u",
+	"u"
 );
 const CATALOG = /^\(?(libs(?:\.\w+)+)\)?$/u;
 const MAIN_CLASS = new RegExp(
 	String.raw`mainClass(?:Name)?(?:\s*=\s*|\.set\(\s*|\s+)${QUOTED}`,
-	"u",
+	"u"
 );
 const GROUP = new RegExp(String.raw`^group\s*=?\s*${QUOTED}`, "mu");
 const LEVEL =
@@ -53,34 +53,34 @@ const CONFIGURATIONS: Readonly<Record<string, string>> = {
 			"testImplementation",
 			"testCompileOnly",
 			"testRuntimeOnly",
-			"testAnnotationProcessor",
-		].map((name) => [name, name]),
-	),
+			"testAnnotationProcessor"
+		].map((name) => [name, name])
+	)
 };
 
 /** Whether `root` has a Gradle build that applies no bedrock plugin yet. */
 export const isGradle = async (root: string): Promise<boolean> => {
 	const groovy = await Promise.all(
 		["settings.gradle", "build.gradle"].map((name) =>
-			isRegularFile(join(root, name)),
-		),
+			isRegularFile(join(root, name))
+		)
 	);
 	if (groovy.includes(true)) {
 		return true;
 	}
 	const kotlin = await Promise.all(
 		["settings.gradle.kts", "build.gradle.kts"].map((name) =>
-			readText(join(root, name)),
-		),
+			readText(join(root, name))
+		)
 	);
 	return kotlin.some(
-		(text) => text !== undefined && !text.includes("bedrock."),
+		(text) => text !== undefined && !text.includes("bedrock.")
 	);
 };
 
 const libraryOf = (
 	configuration: string,
-	coordinates: string,
+	coordinates: string
 ): Dependency | undefined => {
 	const [group, name, version] = coordinates.split(":");
 	return group === undefined || name === undefined
@@ -91,7 +91,7 @@ const libraryOf = (
 /** The dependency one line of a `dependencies {}` block means, when it is a form adopt reads. */
 const dependencyOf = (
 	configuration: string,
-	argument: string,
+	argument: string
 ): Dependency | undefined => {
 	const coordinates = COORDINATES.exec(argument)?.[1];
 	if (coordinates !== undefined) {
@@ -104,7 +104,7 @@ const dependencyOf = (
 			configuration,
 			group: map[1],
 			name: map[2],
-			version: map[3],
+			version: map[3]
 		};
 	}
 	const project = PROJECT.exec(argument)?.[1];
@@ -112,7 +112,7 @@ const dependencyOf = (
 		return {
 			kind: "module",
 			configuration,
-			path: `:${project.replaceAll(/^:+|:+$/gu, "")}`,
+			path: `:${project.replaceAll(/^:+|:+$/gu, "")}`
 		};
 	}
 	const platform = PLATFORM.exec(argument)?.[1];
@@ -130,7 +130,7 @@ const dependencyOf = (
 const readDependencies = (
 	text: string,
 	path: string,
-	migration: Migration,
+	migration: Migration
 ): Dependency[] => {
 	const block = /^dependencies\s*\{\s*\n(.*?)^\}/msu.exec(text)?.[1] ?? "";
 	const found: Dependency[] = [];
@@ -140,7 +140,7 @@ const readDependencies = (
 		.map((line) => line.trim())
 		.filter(
 			(line) =>
-				line !== "" && !line.startsWith("//") && !line.includes("kotlin("),
+				line !== "" && !line.startsWith("//") && !line.includes("kotlin(")
 		);
 	for (const line of lines) {
 		const match = DEPENDENCY.exec(line);
@@ -152,7 +152,7 @@ const readDependencies = (
 				: dependencyOf(configuration, match[2]);
 		if (dependency === undefined) {
 			migration.notes.add(
-				`${path}: kept out "${line}"; add it to the new build by hand`,
+				`${path}: kept out "${line}"; add it to the new build by hand`
 			);
 		} else {
 			found.push(dependency);
@@ -167,7 +167,7 @@ const includedDirectories = (settings: string | undefined): string[] => {
 		.map((line) => line[1] ?? "")
 		.join(" ");
 	return [...lists.matchAll(new RegExp(QUOTED, "gu"))].map((quoted) =>
-		(quoted[1] ?? "").replaceAll(/^:+|:+$/gu, "").replaceAll(":", "/"),
+		(quoted[1] ?? "").replaceAll(/^:+|:+$/gu, "").replaceAll(":", "/")
 	);
 };
 
@@ -182,8 +182,8 @@ export const gradle = async (root: string): Promise<Migration> => {
 	const named = await Promise.all(
 		["settings.gradle.kts", "settings.gradle"].map(async (name) => ({
 			name,
-			text: await readText(join(root, name)),
-		})),
+			text: await readText(join(root, name))
+		}))
 	);
 	const settings = named.find((entry) => entry.text !== undefined);
 	const directories = includedDirectories(settings?.text);
@@ -194,7 +194,7 @@ export const gradle = async (root: string): Promise<Migration> => {
 		directories.length === 0 || (await exists(join(root, "src")));
 	const withRoot = hasSources ? ["", ...directories] : directories;
 	await inOrder([...new Set(["", ...directories])], (directory) =>
-		readProject(root, directory, withRoot.includes(directory), migration),
+		readProject(root, directory, withRoot.includes(directory), migration)
 	);
 	return migration;
 };
@@ -204,7 +204,7 @@ const dropRoot = (path: string, text: string, migration: Migration): void => {
 	migration.steps.push({ kind: "remove", path });
 	if (/\b(allprojects|subprojects)\b/u.test(text)) {
 		migration.notes.add(
-			`${path}: allprojects or subprojects settings; the bedrock plugins set what each module needs, so move the rest into the modules`,
+			`${path}: allprojects or subprojects settings; the bedrock plugins set what each module needs, so move the rest into the modules`
 		);
 	}
 };
@@ -215,7 +215,7 @@ const KOTLIN_PLUGIN =
 const isKotlin = (
 	root: string,
 	base: string,
-	text: string,
+	text: string
 ): Promise<boolean> =>
 	KOTLIN_PLUGIN.test(text)
 		? Promise.resolve(true)
@@ -226,7 +226,7 @@ const convertible = (
 	text: string,
 	directory: string,
 	path: string,
-	migration: Migration,
+	migration: Migration
 ): boolean => {
 	if (text.includes('id("bedrock.')) {
 		migration.modules.push({ ...newModule(directory), kept: true });
@@ -234,7 +234,7 @@ const convertible = (
 	}
 	if (/com\.android\.|multiplatform/u.test(text)) {
 		migration.notes.add(
-			`${path}: an Android or multiplatform build; apply bedrock.android, bedrock.kmp, or bedrock.cmp to it by hand`,
+			`${path}: an Android or multiplatform build; apply bedrock.android, bedrock.kmp, or bedrock.cmp to it by hand`
 		);
 		return false;
 	}
@@ -245,14 +245,14 @@ const fill = (
 	module: Module,
 	text: string,
 	path: string,
-	migration: Migration,
+	migration: Migration
 ): void => {
 	module.mainClass = MAIN_CLASS.exec(text)?.[1];
 	const level = LEVEL.exec(text);
 	javaLevelNote(
 		path,
 		(level?.[1] ?? level?.[2])?.replaceAll("_", "."),
-		migration.notes,
+		migration.notes
 	);
 	module.dependencies.push(...readDependencies(text, path, migration));
 };
@@ -261,12 +261,12 @@ const readProject = async (
 	root: string,
 	directory: string,
 	hasCode: boolean,
-	migration: Migration,
+	migration: Migration
 ): Promise<void> => {
 	const base = directory === "" ? "" : `${directory}/`;
 	const [groovyText, kotlinText] = await Promise.all([
 		readText(join(root, `${base}build.gradle`)),
-		readText(join(root, `${base}build.gradle.kts`)),
+		readText(join(root, `${base}build.gradle.kts`))
 	]);
 	const text = groovyText ?? kotlinText;
 	if (text === undefined) {

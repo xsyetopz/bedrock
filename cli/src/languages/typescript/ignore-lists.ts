@@ -3,7 +3,7 @@ import { asRecord, asStrings } from "./json.ts";
 /** The ignore list each tool config keeps, which a repo may extend. */
 export const IGNORE_KEYS: Readonly<Record<string, string>> = {
 	".markdownlint-cli2.jsonc": "ignores",
-	".oxlintrc.json": "ignorePatterns",
+	".oxlintrc.json": "ignorePatterns"
 };
 
 const arrayOf = (key: string): RegExp =>
@@ -24,7 +24,7 @@ const templateEntries = (template: string, key: string): string[] => {
 export const droppedEntries = (
 	template: string,
 	current: unknown,
-	key: string,
+	key: string
 ): string[] => {
 	if (current === undefined) {
 		return [];
@@ -41,7 +41,7 @@ export const droppedEntries = (
 export const mergeIgnoreList = (
 	template: string,
 	current: unknown,
-	key: string,
+	key: string
 ): string => {
 	const found = arrayOf(key).exec(template);
 	if (found === null) {
@@ -49,21 +49,19 @@ export const mergeIgnoreList = (
 	}
 	const have = new Set(templateEntries(template, key));
 	const extra = [
-		...new Set(asStrings(asRecord(current)[key]).filter((e) => !have.has(e))),
+		...new Set(asStrings(asRecord(current)[key]).filter((e) => !have.has(e)))
 	];
 	if (extra.length === 0) {
 		return template;
 	}
 	const items = [...have, ...extra].map((entry) => JSON.stringify(entry));
 	const original = found[2] ?? "";
-	// A JSONC list keeps the trailing comma `bun fmt` writes, or the formatter
-	// and the next adopt rewrite each other; a JSON list cannot have one.
-	const trailing = original.trimEnd().endsWith(",") ? "," : "";
+	// No trailing comma: JSON rejects one, and `bun fmt` removes it from JSONC.
 	const body = original.includes("\n")
-		? `\n${items.map((item) => `\t\t${item}`).join(",\n")}${trailing}\n\t`
+		? `\n${items.map((item) => `\t\t${item}`).join(",\n")}\n\t`
 		: items.join(", ");
 	return template.replace(
 		arrayOf(key),
-		(_, head: string) => `${head}[${body}]`,
+		(_, head: string) => `${head}[${body}]`
 	);
 };

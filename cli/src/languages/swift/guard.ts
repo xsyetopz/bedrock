@@ -19,7 +19,7 @@ export const STRICT = [
 	"enableUpcomingFeature:NonisolatedNonsendingByDefault",
 	"enableUpcomingFeature:ImmutableWeakCaptures",
 	"strictMemorySafety",
-	"treatAllWarnings:error",
+	"treatAllWarnings:error"
 ];
 
 /** Dependency files of other tools, which Package.swift replaces. */
@@ -27,20 +27,20 @@ const FOREIGN: Readonly<Record<string, string>> = {
 	Cartfile:
 		"Carthage: move each framework to a SwiftPM dependency in Package.swift",
 	Podfile: "CocoaPods: move each pod to a SwiftPM dependency in Package.swift",
-	".swiftformat": "SwiftFormat: swift-format and .swift-format replaced it",
+	".swiftformat": "SwiftFormat: swift-format and .swift-format replaced it"
 };
 
 /** The `setting` or `setting:value` names one target's swift settings carry. */
 const settingNames = (
-	settings: readonly Record<string, unknown>[],
+	settings: readonly Record<string, unknown>[]
 ): Set<string> =>
 	new Set(
 		settings.flatMap((kind) =>
 			Object.entries(kind).map(([key, value]) => {
 				const argument = asRecord(value)["_0"];
 				return typeof argument === "string" ? `${key}:${argument}` : key;
-			}),
-		),
+			})
+		)
 	);
 
 const targetFindings = (target: Record<string, unknown>): Finding[] => {
@@ -49,19 +49,19 @@ const targetFindings = (target: Record<string, unknown>): Finding[] => {
 		return [];
 	}
 	const settings = asArray(target["settings"]).map((setting) =>
-		asRecord(asRecord(setting)["kind"]),
+		asRecord(asRecord(setting)["kind"])
 	);
 	const found = settingNames(settings);
 	const missing = STRICT.filter((setting) => !found.has(setting));
 	const problems: Finding[] = [];
 	if (missing.length > 0) {
 		problems.push(
-			`Package.swift: target ${name} lacks ${missing.join(", ")}; keep the swift-bedrock block last`,
+			`Package.swift: target ${name} lacks ${missing.join(", ")}; keep the swift-bedrock block last`
 		);
 	}
 	if (settings.some((kind) => "unsafeFlags" in kind)) {
 		problems.push(
-			`Package.swift: target ${name} uses unsafeFlags, which keeps others from depending on the package`,
+			`Package.swift: target ${name} uses unsafeFlags, which keeps others from depending on the package`
 		);
 	}
 	return problems;
@@ -77,14 +77,14 @@ export const manifestFindings = (pkg: Record<string, unknown>): Finding[] => {
 	}
 	if (modes.length !== 1 || modes[0] !== "6") {
 		problems.push(
-			`Package.swift: the language modes are [${modes.join(", ")}]; use [.v6] alone`,
+			`Package.swift: the language modes are [${modes.join(", ")}]; use [.v6] alone`
 		);
 	}
 	return [
 		...problems,
 		...asArray(pkg["targets"]).flatMap((target) =>
-			targetFindings(asRecord(target)),
-		),
+			targetFindings(asRecord(target))
+		)
 	];
 };
 
@@ -92,16 +92,16 @@ const dumpFindings = async (root: string): Promise<Finding[]> => {
 	// SwiftPM would nest its sandbox inside an agent's or hook's, and that fails.
 	const dumped = await run(
 		["swift", "package", "--disable-sandbox", "dump-package"],
-		root,
+		root
 	);
 	if (dumped.code === 127) {
 		return [
-			"Package.swift: swift is missing, so the manifest was not checked; install it with swiftly or Xcode",
+			"Package.swift: swift is missing, so the manifest was not checked; install it with swiftly or Xcode"
 		];
 	}
 	if (dumped.code !== 0) {
 		return [
-			`Package.swift: swift package dump-package failed: ${firstLine(dumped.stderr)}`,
+			`Package.swift: swift package dump-package failed: ${firstLine(dumped.stderr)}`
 		];
 	}
 	try {
@@ -114,7 +114,7 @@ const dumpFindings = async (root: string): Promise<Finding[]> => {
 const fileFindings = async (
 	root: string,
 	path: string,
-	fix: boolean,
+	fix: boolean
 ): Promise<Finding[]> => {
 	let text = await readText(join(root, path));
 	if (text === undefined) {
@@ -130,7 +130,7 @@ const fileFindings = async (
 		}
 		if (importsXCTest(text)) {
 			problems.push(
-				`${path}: imports XCTest outside a *UITests target; use Swift Testing (just lint-fix converts it)`,
+				`${path}: imports XCTest outside a *UITests target; use Swift Testing (just lint-fix converts it)`
 			);
 		}
 	}
@@ -139,7 +139,7 @@ const fileFindings = async (
 
 const projectFinding = async (
 	root: string,
-	project: string,
+	project: string
 ): Promise<Finding[]> => {
 	const path = `${project}/project.pbxproj`;
 	const text = await readText(join(root, path));
@@ -149,7 +149,7 @@ const projectFinding = async (
 	const problems: Finding[] = [];
 	if (!text.includes("Bedrock.xcconfig")) {
 		problems.push(
-			`${path}: set Config/Bedrock.xcconfig as the base configuration of the project's Debug and Release`,
+			`${path}: set Config/Bedrock.xcconfig as the base configuration of the project's Debug and Release`
 		);
 	}
 	for (const note of new Set(overrides(text).toSorted())) {
@@ -161,17 +161,17 @@ const projectFinding = async (
 const projectFindings = async (root: string): Promise<Finding[]> => {
 	const projects = await xcodeProjects(root);
 	const found = await Promise.all(
-		projects.map((project) => projectFinding(root, project)),
+		projects.map((project) => projectFinding(root, project))
 	);
 	return found.flat();
 };
 
 const foreignFindings = async (root: string): Promise<Finding[]> => {
 	const present = await Promise.all(
-		Object.keys(FOREIGN).map((path) => Bun.file(join(root, path)).exists()),
+		Object.keys(FOREIGN).map((path) => Bun.file(join(root, path)).exists())
 	);
 	return Object.entries(FOREIGN).flatMap(([path, problem], index) =>
-		present[index] === true ? [`${path}: ${problem}`] : [],
+		present[index] === true ? [`${path}: ${problem}`] : []
 	);
 };
 
@@ -182,18 +182,18 @@ const foreignFindings = async (root: string): Promise<Finding[]> => {
  */
 export const guardSwift = async (
 	context: Context,
-	fix: boolean,
+	fix: boolean
 ): Promise<Finding[]> => {
 	const { root } = context;
 	const [manifest, sources] = await Promise.all([
 		Bun.file(join(root, "Package.swift")).exists(),
-		listFiles(root, new Glob("**/*.swift")),
+		listFiles(root, new Glob("**/*.swift"))
 	]);
 	const [dump, files, foreign, projects] = await Promise.all([
 		manifest ? dumpFindings(root) : [],
 		Promise.all(sources.map((path) => fileFindings(root, path, fix))),
 		foreignFindings(root),
-		projectFindings(root),
+		projectFindings(root)
 	]);
 	return [...dump, ...files.flat(), ...foreign, ...projects];
 };

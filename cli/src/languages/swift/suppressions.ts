@@ -21,7 +21,7 @@ const rulesOf = (text: string): string[] => {
 const isReenabled = (
 	directives: readonly string[],
 	index: number,
-	rules: readonly string[],
+	rules: readonly string[]
 ): boolean =>
 	directives.slice(index + 1).some((later) => {
 		if (!later.startsWith(ENABLE)) {
@@ -41,7 +41,7 @@ export const suppressions = (text: string): string[] => {
 	for (const [index, comment] of directives.entries()) {
 		if (comment.startsWith("swift-format-ignore-file")) {
 			found.push(
-				`${index + 1}: swift-format-ignore-file; ignore the one declaration instead`,
+				`${index + 1}: swift-format-ignore-file; ignore the one declaration instead`
 			);
 		}
 		const tail = comment.slice(SUPPRESS.length);
@@ -50,7 +50,7 @@ export const suppressions = (text: string): string[] => {
 		}
 		if (!isReenabled(directives, index, rulesOf(tail))) {
 			found.push(
-				`${index + 1}: swiftlint:disable without a matching swiftlint:enable; use swiftlint:disable:next`,
+				`${index + 1}: swiftlint:disable without a matching swiftlint:enable; use swiftlint:disable:next`
 			);
 		}
 	}

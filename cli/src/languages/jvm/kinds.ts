@@ -14,7 +14,7 @@ export const KINDS = [
 	"kmp",
 	"kotlin-application",
 	"kotlin-library",
-	"kotlin-native",
+	"kotlin-native"
 ] as const;
 
 /** The chosen kinds, from the comma-separated `kind` option. */
@@ -34,7 +34,7 @@ export const packageName = (name: string): string => {
 
 /** The module directories a kind creates, such as `lib` or `shared`. */
 const modulesOf = (paths: readonly string[]): string[] => [
-	...new Set(paths.map((path) => path.split("/")[0] ?? path)),
+	...new Set(paths.map((path) => path.split("/")[0] ?? path))
 ];
 
 /**
@@ -43,7 +43,7 @@ const modulesOf = (paths: readonly string[]): string[] => [
  */
 export const kindSteps = async (
 	context: Context,
-	variables: Variables,
+	variables: Variables
 ): Promise<{ steps: Step[]; modules: string[] }> => {
 	const parts = await Promise.all(
 		chosenKinds(context).map(async (kind) => {
@@ -52,17 +52,17 @@ export const kindSteps = async (
 			const steps = files.map((file): Step => ({
 				kind: "write",
 				path: file.path,
-				content: file.content,
+				content: file.content
 			}));
 			return { steps, modules: modulesOf(files.map((file) => file.path)) };
-		}),
+		})
 	);
 	const steps = parts.flatMap((part) => part.steps);
 	const present = await Promise.all(
-		steps.map((step) => Bun.file(join(context.root, step.path)).exists()),
+		steps.map((step) => Bun.file(join(context.root, step.path)).exists())
 	);
 	return {
 		steps: steps.filter((_, index) => present[index] !== true),
-		modules: [...new Set(parts.flatMap((part) => part.modules))],
+		modules: [...new Set(parts.flatMap((part) => part.modules))]
 	};
 };

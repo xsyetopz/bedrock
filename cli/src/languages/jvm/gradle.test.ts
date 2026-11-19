@@ -33,7 +33,7 @@ test("converts Groovy scripts and drops the root that holds no code", async () =
 		"build.gradle":
 			"group = 'org.acme'\nallprojects { repositories { mavenCentral() } }\n",
 		"app/build.gradle": GROOVY,
-		"core/build.gradle": "plugins { id 'java-library' }\n",
+		"core/build.gradle": "plugins { id 'java-library' }\n"
 	});
 
 	// Act
@@ -46,7 +46,7 @@ test("converts Groovy scripts and drops the root that holds no code", async () =
 		"app/build.gradle",
 		"build.gradle",
 		"core/build.gradle",
-		"settings.gradle",
+		"settings.gradle"
 	]);
 	expect(files["app/build.gradle.kts"]).toContain("libs.guava");
 	expect(files["app/build.gradle.kts"]).toContain('project(":core")');
@@ -58,7 +58,7 @@ test("leaves a script that applies bedrock as it is", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"settings.gradle.kts": 'include(":lib")\n',
-		"lib/build.gradle.kts": 'plugins { id("bedrock.java") }\n',
+		"lib/build.gradle.kts": 'plugins { id("bedrock.java") }\n'
 	});
 
 	// Act
@@ -73,7 +73,7 @@ test("leaves a script that applies bedrock as it is", async () => {
 test("sends an Android build to a hand migration", async () => {
 	// Arrange
 	const root = await tempRepo({
-		"build.gradle": "plugins { id 'com.android.application' }\n",
+		"build.gradle": "plugins { id 'com.android.application' }\n"
 	});
 
 	// Act

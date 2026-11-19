@@ -5,7 +5,7 @@ import {
 	markers,
 	removeBlock,
 	type Syntax,
-	upsert,
+	upsert
 } from "./blocks.ts";
 import { isRegularFile, readText } from "./fs.ts";
 import type { Language } from "./language.ts";
@@ -30,15 +30,15 @@ export const SHARED_FILES: Readonly<Record<string, SharedFile>> = {
 	editorconfig: {
 		path: ".editorconfig",
 		syntax: "hash",
-		header: "root = true\n",
+		header: "root = true\n"
 	},
 	// Two update lists for one ecosystem make dependabot fail, so a foreign copy is replaced.
 	"dependabot.yml": {
 		path: ".github/dependabot.yml",
 		syntax: "hash",
 		header: "version: 2\nupdates:\n",
-		replaceForeign: true,
-	},
+		replaceForeign: true
+	}
 };
 
 /** Agent instruction files that point at AGENTS.md. */
@@ -48,19 +48,17 @@ const AGENT_LINKS = ["CLAUDE.md", "GEMINI.md"];
 const blocksFor = async (
 	name: string,
 	languages: readonly Language[],
-	variables: Variables,
+	variables: Variables
 ): Promise<Block[]> => {
 	const parts = [
 		{ dir: "base", block: "bedrock" },
 		...languages.map((language) => ({
 			dir: language.id,
-			block: language.block,
-		})),
+			block: language.block
+		}))
 	];
 	const contents = await Promise.all(
-		parts.map((part) =>
-			templateDir(`${part.dir}/blocks`).read(name, variables),
-		),
+		parts.map((part) => templateDir(`${part.dir}/blocks`).read(name, variables))
 	);
 	return parts.flatMap((part, index) => {
 		const content = contents[index];
@@ -71,16 +69,16 @@ const blocksFor = async (
 /** The `languages` whose block is in at least one shared file at `root`. */
 export const withBlocks = async (
 	root: string,
-	languages: readonly Language[],
+	languages: readonly Language[]
 ): Promise<Language[]> => {
 	const files = Object.values(SHARED_FILES);
 	const texts = await Promise.all(
-		files.map((file) => readText(join(root, file.path))),
+		files.map((file) => readText(join(root, file.path)))
 	);
 	return languages.filter((language) =>
 		files.some((file, index) =>
-			(texts[index] ?? "").includes(markers(file.syntax, language.block)[0]),
-		),
+			(texts[index] ?? "").includes(markers(file.syntax, language.block)[0])
+		)
 	);
 };
 
@@ -92,7 +90,7 @@ export const sharedSteps = async (
 	root: string,
 	languages: readonly Language[],
 	variables: Variables,
-	dropped: readonly Language[] = [],
+	dropped: readonly Language[] = []
 ): Promise<Step[]> => {
 	const files = await Promise.all(
 		Object.entries(SHARED_FILES).map(async ([name, file]): Promise<Step> => {
@@ -117,31 +115,31 @@ export const sharedSteps = async (
 			return {
 				kind: "write",
 				path: file.path,
-				content: upsert(kept, file.header, file.syntax, blocks),
+				content: upsert(kept, file.header, file.syntax, blocks)
 			};
-		}),
+		})
 	);
 	return [
 		...files,
 		...AGENT_LINKS.map((path): Step => ({
 			kind: "link",
 			path,
-			target: "AGENTS.md",
-		})),
+			target: "AGENTS.md"
+		}))
 	];
 };
 
 /** The templates under `<dir>`, written over what the repo has. */
 export const copySteps = async (
 	dir: string,
-	variables: Variables,
+	variables: Variables
 ): Promise<Step[]> => {
 	const files = await templateDir(dir).files(variables);
 	return files.map(({ path, content }): Step => ({
 		kind: "write",
 		path,
 		content,
-		executable: isExecutable(path),
+		executable: isExecutable(path)
 	}));
 };
 
@@ -149,11 +147,11 @@ export const copySteps = async (
 export const starterSteps = async (
 	root: string,
 	dir: string,
-	variables: Variables,
+	variables: Variables
 ): Promise<Step[]> => {
 	const steps = await copySteps(dir, variables);
 	const present = await Promise.all(
-		steps.map((step) => Bun.file(join(root, step.path)).exists()),
+		steps.map((step) => Bun.file(join(root, step.path)).exists())
 	);
 	return steps.filter((_, index) => present[index] !== true);
 };

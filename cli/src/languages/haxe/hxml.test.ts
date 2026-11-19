@@ -21,7 +21,7 @@ describe("readHxml", () => {
 		["-cp src\n--main Main\n-js out.js\n", true, false],
 		["-cp src\n--main Main\n--interp\n", true, true],
 		["-cp src\n--main Main\n-js out.js\n--cmd node out.js\n", true, true],
-		["-cp src\n--main Main\n-lib utest\n", false, false],
+		["-cp src\n--main Main\n-lib utest\n", false, false]
 	])("reads %j", async (text, target, runs) => {
 		// Arrange
 		const root = await tempRepo({ "build.hxml": text });
@@ -37,7 +37,7 @@ describe("readHxml", () => {
 		// Arrange
 		const root = await tempRepo({
 			"common.hxml": "-cp src\n--interp\n",
-			"test.hxml": "common.hxml\n--main TestMain\n",
+			"test.hxml": "common.hxml\n--main TestMain\n"
 		});
 
 		// Act
@@ -51,7 +51,7 @@ describe("readHxml", () => {
 		// Arrange
 		const root = await tempRepo({
 			"a.hxml": "b.hxml\nmissing.hxml\n-cp src\n",
-			"b.hxml": "a.hxml\n",
+			"b.hxml": "a.hxml\n"
 		});
 
 		// Act
@@ -68,7 +68,7 @@ describe("hxmlFiles", () => {
 		const root = await tempRepo({
 			"build.hxml": "",
 			"services/api/build.hxml": "",
-			".haxelib/utest/1,13,2/haxelib.hxml": "",
+			".haxelib/utest/1,13,2/haxelib.hxml": ""
 		});
 
 		// Act
@@ -87,7 +87,7 @@ describe("isTestHxml", () => {
 		["sub/Test.hxml", true],
 		["build.hxml", false],
 		["testing.hxml", false],
-		["latest.hxml", false],
+		["latest.hxml", false]
 	])("%s is a test build: %p", (path, expected) => {
 		// Act
 		const found = isTestHxml(path);

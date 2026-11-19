@@ -10,6 +10,6 @@ export const variables = async (context: Context): Promise<Variables> => {
 	const { path } = await moduleFor(context, name);
 	return {
 		module: path,
-		package: packageOf(name),
+		package: packageOf(name)
 	};
 };

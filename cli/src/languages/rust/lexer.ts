@@ -211,7 +211,7 @@ export const tokens = (source: string): Token[] => {
 				text: source.slice(start, scanner.at),
 				start,
 				end: scanner.at,
-				line,
+				line
 			});
 		}
 	}

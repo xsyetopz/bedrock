@@ -8,7 +8,7 @@ import {
 	type Migration,
 	type Module,
 	newMigration,
-	newModule,
+	newModule
 } from "./model.ts";
 
 const LIBRARY =
@@ -24,12 +24,12 @@ const JAVAC_RELEASE =
 const CONFIGURATIONS: Readonly<Record<string, string>> = {
 	test: "testImplementation",
 	provided: "compileOnly",
-	runtime: "runtimeOnly",
+	runtime: "runtimeOnly"
 };
 
 /** The text each project owns: its directory and its own section of build.sbt. */
 const sectionsOf = (
-	text: string,
+	text: string
 ): {
 	common: string;
 	sections: [string, string][];
@@ -40,15 +40,15 @@ const sectionsOf = (
 	const names = new Map(
 		projects.map((match) => [
 			match[1] ?? "",
-			(match[2] ?? "").replaceAll(/^[/.]+|[/.]+$/gu, ""),
-		]),
+			(match[2] ?? "").replaceAll(/^[/.]+|[/.]+$/gu, "")
+		])
 	);
 	const sections: [string, string][] =
 		projects.length === 0
 			? [["", text]]
 			: projects.map((match, index): [string, string] => [
 					names.get(match[1] ?? "") ?? "",
-					text.slice(match.index, projects[index + 1]?.index ?? text.length),
+					text.slice(match.index, projects[index + 1]?.index ?? text.length)
 				]);
 	return { common, sections, names };
 };
@@ -62,13 +62,13 @@ interface Parts {
 const librariesOf = (
 	source: string,
 	api: string,
-	migration: Migration,
+	migration: Migration
 ): Dependency[] =>
 	[...source.matchAll(LIBRARY)].flatMap((match): Dependency[] => {
 		const [, group = "", cross, name = "", version, scope = ""] = match;
 		if (cross === "%%") {
 			migration.notes.add(
-				`build.sbt: ${group} %% ${name} is a Scala library; bedrock builds Java and Kotlin, so find a Java one`,
+				`build.sbt: ${group} %% ${name} is a Scala library; bedrock builds Java and Kotlin, so find a Java one`
 			);
 			return [];
 		}
@@ -79,7 +79,7 @@ const librariesOf = (
 const modulesOf = (
 	section: string,
 	api: string,
-	names: ReadonlyMap<string, string>,
+	names: ReadonlyMap<string, string>
 ): Dependency[] =>
 	(DEPENDS_ON.exec(section)?.[1] ?? "").split(",").flatMap((reference) => {
 		const target = names.get(reference.trim().split(" ")[0] ?? "");
@@ -93,7 +93,7 @@ const moduleOf = (
 	section: string,
 	kotlin: boolean,
 	parts: Parts,
-	migration: Migration,
+	migration: Migration
 ): Module => {
 	const module = newModule(directory);
 	const source = parts.single ? section : parts.common + section;
@@ -103,7 +103,7 @@ const moduleOf = (
 	const api = module.mainClass === undefined ? "api" : "implementation";
 	module.dependencies.push(
 		...librariesOf(source, api, migration),
-		...modulesOf(section, api, parts.names),
+		...modulesOf(section, api, parts.names)
 	);
 	javaLevelNote("build.sbt", JAVAC_RELEASE.exec(source)?.[1], migration.notes);
 	return module;
@@ -122,16 +122,16 @@ export const sbt = async (root: string): Promise<Migration> => {
 	const parts = {
 		common,
 		names,
-		single: sections.length === 1 && names.size === 0,
+		single: sections.length === 1 && names.size === 0
 	};
 	const kotlin = await Promise.all(
 		sections.map(([directory]) =>
-			exists(join(root, directory, "src/main/kotlin")),
-		),
+			exists(join(root, directory, "src/main/kotlin"))
+		)
 	);
 	for (const [index, [directory, section]] of sections.entries()) {
 		migration.modules.push(
-			moduleOf(directory, section, kotlin[index] === true, parts, migration),
+			moduleOf(directory, section, kotlin[index] === true, parts, migration)
 		);
 	}
 	migration.steps.push({ kind: "remove", path: "build.sbt" });
@@ -139,7 +139,7 @@ export const sbt = async (root: string): Promise<Migration> => {
 		migration.steps.push({ kind: "remove", path: "project" });
 	}
 	migration.notes.add(
-		"build.sbt: sbt builds are code, so compare each new build.gradle.kts with it; project/ held sbt's plugins and build code",
+		"build.sbt: sbt builds are code, so compare each new build.gradle.kts with it; project/ held sbt's plugins and build code"
 	);
 	return migration;
 };

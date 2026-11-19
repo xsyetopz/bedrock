@@ -16,16 +16,16 @@ export const planTsconfig = async (context: Context): Promise<Part> => {
 	if (current === undefined) {
 		return {
 			steps: [{ kind: "write", path: "tsconfig.json", content: text ?? "" }],
-			notes: [],
+			notes: []
 		};
 	}
 	const migrated = migrateTsconfig(
 		current,
-		asRecord(Bun.JSONC.parse(text ?? "{}")),
+		asRecord(Bun.JSONC.parse(text ?? "{}"))
 	);
 	return {
 		steps: await jsonWrite(root, "tsconfig.json", migrated.tsconfig),
-		notes: migrated.notes,
+		notes: migrated.notes
 	};
 };
 
@@ -35,10 +35,10 @@ export const planBunfig = async (context: Context): Promise<Part> => {
 	const merged = mergeBunfig(
 		(await templates("merge").read("bunfig.toml", await variables(context))) ??
 			"",
-		await readText(join(root, "bunfig.toml")),
+		await readText(join(root, "bunfig.toml"))
 	);
 	return {
 		steps: [{ kind: "write", path: "bunfig.toml", content: merged.content }],
-		notes: merged.notes,
+		notes: merged.notes
 	};
 };

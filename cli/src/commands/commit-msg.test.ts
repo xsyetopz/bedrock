@@ -9,7 +9,7 @@ const roots: string[] = [];
 
 afterAll(async () => {
 	await Promise.all(
-		roots.map((root) => rm(root, { recursive: true, force: true })),
+		roots.map((root) => rm(root, { recursive: true, force: true }))
 	);
 });
 
@@ -25,9 +25,9 @@ describe("isConventional", () => {
 		["comments git strips", "chore: tidy\n# Please enter the message\n"],
 		[
 			"text below the scissors line",
-			`ci: pin\n# ------------------------ >8 ------------------------\n${"x".repeat(200)}\n`,
+			`ci: pin\n# ------------------------ >8 ------------------------\n${"x".repeat(200)}\n`
 		],
-		["100 characters, not bytes", `test: ${"é".repeat(94)}\n`],
+		["100 characters, not bytes", `test: ${"é".repeat(94)}\n`]
 	])("accepts %s", (_, message) => {
 		// Arrange, Act
 		const accepted = isConventional(message);
@@ -44,7 +44,7 @@ describe("isConventional", () => {
 		["a line over 100 characters", `feat: x\n\n${"y".repeat(101)}\n`],
 		["a lower-case breaking footer", "feat: x\n\nbreaking change: y\n"],
 		["a conventional line below the subject", "wip\n\nfeat: x\n"],
-		["an empty message", ""],
+		["an empty message", ""]
 	])("rejects %s", (_, message) => {
 		// Arrange, Act
 		const accepted = isConventional(message);

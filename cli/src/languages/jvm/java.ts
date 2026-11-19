@@ -13,13 +13,13 @@ const BREW_FORMULAE = ["openjdk@25", "openjdk@21", "openjdk@17", "openjdk"];
 const BREW_PREFIXES = ["/opt/homebrew", "/usr/local"];
 
 const runs = async (
-	command: readonly string[],
+	command: readonly string[]
 ): Promise<string | undefined> => {
 	try {
 		const child = Bun.spawn([...command], { stdout: "pipe", stderr: "ignore" });
 		const [out, code] = await Promise.all([
 			new Response(child.stdout).text(),
-			child.exited,
+			child.exited
 		]);
 		return code === 0 ? out.trim() : undefined;
 	} catch {
@@ -33,22 +33,22 @@ const listed = async (parent: string, prefix: string): Promise<string[]> => {
 	return names
 		.filter((name) => name.startsWith(prefix))
 		.toSorted((left, right) =>
-			right.localeCompare(left, "en", { numeric: true }),
+			right.localeCompare(left, "en", { numeric: true })
 		)
 		.map((name) => join(parent, name));
 };
 
 const candidates = async (): Promise<string[]> => {
 	const brew = BREW_PREFIXES.flatMap((prefix) =>
-		BREW_FORMULAE.map((name) => join(prefix, "opt", name)),
+		BREW_FORMULAE.map((name) => join(prefix, "opt", name))
 	);
 	const more = await Promise.all([
 		...BREW_PREFIXES.map((prefix) => listed(join(prefix, "opt"), "openjdk@")),
-		listed("/usr/lib/jvm", ""),
+		listed("/usr/lib/jvm", "")
 	]);
 	return [...brew, ...more.flat()].flatMap((path) => [
 		join(path, "libexec/openjdk.jdk/Contents/Home"),
-		path,
+		path
 	]);
 };
 
@@ -58,7 +58,7 @@ const candidates = async (): Promise<string[]> => {
  * `java_home`, then Homebrew and `/usr/lib/jvm`. Returns undefined when none runs.
  */
 export const findJdk = async (
-	env: Readonly<Record<string, string | undefined>> = process.env,
+	env: Readonly<Record<string, string | undefined>> = process.env
 ): Promise<Jdk | undefined> => {
 	const configured = env["JAVA_HOME"];
 	if (
@@ -76,7 +76,7 @@ export const findJdk = async (
 	}
 	const paths = await candidates();
 	const present = await Promise.all(
-		paths.map((path) => exists(join(path, "bin/java"))),
+		paths.map((path) => exists(join(path, "bin/java")))
 	);
 	const home = paths.find((_, index) => present[index] === true);
 	return home === undefined ? undefined : { home };

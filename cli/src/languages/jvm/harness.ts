@@ -15,10 +15,10 @@ export const contextIn = (root: string, kind = "", init = false): Context =>
 export const adoptJvm = async (
 	root: string,
 	kind = "",
-	init = false,
+	init = false
 ): Promise<Plan> => {
 	const plan = await buildPlan(root, [{ language: jvm, options: { kind } }], {
-		init,
+		init
 	});
 	await applySteps(root, plan.steps);
 	return plan;
@@ -40,7 +40,7 @@ export const textOf = (root: string, path: string): Promise<string> =>
 export const gradleIn = async (
 	root: string,
 	tasks: readonly string[],
-	home: string | undefined,
+	home: string | undefined
 ): Promise<{ code: number; output: string }> => {
 	const env =
 		home === undefined ? process.env : { ...process.env, JAVA_HOME: home };
@@ -48,12 +48,12 @@ export const gradleIn = async (
 		cwd: root,
 		env,
 		stdout: "pipe",
-		stderr: "pipe",
+		stderr: "pipe"
 	});
 	const [out, err, code] = await Promise.all([
 		new Response(child.stdout).text(),
 		new Response(child.stderr).text(),
-		child.exited,
+		child.exited
 	]);
 	return { code, output: out + err };
 };

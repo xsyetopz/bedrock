@@ -33,20 +33,20 @@ describe("rewriteScript", () => {
 		["vitest --watch", "bun test --watch"],
 		[
 			"cross-env NODE_ENV=production tsx src/main.ts",
-			"NODE_ENV=production bun src/main.ts",
+			"NODE_ENV=production bun src/main.ts"
 		],
 		["rimraf dist", "rm -rf dist"],
 		["typescript-bedrock guard", "just typescript::guard"],
 		["typescript-bedrock adopt .", "just bedrock adopt ."],
 		["npm whoami", "npm whoami"],
-		["vite build", "vite build"],
+		["vite build", "vite build"]
 	])("%p → %p", (input, output) => {
 		expect(rewriteScript(input)).toBe(output);
 	});
 
 	test("rewrites each command of a chain and keeps the separators", () => {
 		expect(
-			rewriteScript("rimraf dist && tsc --noEmit || echo failed; npm run x"),
+			rewriteScript("rimraf dist && tsc --noEmit || echo failed; npm run x")
 		).toBe("rm -rf dist && bun check || echo failed; bun run x");
 	});
 

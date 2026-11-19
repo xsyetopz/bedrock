@@ -51,7 +51,7 @@ const matches = (glob: string, path: string): boolean => {
 const apply = (
 	sections: readonly Section[],
 	path: string,
-	properties: Map<string, string>,
+	properties: Map<string, string>
 ): Map<string, string> => {
 	for (const section of sections.filter(({ glob }) => matches(glob, path))) {
 		for (const [key, value] of section.pairs) {
@@ -72,7 +72,7 @@ const apply = (
  */
 export const propertiesFor = (
 	sections: readonly Section[],
-	path: string,
+	path: string
 ): Map<string, string> => apply(sections, path, new Map());
 
 /** One `.editorconfig` on disk. */
@@ -102,7 +102,7 @@ const declaresRoot = (text: string): boolean => {
 /** The `.editorconfig` in `dir` under `root`, or undefined when it has none. */
 const readEditorconfig = async (
 	root: string,
-	dir: string,
+	dir: string
 ): Promise<EditorconfigFile | undefined> => {
 	const path = dir === "" ? ".editorconfig" : `${dir}/.editorconfig`;
 	const text = await readText(join(root, path));
@@ -112,7 +112,7 @@ const readEditorconfig = async (
 				path,
 				dir,
 				root: declaresRoot(text),
-				sections: parseEditorconfig(text),
+				sections: parseEditorconfig(text)
 			};
 };
 
@@ -123,7 +123,7 @@ const ancestors = (path: string): string[] => {
 };
 
 const present = async (
-	pending: readonly Promise<EditorconfigFile | undefined>[],
+	pending: readonly Promise<EditorconfigFile | undefined>[]
 ): Promise<EditorconfigFile[]> => {
 	const files = await Promise.all(pending);
 	return files.filter((file) => file !== undefined);
@@ -132,12 +132,12 @@ const present = async (
 /** Applies `files`, from the nearest `root = true` down, to `path`. */
 const cascade = (
 	files: readonly EditorconfigFile[],
-	path: string,
+	path: string
 ): Map<string, string> => {
 	const properties = new Map<string, string>();
 	const top = Math.max(
 		files.findLastIndex((file) => file.root),
-		0,
+		0
 	);
 	for (const file of files.slice(top)) {
 		const relative = file.dir === "" ? path : path.slice(file.dir.length + 1);
@@ -171,6 +171,6 @@ export const editorconfigTree = (root: string): EditorconfigTree => {
 		files: async () => {
 			await load("");
 			return present([...loaded.values()]);
-		},
+		}
 	};
 };

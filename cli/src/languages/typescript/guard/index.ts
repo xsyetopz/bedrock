@@ -7,7 +7,7 @@ import { findUndocumentedApi } from "./api.ts";
 import {
 	findForeignFiles,
 	findForeignScripts,
-	findUnsortedCatalogs,
+	findUnsortedCatalogs
 } from "./package-managers.ts";
 import { findSuppressions, sourcesOf } from "./suppressions.ts";
 import { findTypescriptDrift } from "./typescript-drift.ts";
@@ -26,7 +26,7 @@ export const guardTypescript = async (context: Context): Promise<Finding[]> => {
 		findUndocumentedApi(context, ignore),
 		findForeignFiles(root),
 		findForeignScripts(root),
-		findTypescriptDrift(root),
+		findTypescriptDrift(root)
 	]);
 	return [...results.flat(), ...findUnsortedCatalogs(manifest)];
 };

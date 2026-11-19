@@ -11,7 +11,7 @@ test("reports dependency managers and a second golangci-lint config", async () =
 		"go.mod": "module m\n",
 		"Gopkg.toml": "",
 		"glide.yaml": "",
-		".golangci.yaml": "",
+		".golangci.yaml": ""
 	});
 
 	// Act
@@ -21,7 +21,7 @@ test("reports dependency managers and a second golangci-lint config", async () =
 	expect(found.map((finding) => finding.split(":")[0])).toEqual([
 		".golangci.yaml",
 		"Gopkg.toml",
-		"glide.yaml",
+		"glide.yaml"
 	]);
 });
 
@@ -39,7 +39,7 @@ test("passes a repo with a go.mod and .golangci.yml", async () => {
 test.each([
 	["module github.com/a/b\n\ngo 1.27\n", "github.com/a/b"],
 	['module "x.org/y"\n', "x.org/y"],
-	["go 1.27\n", undefined],
+	["go 1.27\n", undefined]
 ])("reads the module of %j", (text, expected) => {
 	// Act
 	const path = moduleOf(text);
@@ -50,7 +50,7 @@ test.each([
 
 test.each([
 	["my-app", "myapp"],
-	["9lives", "p9lives"],
+	["9lives", "p9lives"]
 ])("names the package of %s", (name, expected) => {
 	// Act
 	const word = packageOf(name);

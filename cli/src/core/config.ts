@@ -37,7 +37,7 @@ const fromEditorconfig = (text: string): Config | undefined => {
 	const pairs = new Map(
 		parseEditorconfig(text)
 			.filter((section) => section.glob === "*")
-			.flatMap((section) => section.pairs),
+			.flatMap((section) => section.pairs)
 	);
 	const version = pairs.get(VERSION_KEY);
 	if (version === undefined) {
@@ -54,7 +54,7 @@ const fromEditorconfig = (text: string): Config | undefined => {
 				.filter(([key]) => key.startsWith(prefix))
 				.map(([key, value]) => [key.slice(prefix.length), optionValue(value)]);
 			return [id, Object.fromEntries(options)];
-		}),
+		})
 	);
 	return { version, languages };
 };
@@ -66,7 +66,7 @@ const legacyOptions = (options: unknown): LanguageOptions | undefined => {
 	}
 	const entries = Object.entries(options).filter(
 		(entry): entry is [string, string | boolean] =>
-			typeof entry[1] === "string" || typeof entry[1] === "boolean",
+			typeof entry[1] === "string" || typeof entry[1] === "boolean"
 	);
 	return entries.length === Object.keys(options).length
 		? Object.fromEntries(entries)
@@ -80,12 +80,12 @@ const fromLegacy = (text: string): Config => {
 	const languages = isRecord(data) ? data["languages"] : undefined;
 	const entries = isRecord(languages)
 		? Object.entries(languages).map(
-				([id, options]) => [id, legacyOptions(options)] as const,
+				([id, options]) => [id, legacyOptions(options)] as const
 			)
 		: [];
 	const valid = entries.filter(
 		(entry): entry is readonly [string, LanguageOptions] =>
-			entry[1] !== undefined,
+			entry[1] !== undefined
 	);
 	if (
 		typeof version !== "string" ||
@@ -93,7 +93,7 @@ const fromLegacy = (text: string): Config => {
 		valid.length !== entries.length
 	) {
 		throw new Error(
-			`${LEGACY_CONFIG_PATH}: expected { "version": string, "languages": { <id>: { <option>: string | boolean } } }`,
+			`${LEGACY_CONFIG_PATH}: expected { "version": string, "languages": { <id>: { <option>: string | boolean } } }`
 		);
 	}
 	return { version, languages: Object.fromEntries(valid) };
@@ -106,7 +106,7 @@ const fromLegacy = (text: string): Config => {
 export const readConfig = async (root: string): Promise<Config | undefined> => {
 	const [editorconfig, legacy] = await Promise.all([
 		readText(join(root, CONFIG_PATH)),
-		readText(join(root, LEGACY_CONFIG_PATH)),
+		readText(join(root, LEGACY_CONFIG_PATH))
 	]);
 	const current =
 		editorconfig === undefined ? undefined : fromEditorconfig(editorconfig);
@@ -126,11 +126,11 @@ export const configPairs = (config: Config): string => {
 	const options = ids.flatMap((id) =>
 		Object.entries(config.languages[id] ?? {})
 			.toSorted(([a], [b]) => a.localeCompare(b))
-			.map(([key, value]) => `bedrock_${id}_${key} = ${String(value)}`),
+			.map(([key, value]) => `bedrock_${id}_${key} = ${String(value)}`)
 	);
 	return [
 		`${VERSION_KEY} = ${config.version}`,
 		`${LANGUAGES_KEY} =${ids.length === 0 ? "" : ` ${ids.join(", ")}`}`,
-		...options,
+		...options
 	].join("\n");
 };

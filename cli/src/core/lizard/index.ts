@@ -5,7 +5,7 @@ import {
 	findLizard,
 	LIZARD_VERSION,
 	measure,
-	type Measures,
+	type Measures
 } from "./measure.ts";
 
 export { invalidBounds } from "./limits.ts";
@@ -32,7 +32,7 @@ const report = (hits: readonly Hit[]): LizardReport => {
 		const over = crossed(value, bound);
 		if (over !== undefined) {
 			(over.level === "error" ? errors : warnings).push(
-				`${at}: ${what} is ${String(value)}, over ${String(over.limit)}`,
+				`${at}: ${what} is ${String(value)}, over ${String(over.limit)}`
 			);
 		}
 	}
@@ -44,7 +44,7 @@ const WHAT: Readonly<Record<Metric, string>> = {
 	test_file_code_lines: "test file code lines",
 	function_code_lines: "code lines",
 	function_complexity: "cyclomatic complexity",
-	function_parameters: "parameters",
+	function_parameters: "parameters"
 };
 
 /**
@@ -55,7 +55,7 @@ const WHAT: Readonly<Record<Metric, string>> = {
 export const judge = (
 	measures: Measures,
 	propertiesOf: (path: string) => ReadonlyMap<string, string>,
-	isTest: (path: string) => boolean = () => false,
+	isTest: (path: string) => boolean = () => false
 ): LizardReport => {
 	const cache = new Map<string, Partial<Record<Metric, Bound>>>();
 	const boundsAt = (path: string): Partial<Record<Metric, Bound>> => {
@@ -71,12 +71,12 @@ export const judge = (
 		path: string,
 		metric: Metric,
 		value: number,
-		name = "",
+		name = ""
 	): Hit => ({
 		at,
 		value,
 		bound: boundsAt(path)[metric] ?? {},
-		what: name === "" ? WHAT[metric] : `${name} ${WHAT[metric]}`,
+		what: name === "" ? WHAT[metric] : `${name} ${WHAT[metric]}`
 	});
 	return report([
 		...measures.files.map((file) =>
@@ -84,17 +84,17 @@ export const judge = (
 				file.path,
 				file.path,
 				isTest(file.path) ? "test_file_code_lines" : "file_code_lines",
-				file.nloc,
-			),
+				file.nloc
+			)
 		),
 		...measures.functions.flatMap((fn) => {
 			const at = `${fn.path}:${String(fn.line)}`;
 			return [
 				hit(at, fn.path, "function_code_lines", fn.nloc, fn.name),
 				hit(at, fn.path, "function_complexity", fn.ccn, fn.name),
-				hit(at, fn.path, "function_parameters", fn.params, fn.name),
+				hit(at, fn.path, "function_parameters", fn.params, fn.name)
 			];
-		}),
+		})
 	]);
 };
 
@@ -107,27 +107,27 @@ export const checkSize = async (
 	root: string,
 	languages: readonly string[],
 	tree: EditorconfigTree,
-	testFiles?: Language["testFiles"],
+	testFiles?: Language["testFiles"]
 ): Promise<LizardReport> => {
 	const lizard = await findLizard();
 	if (lizard === undefined) {
 		return {
 			errors: [
-				`lizard ${LIZARD_VERSION} cannot run: install uv or pipx (just setup does), so bedrock can bound ${languages.join(", ")} sizes`,
+				`lizard ${LIZARD_VERSION} cannot run: install uv or pipx (just setup does), so bedrock can bound ${languages.join(", ")} sizes`
 			],
-			warnings: [],
+			warnings: []
 		};
 	}
 	const measures = await measure(lizard, root, languages);
 	const paths = [
 		...new Set(
-			[...measures.files, ...measures.functions].map((entry) => entry.path),
-		),
+			[...measures.files, ...measures.functions].map((entry) => entry.path)
+		)
 	];
 	const properties = new Map(
 		await Promise.all(
-			paths.map(async (path) => [path, await tree.properties(path)] as const),
-		),
+			paths.map(async (path) => [path, await tree.properties(path)] as const)
+		)
 	);
 	const measured = measures.files.map(({ path }) => path);
 	const tests =
@@ -137,6 +137,6 @@ export const checkSize = async (
 	return judge(
 		measures,
 		(path) => properties.get(path) ?? new Map(),
-		(path) => tests.has(path),
+		(path) => tests.has(path)
 	);
 };

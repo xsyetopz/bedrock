@@ -39,7 +39,7 @@ export const packageName = (root: string): string => {
 /** The placeholder values for one crate. */
 export const crateVariables = (pkg: string): Variables => ({
 	package: pkg,
-	crate: pkg.replaceAll("-", "_"),
+	crate: pkg.replaceAll("-", "_")
 });
 
 /** One crate's package name: the project's alone, else `<name>-<kind>`. */
@@ -50,13 +50,13 @@ const templateSteps = async (
 	context: Context,
 	dir: string,
 	target: (path: string) => string,
-	variables: Variables,
+	variables: Variables
 ): Promise<Step[]> => {
 	const files = await context.templates(dir).files(variables);
 	return files.map((file): Step => ({
 		kind: "write",
 		path: target(file.path),
-		content: file.content,
+		content: file.content
 	}));
 };
 
@@ -64,14 +64,14 @@ const templateSteps = async (
 const crateSteps = async (
 	context: Context,
 	kind: string,
-	pkg: string,
+	pkg: string
 ): Promise<Step[]> => {
 	const variables = crateVariables(pkg);
 	const rust = await templateSteps(
 		context,
 		`crates/${kind === "bun-ffi" ? "ffi" : kind}`,
 		(path) => `crates/${pkg}/${path}`,
-		variables,
+		variables
 	);
 	return kind === "bun-ffi"
 		? [
@@ -80,8 +80,8 @@ const crateSteps = async (
 					context,
 					"crates/bun-ffi",
 					(path) => path,
-					variables,
-				)),
+					variables
+				))
 			]
 		: rust;
 };
@@ -89,13 +89,13 @@ const crateSteps = async (
 /** The crates `bedrock init` creates, and a note where a kind needs another language. */
 export const kindSteps = async (
 	context: Context,
-	kinds: readonly string[],
+	kinds: readonly string[]
 ): Promise<{ steps: Step[]; notes: string[] }> => {
 	const name = packageName(context.root);
 	const steps = await Promise.all(
 		kinds.map((kind) =>
-			crateSteps(context, kind, packageOf(name, kind, kinds.length)),
-		),
+			crateSteps(context, kind, packageOf(name, kind, kinds.length))
+		)
 	);
 	const needsBun = kinds.includes("bun-ffi");
 	return {
@@ -103,8 +103,8 @@ export const kindSteps = async (
 		notes:
 			needsBun && !context.languages.includes("typescript")
 				? [
-						"bun-ffi writes its Bun side to src/, which needs Bun: adopt typescript too (bedrock adopt typescript) to lint and test it.",
+						"bun-ffi writes its Bun side to src/, which needs Bun: adopt typescript too (bedrock adopt typescript) to lint and test it."
 					]
-				: [],
+				: []
 	};
 };

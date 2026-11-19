@@ -5,7 +5,7 @@ import type { Engine, Hook, On } from "./engine.ts";
 export function registerHello($: Engine): Promise<unknown> {
 	return $.command.register({
 		name: "hello",
-		description: `Say hello from ${$.plugin.name}.`,
+		description: `Say hello from ${$.plugin.name}.`
 	});
 }
 

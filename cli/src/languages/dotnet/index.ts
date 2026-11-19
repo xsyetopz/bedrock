@@ -4,7 +4,7 @@ import {
 	dotnetLint,
 	dotnetRestore,
 	dotnetTest,
-	dotnetTypecheck,
+	dotnetTypecheck
 } from "./commands.ts";
 import { guardDotnet } from "./guard.ts";
 import { planDotnet } from "./plan.ts";
@@ -24,11 +24,11 @@ export const dotnet: Language = {
 		".just/dotnet.just",
 		"global.json",
 		"*.{sln,slnx}",
-		"**/*.{csproj,fsproj}",
+		"**/*.{csproj,fsproj}"
 	],
 	tools: {
 		dotnet:
-			"the .NET 10 SDK from https://dotnet.microsoft.com/download, such as brew install dotnet@10",
+			"the .NET 10 SDK from https://dotnet.microsoft.com/download, such as brew install dotnet@10"
 	},
 	sources: [
 		"**/*.{cs,csx,fs,fsi,fsx}",
@@ -37,7 +37,7 @@ export const dotnet: Language = {
 		"global.json",
 		".config/dotnet-tools.json",
 		"dotnet-tools.json",
-		".editorconfig",
+		".editorconfig"
 	],
 	kinds: [],
 	variables: () => Promise.resolve({}),
@@ -52,6 +52,6 @@ export const dotnet: Language = {
 		format: dotnetFormat,
 		typecheck: dotnetTypecheck,
 		lint: dotnetLint,
-		test: dotnetTest,
-	},
+		test: dotnetTest
+	}
 };

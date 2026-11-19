@@ -21,7 +21,7 @@ const XTASK_FILES = new Set(["xtask/Cargo.toml", "xtask/src/main.rs"]);
 const DEPENDENCY_TABLES = [
 	"dependencies",
 	"dev-dependencies",
-	"build-dependencies",
+	"build-dependencies"
 ];
 
 /** Whether the manifest depends on the rust-bedrock crate, which only bedrock's xtask did. */
@@ -35,7 +35,7 @@ const dependsOnBedrock = (text: string): boolean => {
 
 /** The xtask crate, if bedrock wrote it: removed whole, with a note for files it did not write. */
 const xtaskPlan = async (
-	root: string,
+	root: string
 ): Promise<{ present: boolean; ours: boolean; notes: string[] }> => {
 	const manifest = await readText(join(root, "xtask/Cargo.toml"));
 	if (manifest === undefined) {
@@ -46,8 +46,8 @@ const xtaskPlan = async (
 			present: true,
 			ours: false,
 			notes: [
-				"xtask does not depend on rust-bedrock, so it stays; remove it by hand if nothing else uses it.",
-			],
+				"xtask does not depend on rust-bedrock, so it stays; remove it by hand if nothing else uses it."
+			]
 		};
 	}
 	const files = await listFiles(root, new Glob("xtask/**"));
@@ -59,17 +59,17 @@ const xtaskPlan = async (
 			"Cargo.lock still lists xtask and rust-bedrock until cargo runs again (cargo fetch does it).",
 			...(extra.length > 0
 				? [
-						`xtask held files bedrock did not write: ${extra.join(", ")}. They go with the crate; git still has them.`,
+						`xtask held files bedrock did not write: ${extra.join(", ")}. They go with the crate; git still has them.`
 					]
-				: []),
-		],
+				: [])
+		]
 	};
 };
 
 /** `.cargo/config.toml` without the bedrock alias; removed when nothing else is in it. */
 const cargoConfigStep = async (
 	root: string,
-	removable: boolean,
+	removable: boolean
 ): Promise<Step | undefined> => {
 	const text = await readText(join(root, ".cargo/config.toml"));
 	if (text === undefined || !removable) {
@@ -102,7 +102,7 @@ export const legacyPlan = async (root: string): Promise<Legacy> => {
 	const xtask = await xtaskPlan(root);
 	const [config, deny] = await Promise.all([
 		cargoConfigStep(root, xtask.ours || !xtask.present),
-		denyStep(root),
+		denyStep(root)
 	]);
 	const edits = [config, deny].filter((step) => step !== undefined);
 	const crate: Step[] = xtask.ours ? [{ kind: "remove", path: "xtask" }] : [];
@@ -110,6 +110,6 @@ export const legacyPlan = async (root: string): Promise<Legacy> => {
 		steps: [...crate, ...edits],
 		notes: xtask.notes,
 		projectFiles: edits.map((step) => step.path),
-		dropXtask: xtask.ours,
+		dropXtask: xtask.ours
 	};
 };

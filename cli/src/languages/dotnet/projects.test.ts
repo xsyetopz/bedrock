@@ -9,7 +9,7 @@ describe("buildEntries", () => {
 		const root = await tempRepo({
 			"App.sln": "",
 			"App.slnx": "<Solution />\n",
-			"src/App/App.csproj": "<Project />\n",
+			"src/App/App.csproj": "<Project />\n"
 		});
 
 		// Act
@@ -23,7 +23,7 @@ describe("buildEntries", () => {
 		// Arrange
 		const root = await tempRepo({
 			"src/B/B.fsproj": "<Project />\n",
-			"src/A/A.csproj": "<Project />\n",
+			"src/A/A.csproj": "<Project />\n"
 		});
 
 		// Act

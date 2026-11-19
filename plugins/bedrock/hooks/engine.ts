@@ -17,7 +17,7 @@ export interface Engine {
 	readonly process: {
 		readonly run: (
 			argv: readonly string[],
-			init: { readonly timeoutMs: number },
+			init: { readonly timeoutMs: number }
 		) => Promise<ProcessResult>;
 	};
 	readonly session: { readonly cwd: () => Promise<string> };
@@ -34,11 +34,11 @@ export interface On {
 	(
 		event: "command.run",
 		matcher: { readonly command: "adopt" | "bedrock" },
-		hook: Hook<{ readonly args: string }>,
+		hook: Hook<{ readonly args: string }>
 	): unknown;
 	(
 		event: "tool.call",
 		matcher: { readonly tool: "Bash" },
-		hook: Hook<BashCall>,
+		hook: Hook<BashCall>
 	): unknown;
 }

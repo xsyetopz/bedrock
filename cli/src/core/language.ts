@@ -87,7 +87,7 @@ export interface Language {
 	 */
 	readonly testFiles?: (
 		root: string,
-		files: readonly string[],
+		files: readonly string[]
 	) => Promise<ReadonlySet<string>>;
 	/** Extra commands, such as `swift compile-commands` or `jvm j2k`. */
 	readonly subcommands?: Readonly<Record<string, Subcommand>>;

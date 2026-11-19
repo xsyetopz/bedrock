@@ -22,8 +22,8 @@ export const parseNamed = (arg: string): Named => {
 	if (language === undefined) {
 		const known = LANGUAGES.map((entry) =>
 			[entry.id, ...entry.aliases.filter((alias) => alias !== entry.id)].join(
-				", ",
-			),
+				", "
+			)
 		);
 		throw new Error(`Unknown language ${name}. Known: ${known.join("; ")}.`);
 	}
@@ -33,7 +33,7 @@ export const parseNamed = (arg: string): Named => {
 			.filter((entry) => !language.kinds.includes(entry));
 		if (unknown.length > 0) {
 			throw new Error(
-				`${language.id} has no kind ${unknown.join(", ")}. Kinds: ${language.kinds.join(", ") || "none"}.`,
+				`${language.id} has no kind ${unknown.join(", ")}. Kinds: ${language.kinds.join(", ") || "none"}.`
 			);
 		}
 	}
@@ -44,7 +44,7 @@ export const parseNamed = (arg: string): Named => {
 const matches = async (root: string, pattern: string): Promise<boolean> => {
 	for await (const _ of new Glob(pattern).scan({
 		cwd: root,
-		onlyFiles: true,
+		onlyFiles: true
 	})) {
 		return true;
 	}
@@ -55,10 +55,10 @@ const matches = async (root: string, pattern: string): Promise<boolean> => {
 const hasMarker = async (
 	root: string,
 	language: Language,
-	ignored: readonly string[] = [],
+	ignored: readonly string[] = []
 ): Promise<boolean> => {
 	const markers = language.markers.filter(
-		(marker) => !ignored.includes(marker),
+		(marker) => !ignored.includes(marker)
 	);
 	const globs = markers.filter((marker) => /[*?{[]/u.test(marker));
 	const paths = markers.filter((marker) => !globs.includes(marker));
@@ -73,7 +73,7 @@ const hasMarker = async (
 /** The languages whose marker files sit at `root`. */
 export const detect = async (root: string): Promise<Language[]> => {
 	const found = await Promise.all(
-		LANGUAGES.map((language) => hasMarker(root, language)),
+		LANGUAGES.map((language) => hasMarker(root, language))
 	);
 	return LANGUAGES.filter((_, index) => found[index] === true);
 };
@@ -87,19 +87,19 @@ export const detect = async (root: string): Promise<Language[]> => {
  */
 export const dropped = async (
 	root: string,
-	selected: readonly Selected[],
+	selected: readonly Selected[]
 ): Promise<Language[]> => {
 	const left = LANGUAGES.filter(
-		(language) => !selected.some((entry) => entry.language === language),
+		(language) => !selected.some((entry) => entry.language === language)
 	);
 	const marked = await Promise.all(
 		left.map(async (language) =>
 			hasMarker(
 				root,
 				language,
-				await templateDir(`${language.id}/files`).paths(),
-			),
-		),
+				await templateDir(`${language.id}/files`).paths()
+			)
+		)
 	);
 	return left.filter((_, index) => marked[index] !== true);
 };
@@ -110,7 +110,7 @@ const GROUP = /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/u;
 /** The jvm options `--group` adds to, or an error when the run has no jvm or the group is no package name. */
 const jvmOptions = (
 	options: ReadonlyMap<string, LanguageOptions>,
-	group: string,
+	group: string
 ): LanguageOptions => {
 	const current = options.get("jvm");
 	if (current === undefined) {
@@ -118,7 +118,7 @@ const jvmOptions = (
 	}
 	if (!GROUP.test(group)) {
 		throw new Error(
-			`--group ${group} is no Java package name, such as com.example.app.`,
+			`--group ${group} is no Java package name, such as com.example.app.`
 		);
 	}
 	return current;
@@ -131,10 +131,10 @@ const jvmOptions = (
 export const select = (
 	config: Config | undefined,
 	named: readonly Named[],
-	flags: LanguageOptions = {},
+	flags: LanguageOptions = {}
 ): Selected[] => {
 	const options = new Map<string, LanguageOptions>(
-		Object.entries(config?.languages ?? {}),
+		Object.entries(config?.languages ?? {})
 	);
 	const add = (id: string, extra: LanguageOptions): void => {
 		options.set(id, { ...options.get(id), ...extra });
@@ -142,7 +142,7 @@ export const select = (
 	for (const entry of named) {
 		add(
 			entry.language.id,
-			entry.kind === undefined ? {} : { kind: entry.kind },
+			entry.kind === undefined ? {} : { kind: entry.kind }
 		);
 	}
 	if (flags["cxx"] === true) {
@@ -155,8 +155,8 @@ export const select = (
 	return LANGUAGES.filter((language) => options.has(language.id)).map(
 		(language) => ({
 			language,
-			options: options.get(language.id) ?? {},
-		}),
+			options: options.get(language.id) ?? {}
+		})
 	);
 };
 
@@ -164,7 +164,7 @@ export const select = (
 export const missingTools = (selected: readonly Selected[]): string[] => {
 	const tools: Record<string, string> = {
 		git: "the system's package manager, such as brew install git",
-		just: "brew install just, or cargo install --locked just",
+		just: "brew install just, or cargo install --locked just"
 	};
 	for (const { language } of selected) {
 		Object.assign(tools, language.tools);

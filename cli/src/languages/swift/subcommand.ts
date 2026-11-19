@@ -23,7 +23,7 @@ export const convertTests: Subcommand = {
 					await Bun.write(join(context.root, path), converted.text);
 				}
 				return { path, converted, missing: text === undefined };
-			}),
+			})
 		);
 		let status = 0;
 		for (const { path, converted, missing } of results) {
@@ -40,5 +40,5 @@ export const convertTests: Subcommand = {
 			}
 		}
 		return status;
-	},
+	}
 };

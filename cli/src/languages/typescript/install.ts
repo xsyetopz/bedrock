@@ -10,13 +10,13 @@ import { lockfilesIn } from "./legacy.ts";
 const runOrThrow = async (
 	root: string,
 	command: readonly string[],
-	failure: string,
+	failure: string
 ): Promise<void> => {
 	const child = Bun.spawn([...command], {
 		cwd: root,
 		stdin: "inherit",
 		stdout: "inherit",
-		stderr: "inherit",
+		stderr: "inherit"
 	});
 	if ((await child.exited) !== 0) {
 		throw new Error(failure);
@@ -34,16 +34,16 @@ export const installDependencies = async ({ root }: Context): Promise<void> => {
 	await runOrThrow(
 		root,
 		["bun", "install"],
-		"bun install failed; fix it, then run `just setup`.",
+		"bun install failed; fix it, then run `just setup`."
 	);
 	if (await exists(join(root, "bun.lock"))) {
 		await inOrder(await lockfilesIn(root), (path) =>
-			rm(join(root, path), { force: true, recursive: true }),
+			rm(join(root, path), { force: true, recursive: true })
 		);
 	}
 	await runOrThrow(
 		root,
 		["bun", "fmt"],
-		"bun fmt failed; fix what it reports, then run `just format`.",
+		"bun fmt failed; fix what it reports, then run `just format`."
 	);
 };

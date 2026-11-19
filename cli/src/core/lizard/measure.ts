@@ -23,12 +23,12 @@ export interface FileMeasure {
 const RUNNERS: readonly (readonly string[])[] = [
 	["lizard"],
 	["uvx", "--from", `lizard==${LIZARD_VERSION}`, "lizard"],
-	["pipx", "run", "--spec", `lizard==${LIZARD_VERSION}`, "lizard"],
+	["pipx", "run", "--spec", `lizard==${LIZARD_VERSION}`, "lizard"]
 ];
 
 const stdoutOf = async (
 	argv: readonly string[],
-	cwd?: string,
+	cwd?: string
 ): Promise<{
 	readonly ok: boolean;
 	readonly stdout: string;
@@ -37,12 +37,12 @@ const stdoutOf = async (
 	const child = Bun.spawn([...argv], {
 		...(cwd === undefined ? {} : { cwd }),
 		stdout: "pipe",
-		stderr: "pipe",
+		stderr: "pipe"
 	});
 	const [stdout, stderr, code] = await Promise.all([
 		new Response(child.stdout).text(),
 		new Response(child.stderr).text(),
-		child.exited,
+		child.exited
 	]);
 	return { ok: code === 0, stdout, stderr };
 };
@@ -59,7 +59,7 @@ export const findLizard = async (): Promise<readonly string[] | undefined> => {
 			}
 			const { stdout } = await stdoutOf([...runner, "--version"]);
 			return stdout.trim() === LIZARD_VERSION;
-		}),
+		})
 	);
 	return RUNNERS.find((_, index) => usable[index] === true);
 };
@@ -106,7 +106,7 @@ export const parseFunctions = (csv: string): FunctionMeasure[] =>
 				name: at(7),
 				nloc: Number(at(0)),
 				ccn: Number(at(1)),
-				params: Number(at(3)),
+				params: Number(at(3))
 			};
 		});
 
@@ -127,11 +127,11 @@ export const parseFiles = (xml: string): FileMeasure[] => {
 		/<measure type="File">([\s\S]*?)<\/measure>/u.exec(xml)?.[1] ?? "";
 	return [
 		...section.matchAll(
-			/<item name="([^"]*)">\s*<value>[^<]*<\/value>\s*<value>(\d+)<\/value>/gu,
-		),
+			/<item name="([^"]*)">\s*<value>[^<]*<\/value>\s*<value>(\d+)<\/value>/gu
+		)
 	].map(([, name = "", nloc = "0"]) => ({
 		path: relative(unescapeXml(name)),
-		nloc: Number(nloc),
+		nloc: Number(nloc)
 	}));
 };
 
@@ -145,7 +145,7 @@ export interface Measures {
 export const measure = async (
 	lizard: readonly string[],
 	root: string,
-	languages: readonly string[],
+	languages: readonly string[]
 ): Promise<Measures> => {
 	const args = [
 		...languages.flatMap((language) => ["-l", language]),
@@ -153,12 +153,12 @@ export const measure = async (
 		"--ignore_warnings",
 		"-1",
 		"-t",
-		String(availableParallelism()),
+		String(availableParallelism())
 	];
 	const [csv, xml] = await Promise.all(
 		["--csv", "--xml"].map((format) =>
-			stdoutOf([...lizard, ...args, format, "."], root),
-		),
+			stdoutOf([...lizard, ...args, format, "."], root)
+		)
 	);
 	const failed = [csv, xml].find((result) => result?.ok !== true);
 	if (failed !== undefined) {
@@ -166,6 +166,6 @@ export const measure = async (
 	}
 	return {
 		functions: parseFunctions(csv?.stdout ?? ""),
-		files: parseFiles(xml?.stdout ?? ""),
+		files: parseFiles(xml?.stdout ?? "")
 	};
 };

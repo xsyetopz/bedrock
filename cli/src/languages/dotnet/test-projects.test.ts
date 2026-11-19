@@ -6,7 +6,7 @@ import {
 	isTestProject,
 	testProjects,
 	type TestRunner,
-	testRunner,
+	testRunner
 } from "./test-projects.ts";
 
 describe("test projects", () => {
@@ -16,17 +16,17 @@ describe("test projects", () => {
 	test.each<[string, TestRunner | undefined]>([
 		[
 			'<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" /><PackageReference Include="xunit" />',
-			"vstest",
+			"vstest"
 		],
 		['<PackageReference Include="xunit.v3" Version="4.0.3" />', "mtp"],
 		[
 			'<PackageReference Include="xunit.v3" /><PackageReference Include="xunit.runner.visualstudio" /><PackageReference Include="Microsoft.NET.Test.Sdk" />',
-			"mtp",
+			"mtp"
 		],
 		['<PackageReference Include="xunit.v3.mtp-v2" />', "mtp"],
 		[
 			'<PackageReference Include="xunit.v3.mtp-off" /><PackageReference Include="xunit.runner.visualstudio" />',
-			"vstest",
+			"vstest"
 		],
 		['<PackageReference Version="1.87.0" Include="TUnit" />', "mtp"],
 		['<PackageReference Include="TUnit.Core" />', undefined],
@@ -35,24 +35,24 @@ describe("test projects", () => {
 		['<Project Sdk="MSTest.Sdk/4.0.0"><UseVSTest>true</UseVSTest>', "vstest"],
 		[
 			'<PackageReference Include="NUnit" /><PackageReference Include="NUnit3TestAdapter" />',
-			"vstest",
+			"vstest"
 		],
 		[
 			'<EnableNUnitRunner>true</EnableNUnitRunner><PackageReference Include="NUnit3TestAdapter" />',
-			"mtp",
+			"mtp"
 		],
 		[
 			"<EnableNUnitRunner>true</EnableNUnitRunner><EnableMSTestRunner>true</EnableMSTestRunner>",
-			undefined,
+			undefined
 		],
 		[
 			'<EnableMSTestRunner>true</EnableMSTestRunner><PackageReference Include="MSTest" />',
-			"mtp",
+			"mtp"
 		],
 		['<PackageReference Include="YoloDev.Expecto.TestSdk" />', "vstest"],
 		["<IsTestProject>true</IsTestProject>", "vstest"],
 		['<PackageReference Include="Expecto" />', undefined],
-		['<PackageReference Include="xunit" />', undefined],
+		['<PackageReference Include="xunit" />', undefined]
 	])("%s runs on %p", (text, expected) => {
 		expect(testRunner(text)).toBe(expected);
 		expect(isTestProject(text)).toBe(expected !== undefined);
@@ -63,13 +63,13 @@ describe("test projects", () => {
 		const root = await tempRepo({
 			"src/App/App.csproj": "<Project />\n",
 			"tests/App.Tests/App.Tests.csproj":
-				'<Project><ItemGroup><PackageReference Include="Microsoft.NET.Test.Sdk" /></ItemGroup></Project>\n',
+				'<Project><ItemGroup><PackageReference Include="Microsoft.NET.Test.Sdk" /></ItemGroup></Project>\n'
 		});
 
 		// Act
 		const files = await dotnetTestFiles(root, [
 			"src/App/Lib.cs",
-			"tests/App.Tests/LibTests.cs",
+			"tests/App.Tests/LibTests.cs"
 		]);
 
 		// Assert
@@ -95,7 +95,7 @@ describe("central test packages", () => {
 `,
 				"src/App/App.csproj": '<Project Sdk="Microsoft.NET.Sdk" />\n',
 				"tests/App.Tests/App.Tests.csproj":
-					'<Project Sdk="Microsoft.NET.Sdk" />\n',
+					'<Project Sdk="Microsoft.NET.Sdk" />\n'
 			});
 
 			// Act
@@ -103,9 +103,9 @@ describe("central test packages", () => {
 
 			// Assert
 			expect(tests).toEqual([
-				{ path: "tests/App.Tests/App.Tests.csproj", runner: "mtp" },
+				{ path: "tests/App.Tests/App.Tests.csproj", runner: "mtp" }
 			]);
 		},
-		60_000,
+		60_000
 	);
 });

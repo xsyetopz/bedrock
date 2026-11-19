@@ -48,7 +48,7 @@ const canBeDeinit = (found: Lifecycle, line: string): boolean => {
 /** `override func setUp…()` becomes `init()`, and `tearDown…()` becomes `deinit`. */
 export const rewriteLifecycle = (
 	line: string,
-	container: Container,
+	container: Container
 ): string | undefined => {
 	const found = lifecycleOf(line);
 	if (found === undefined) {
@@ -74,7 +74,7 @@ export const isSuperCall = (line: string): boolean => {
 		"setUp",
 		"setUpWithError",
 		"tearDown",
-		"tearDownWithError",
+		"tearDownWithError"
 	].map((name) => `super.${name}()`);
 	const trimmed = line.replaceAll(/^[; \t\r]+|[; \t\r]+$/gu, "");
 	const parts = trimmed.split(/ +/u).filter((word) => word !== "");

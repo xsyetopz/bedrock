@@ -18,7 +18,7 @@ test("finds each inline test module with its line", () => {
 	// Assert
 	expect(result).toEqual([
 		["tests", 5],
-		["extra", 9],
+		["extra", 9]
 	]);
 });
 
@@ -66,8 +66,8 @@ test("puts the file beside the roots and in a directory for other modules", asyn
 	const foo = await testsFile(join(root, "src/foo.rs"));
 	const roots = await Promise.all(
 		["lib.rs", "main.rs", "mod.rs"].map((name) =>
-			testsFile(join(root, "src", name)),
-		),
+			testsFile(join(root, "src", name))
+		)
 	);
 
 	// Assert

@@ -15,7 +15,7 @@ const testRuns = async (root: string): Promise<string[][][]> => {
 	const [cmake, meson, xmake] = await Promise.all([
 		cmakeProjects(root),
 		mesonProjects(root),
-		xmakeProjects(root),
+		xmakeProjects(root)
 	]);
 	const [cmakeRuns, mesonRuns] = await Promise.all([
 		eachProject(cmake, async (project) => {
@@ -28,22 +28,22 @@ const testRuns = async (root: string): Promise<string[][][]> => {
 						"--test-dir",
 						build,
 						"--output-on-failure",
-						"--no-tests=ignore",
-					],
-				],
+						"--no-tests=ignore"
+					]
+				]
 			];
 		}),
 		eachProject(meson, async (project) => {
 			const build = await configureMeson(root, project);
 			return [[["meson", "test", "-C", build, "--print-errorlogs"]]];
-		}),
+		})
 	]);
 	return [
 		...cmakeRuns,
 		...mesonRuns,
 		...xmake.map((project) => [
-			["xmake", "test", "-y", "-P", join(root, project)],
-		]),
+			["xmake", "test", "-y", "-P", join(root, project)]
+		])
 	];
 };
 
@@ -53,7 +53,7 @@ const testRuns = async (root: string): Promise<string[][][]> => {
  */
 const allPass = async (
 	root: string,
-	commands: readonly (readonly string[])[],
+	commands: readonly (readonly string[])[]
 ): Promise<boolean> => {
 	const [first, ...rest] = commands;
 	return (
@@ -68,7 +68,7 @@ const allPass = async (
  */
 const everyRunPasses = async (
 	root: string,
-	runs: readonly (readonly (readonly string[])[])[],
+	runs: readonly (readonly (readonly string[])[])[]
 ): Promise<boolean> => {
 	const [first, ...rest] = runs;
 	if (first === undefined) {
@@ -98,5 +98,5 @@ export const cppTest: Subcommand = {
 		}
 		const passed = await everyRunPasses(root, runs);
 		return passed ? 0 : 1;
-	},
+	}
 };

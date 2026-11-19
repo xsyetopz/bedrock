@@ -63,7 +63,7 @@ test("recognizes top-level files of tests/ and nothing deeper", () => {
 		"tests/a.rs",
 		"crates/x/tests/b.rs",
 		"tests/util/mod.rs",
-		"src/tests.rs",
+		"src/tests.rs"
 	];
 
 	// Act

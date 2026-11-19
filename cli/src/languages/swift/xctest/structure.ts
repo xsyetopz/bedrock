@@ -7,7 +7,7 @@ import {
 	type Line,
 	parseLines,
 	prefixWhile,
-	scalars,
+	scalars
 } from "./lexer.ts";
 import { type Container, isSuperCall, rewriteLifecycle } from "./lifecycle.ts";
 
@@ -15,7 +15,7 @@ import { type Container, isSuperCall, rewriteLifecycle } from "./lifecycle.ts";
 const KEYWORDS = new Set(
 	`class enum extension func import init let var struct protocol static default case if else
 	for in is as do guard return switch where while try throw throws true false nil self super
-	repeat break continue defer`.split(/\s+/u),
+	repeat break continue defer`.split(/\s+/u)
 );
 
 const isIndent = (c: string): boolean => c === " " || c === "\t";
@@ -25,7 +25,7 @@ const words = (text: string, separators: string): string[] =>
 
 /** The rewritten declaration and class name of `class X: XCTestCase`. */
 export const rewriteClass = (
-	line: string,
+	line: string
 ): { text: string; name: string } | undefined => {
 	const brace = line.indexOf("{");
 	const headEnd = brace === -1 ? line.length : brace;
@@ -43,7 +43,7 @@ export const rewriteClass = (
 		.map((base) => base.trim())
 		.filter((base) => base !== "");
 	const found = bases.findIndex(
-		(base) => base === "XCTestCase" || base === "XCTest.XCTestCase",
+		(base) => base === "XCTestCase" || base === "XCTest.XCTestCase"
 	);
 	if (!after.startsWith(":") || found === -1) {
 		return undefined;
@@ -51,7 +51,7 @@ export const rewriteClass = (
 	bases.splice(found, 1);
 	const modifiers = head.slice(0, keyword);
 	const isFinal = words(modifiers, " ").some(
-		(word) => word === "final" || word === "open",
+		(word) => word === "final" || word === "open"
 	);
 	const inheritance = bases.length === 0 ? "" : `: ${bases.join(", ")}`;
 	const tail = line.slice(headEnd);
@@ -77,7 +77,7 @@ const SKIPPED = new Set([
 	"private",
 	"fileprivate",
 	"static",
-	"class",
+	"class"
 ]);
 
 /** The name of a `func testX()` declaration that XCTest would run. */
@@ -117,7 +117,7 @@ const usedNames = (source: string): Set<string> => {
 		"class",
 		"struct",
 		"enum",
-		"typealias",
+		"typealias"
 	]);
 	const used = new Set<string>();
 	for (const [k, token] of tokens.entries()) {
@@ -138,14 +138,14 @@ const usedNames = (source: string): Set<string> => {
 /** How each test is named after conversion: without `test` unless that collides. */
 const renames = (
 	source: string,
-	lines: readonly Line[],
+	lines: readonly Line[]
 ): Map<string, string> => {
 	const used = usedNames(source);
 	const tests = new Set(
 		lines.flatMap((line) => {
 			const name = line.code ? testName(line.text) : undefined;
 			return name === undefined ? [] : [name];
-		}),
+		})
 	);
 	const shorts = [...tests].map((name) => deprefixed(name));
 	return new Map(
@@ -156,7 +156,7 @@ const renames = (
 				shorts.filter((other) => other === short).length === 1 &&
 				!used.has(short);
 			return [name, unique ? short : name];
-		}),
+		})
 	);
 };
 
@@ -164,10 +164,10 @@ const testLine = (
 	text: string,
 	name: string,
 	renamed: string,
-	cr: string,
+	cr: string
 ): string[] => [
 	`${indentOf(text)}@Test${cr}`,
-	text.replace(`func ${name}(`, `func ${renamed}(`),
+	text.replace(`func ${name}(`, `func ${renamed}(`)
 ];
 
 const classNamesOf = (lines: readonly Line[]): Set<string> =>
@@ -175,7 +175,7 @@ const classNamesOf = (lines: readonly Line[]): Set<string> =>
 		lines.flatMap((line) => {
 			const name = line.code ? rewriteClass(line.text)?.name : undefined;
 			return name === undefined ? [] : [name];
-		}),
+		})
 	);
 
 /** Drops containers the line has left and marks the current one as entered. */
@@ -198,7 +198,7 @@ const rewriteMember = (
 	text: string,
 	top: Container,
 	plan: ReadonlyMap<string, string>,
-	cr: string,
+	cr: string
 ): string[] => {
 	const name = testName(text);
 	const renamed = name === undefined ? undefined : plan.get(name);
@@ -232,7 +232,7 @@ export const restructure = (source: string): string => {
 				bodyDepth: line.depth + 1,
 				seenBody: line.opens > 0,
 				hasInit: false,
-				hasDeinit: false,
+				hasDeinit: false
 			});
 		} else if (top !== undefined && line.depth === top.bodyDepth) {
 			out.push(...rewriteMember(text, top, plan, cr));

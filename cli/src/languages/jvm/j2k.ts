@@ -7,13 +7,13 @@ import { findJdk, JDK_MISSING } from "./java.ts";
 const gradlew = (
 	context: Context,
 	home: string | undefined,
-	args: readonly string[],
+	args: readonly string[]
 ): Promise<number> => {
 	const env =
 		home === undefined ? process.env : { ...process.env, JAVA_HOME: home };
 	const child = Bun.spawn(
 		[join(context.root, "gradlew"), "--console=plain", ...args],
-		{ cwd: context.root, env, stdout: "inherit", stderr: "inherit" },
+		{ cwd: context.root, env, stdout: "inherit", stderr: "inherit" }
 	);
 	return child.exited;
 };
@@ -38,10 +38,10 @@ export const j2k: Subcommand = {
 		}
 		const converted = await gradlew(context, jdk.home, [
 			"j2k",
-			...args.map((path) => `--file=${path}`),
+			...args.map((path) => `--file=${path}`)
 		]);
 		return converted === 0
 			? gradlew(context, jdk.home, ["spotlessApply"])
 			: converted;
-	},
+	}
 };

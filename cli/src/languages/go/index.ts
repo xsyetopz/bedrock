@@ -10,7 +10,7 @@ export const go: Language = {
 	aliases: ["go", "golang"],
 	markers: ["go.mod", "go.work", ".golangci.yml"],
 	tools: {
-		go: "https://go.dev/dl, such as brew install go",
+		go: "https://go.dev/dl, such as brew install go"
 	},
 	sources: ["**/*.go", "go.mod", "go.sum", "go.work", ".golangci.yml"],
 	kinds: ["command", "library"],
@@ -22,5 +22,5 @@ export const go: Language = {
 		}
 	},
 	runs: "go mod tidy",
-	guard: guardGo,
+	guard: guardGo
 };

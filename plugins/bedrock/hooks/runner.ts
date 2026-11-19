@@ -48,7 +48,7 @@ export async function findBedrock($: Engine): Promise<string[]> {
 	}
 	const [system, machine] = await Promise.all([
 		output($, ["uname", "-s"]),
-		output($, ["uname", "-m"]),
+		output($, ["uname", "-m"])
 	]);
 	const asset = assetName(system, machine);
 	const binary = `${$.plugin.root}/.bedrock/${VERSION}/${asset}`;
@@ -56,11 +56,11 @@ export async function findBedrock($: Engine): Promise<string[]> {
 		const url = `${REPOSITORY}/releases/download/v${VERSION}`;
 		const { exitCode, stderr } = await $.process.run(
 			["sh", "-c", INSTALL, "sh", binary, url, asset],
-			{ timeoutMs: 300_000 },
+			{ timeoutMs: 300_000 }
 		);
 		if (exitCode !== 0) {
 			throw new Error(
-				`Downloading bedrock ${VERSION} (${asset}) failed: ${stderr.trim()}`,
+				`Downloading bedrock ${VERSION} (${asset}) failed: ${stderr.trim()}`
 			);
 		}
 	}

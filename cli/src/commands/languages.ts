@@ -17,7 +17,7 @@ files HEAD's commits change that no remote has yet, for the pre-push hook.`;
 /** Lists the paths the flags narrow the languages to; none means every language. */
 const listerFor = (
 	staged: boolean,
-	unpushed: boolean,
+	unpushed: boolean
 ): ((root: string) => Promise<string[] | undefined>) | undefined => {
 	if (staged) {
 		return stagedPaths;
@@ -42,8 +42,8 @@ export const languages = async (args: readonly string[]): Promise<number> => {
 		options: {
 			help: { type: "boolean", short: "h", default: false },
 			staged: { type: "boolean", default: false },
-			unpushed: { type: "boolean", default: false },
-		},
+			unpushed: { type: "boolean", default: false }
+		}
 	});
 	if (values.help) {
 		console.info(USAGE);

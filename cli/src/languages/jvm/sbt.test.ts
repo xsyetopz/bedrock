@@ -17,7 +17,7 @@ test("maps each project to a module and its dependsOn to a project dependency", 
 	// Arrange
 	const root = await tempRepo({
 		"build.sbt": SBT,
-		"project/build.properties": "",
+		"project/build.properties": ""
 	});
 
 	// Act
@@ -28,7 +28,7 @@ test("maps each project to a module and its dependsOn to a project dependency", 
 	expect(migration.group).toBe("org.acme");
 	expect(migration.modules.map((module) => module.directory)).toEqual([
 		"core",
-		"app",
+		"app"
 	]);
 	expect(files["core/build.gradle.kts"]).toContain("libs.guava");
 	expect(files["app/build.gradle.kts"]).toContain('project(":core")');
@@ -49,7 +49,7 @@ test("notes Scala libraries it cannot carry over", async () => {
 test("a single-project build becomes the root module", async () => {
 	// Arrange
 	const root = await tempRepo({
-		"build.sbt": 'libraryDependencies += "junit" % "junit" % "4.13" % Test\n',
+		"build.sbt": 'libraryDependencies += "junit" % "junit" % "4.13" % Test\n'
 	});
 
 	// Act

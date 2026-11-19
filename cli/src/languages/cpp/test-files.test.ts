@@ -9,7 +9,7 @@ test("picks the files in a SwiftPM package's Tests directory", async () => {
 		"Package.swift": "// swift-tools-version: 6.4\n",
 		"Sources/KitCxx/Kit.cpp": "int kit() { return 0; }\n",
 		"Tests/KitTests/Helper.cpp": "int helper() { return 0; }\n",
-		"vendor/Tests/Other.cpp": "int other() { return 0; }\n",
+		"vendor/Tests/Other.cpp": "int other() { return 0; }\n"
 	};
 	const root = await tempRepo(files);
 

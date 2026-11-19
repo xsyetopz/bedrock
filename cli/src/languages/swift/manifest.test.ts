@@ -7,7 +7,7 @@ import {
 	TOOLS_VERSION,
 	typeName,
 	withMinimumMacOS,
-	withToolsVersion,
+	withToolsVersion
 } from "./manifest.ts";
 
 describe("withToolsVersion", () => {
@@ -15,13 +15,13 @@ describe("withToolsVersion", () => {
 		const text = "// swift-tools-version:5.9\nimport PackageDescription\n";
 
 		expect(withToolsVersion(text)).toBe(
-			`${TOOLS_VERSION}\nimport PackageDescription\n`,
+			`${TOOLS_VERSION}\nimport PackageDescription\n`
 		);
 	});
 
 	test("adds the line when none exists", () => {
 		expect(withToolsVersion("import PackageDescription\n")).toBe(
-			`${TOOLS_VERSION}\nimport PackageDescription\n`,
+			`${TOOLS_VERSION}\nimport PackageDescription\n`
 		);
 	});
 });
@@ -32,10 +32,10 @@ describe("withMinimumMacOS", () => {
 		".macOS(.v11)",
 		'.macOS("10.13")',
 		'.macOS("11.0")',
-		".macOS( .v10_9 )",
+		".macOS( .v10_9 )"
 	])("raises %s to .v12", (old) => {
 		expect(withMinimumMacOS(`platforms: [${old}]`)).toBe(
-			"platforms: [.macOS(.v12)]",
+			"platforms: [.macOS(.v12)]"
 		);
 	});
 
@@ -43,7 +43,7 @@ describe("withMinimumMacOS", () => {
 		"keeps %s",
 		(kept) => {
 			expect(withMinimumMacOS(kept)).toBe(kept);
-		},
+		}
 	);
 });
 
@@ -53,7 +53,7 @@ describe("adoptedManifest", () => {
 
 		const result = adoptedManifest(
 			"// swift-tools-version: 5.5\nlet package = 1\n",
-			blocks,
+			blocks
 		);
 
 		expect(result).toContain("let strict = true");
@@ -72,7 +72,7 @@ describe("typeName", () => {
 	test.each([
 		["my-tool", "MyTool"],
 		["foo_bar baz", "FooBarBaz"],
-		["Plain", "Plain"],
+		["Plain", "Plain"]
 	])("turns %s into %s", (raw, expected) => {
 		expect(typeName(raw)).toBe(expected);
 	});
@@ -82,7 +82,7 @@ describe("typeName", () => {
 		["1Bad", false],
 		["", false],
 		["Bad-Name", false],
-		["Café", false],
+		["Café", false]
 	])("isTypeName(%s) is %s", (name, expected) => {
 		expect(isTypeName(name)).toBe(expected);
 	});

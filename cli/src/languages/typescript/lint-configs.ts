@@ -4,7 +4,7 @@ import type { Context } from "../../core/language.ts";
 import {
 	droppedEntries,
 	IGNORE_KEYS,
-	mergeIgnoreList,
+	mergeIgnoreList
 } from "./ignore-lists.ts";
 import { asRecord, type Json, readJsonc } from "./json.ts";
 import { extendsLegacy } from "./legacy.ts";
@@ -23,14 +23,14 @@ const withoutExtends = (value: unknown): unknown =>
 const droppedKeys = (
 	current: Json,
 	template: string,
-	ignoreKey: string,
+	ignoreKey: string
 ): string[] => {
 	const known = asRecord(Bun.JSONC.parse(template));
 	return Object.keys(current).filter(
 		(key) =>
 			key !== "extends" &&
 			key !== ignoreKey &&
-			!Bun.deepEquals(withoutExtends(current[key]), withoutExtends(known[key])),
+			!Bun.deepEquals(withoutExtends(current[key]), withoutExtends(known[key]))
 	);
 };
 
@@ -45,29 +45,29 @@ export const planIgnoreLists = async (context: Context): Promise<Part> => {
 			const notes = [
 				...(dropped.length > 0 || extendsLegacy(current)
 					? [
-							`${path}: now the full bedrock config, without \`extends\`${dropped.length > 0 ? `; its own ${dropped.map((name) => `"${name}"`).join(", ")} were not carried over, git has them` : ""}.`,
+							`${path}: now the full bedrock config, without \`extends\`${dropped.length > 0 ? `; its own ${dropped.map((name) => `"${name}"`).join(", ")} were not carried over, git has them` : ""}.`
 						]
 					: []),
 				...(restored.length > 0
 					? [
-							`${path}: puts back ${restored.map((entry) => `"${entry}"`).join(", ")} in "${key}"; bedrock owns its own entries, and yours go after them.`,
+							`${path}: puts back ${restored.map((entry) => `"${entry}"`).join(", ")} in "${key}"; bedrock owns its own entries, and yours go after them.`
 						]
-					: []),
+					: [])
 			];
 			return {
 				steps: [
 					{
 						kind: "write",
 						path,
-						content: mergeIgnoreList(template, current, key),
-					},
+						content: mergeIgnoreList(template, current, key)
+					}
 				],
-				notes,
+				notes
 			};
-		}),
+		})
 	);
 	return {
 		steps: parts.flatMap((part) => part.steps),
-		notes: parts.flatMap((part) => part.notes),
+		notes: parts.flatMap((part) => part.notes)
 	};
 };
