@@ -221,7 +221,7 @@ func (a *App) guardBase(
 
 // drift returns the managed files that differ from the templates root pins.
 func (a *App) drift(ctx context.Context, root string, cfg config.Config, selected []plan.Selected) ([]string, error) {
-	dropped, err := a.selector().Dropped(root, selected)
+	dropped, err := a.selector().Dropped(ctx, root, selected)
 	if err != nil {
 		return nil, err
 	}

@@ -100,8 +100,8 @@ func migrateTestFile(text string) string {
 }
 
 // testSteps rewrites each test file that is not on bun:test yet, except
-// those in node_modules, those git ignores, and those `bunfig.toml` keeps
-// `bun test` from running.
+// those `bun test` never runs: in node_modules or a hidden directory, ignored
+// by git, or skipped by `bunfig.toml`.
 func testSteps(ctx context.Context, c *language.Context) ([]step.Step, error) {
 	ignore, err := readBunfigTestIgnores(c.Root)
 	if err != nil {
@@ -116,6 +116,10 @@ func testSteps(ctx context.Context, c *language.Context) ([]step.Step, error) {
 	var steps []step.Step
 
 	for _, path := range paths {
+		if inHiddenDirectory(path) {
+			continue
+		}
+
 		text, _, readErr := fsutil.ReadText(filepath.Join(c.Root, filepath.FromSlash(path)))
 		if readErr != nil {
 			return nil, readErr

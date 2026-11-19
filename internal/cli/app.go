@@ -246,7 +246,7 @@ func (a *App) engine() *plan.Engine {
 }
 
 func (a *App) selector() selection.Selector {
-	return selection.Selector{Registry: a.Registry, Templates: a.Templates}
+	return selection.Selector{Registry: a.Registry, Templates: a.Templates, Runner: a.Runner}
 }
 
 // confirm asks a person to approve; without a terminal there is no one to

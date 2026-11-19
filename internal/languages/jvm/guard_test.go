@@ -138,12 +138,13 @@ func TestGuardRejectsJUnit4ExceptInAndroidModules(t *testing.T) {
 	}
 }
 
-func TestGuardSkipsOpenSpecAndTheManagedBuild(t *testing.T) {
+func TestGuardSkipsIgnoredFilesAndTheManagedBuild(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
 	root := bedrocktest.Repo(t, map[string]string{
-		"openspec/pom.xml":                "<project/>",
+		".gitignore":                      "vendor/\n",
+		"vendor/lib/pom.xml":              "<project/>",
 		"gradle/bedrock/src/B.java":       "@SuppressWarnings(\"x\")\nclass B {}\n",
 		"gradle/bedrock/build.gradle.kts": "plugins { java }\n",
 	})

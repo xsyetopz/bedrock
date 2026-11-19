@@ -117,6 +117,7 @@ func TestAdoptSkipsTestFilesGitIgnoresAndBunfigSkips(t *testing.T) {
 		"captures/dep/c.test.ts":     bareTest,
 		"plugins/lab/c.test.ts":      bareTest,
 		"node_modules/dep/c.test.ts": bareTest,
+		".hidden/c.test.ts":          bareTest,
 	})
 
 	// Act
@@ -127,7 +128,8 @@ func TestAdoptSkipsTestFilesGitIgnoresAndBunfigSkips(t *testing.T) {
 		t.Errorf("source test not migrated: %q", got)
 	}
 
-	for _, path := range []string{"captures/dep/c.test.ts", "plugins/lab/c.test.ts", "node_modules/dep/c.test.ts"} {
+	for _, path := range []string{
+		"captures/dep/c.test.ts", "plugins/lab/c.test.ts", "node_modules/dep/c.test.ts", ".hidden/c.test.ts"} {
 		if got := bedrocktest.Read(t, root, path); got != bareTest {
 			t.Errorf("%s was rewritten: %q", path, got)
 		}

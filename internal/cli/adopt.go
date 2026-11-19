@@ -116,7 +116,7 @@ func (a *App) adopt(ctx context.Context, mode mode, args []string) (int, error) 
 		return ExitFailed, prepareErr
 	}
 
-	selected, err := a.selection(mode, root, names, flags.languages)
+	selected, err := a.selection(ctx, mode, root, names, flags.languages)
 	if err != nil {
 		return ExitFailed, err
 	}
@@ -210,7 +210,13 @@ func (a *App) apply(
 
 // selection returns the languages a run covers and fails when it covers
 // none or their tools are missing, before anything changes.
-func (a *App) selection(mode mode, root string, names []string, flags map[string]string) ([]plan.Selected, error) {
+func (a *App) selection(
+	ctx context.Context,
+	mode mode,
+	root string,
+	names []string,
+	flags map[string]string,
+) ([]plan.Selected, error) {
 	cfg, found, err := config.Read(root)
 	if err != nil {
 		return nil, fmt.Errorf("read `%s`: %w", config.Path, err)
@@ -234,7 +240,12 @@ func (a *App) selection(mode mode, root string, names []string, flags map[string
 	}
 
 	if len(named) == 0 && !found {
-		for _, lang := range selector.Detect(root) {
+		detected, detectErr := selector.Detect(ctx, root)
+		if detectErr != nil {
+			return nil, detectErr
+		}
+
+		for _, lang := range detected {
 			named = append(named, selection.Named{Language: lang, Kind: ""})
 		}
 	}
@@ -273,7 +284,7 @@ func (a *App) planFor(ctx context.Context, root string, selected []plan.Selected
 		version = config.SourceVersion
 	}
 
-	dropped, err := a.selector().Dropped(root, selected)
+	dropped, err := a.selector().Dropped(ctx, root, selected)
 	if err != nil {
 		return plan.Plan{}, err
 	}

@@ -66,20 +66,11 @@ func Existing(root string, paths []string) []string {
 	return found
 }
 
-// skipped are directories no check reads: dependencies, build output, agent
-// worktrees, and OpenSpec proposals.
-func skipped(part string) bool {
-	switch part {
-	case ".build", ".claude", ".git", ".gradle", "build", "node_modules", "openspec", "target":
-		return true
-	default:
-		return false
-	}
-}
-
 // ListFiles returns the slash-separated paths of the regular files under
-// root that match keeps, without the ones git ignores and those in
-// dependency or build directories. Outside a git work tree it walks root.
+// root that match keeps. Git lists them, so the repository's own ignore
+// rules decide what a check skips: each language's gitignore block covers
+// its toolchain's output, such as target/ or node_modules, and a nested
+// repository, such as an agent's worktree, is not listed at all.
 func ListFiles(
 	ctx context.Context,
 	runner execx.Runner,
@@ -88,19 +79,17 @@ func ListFiles(
 ) ([]string, error) {
 	listed, err := gitListed(ctx, runner, root)
 	if err != nil {
-		listed, err = walked(root)
-		if err != nil {
-			return nil, err
-		}
+		return nil, fmt.Errorf("list the files git sees under `%s`: %w", root, err)
 	}
 
 	var files []string
 
 	for _, path := range listed {
-		if path == "" || !keep(path) || slices.ContainsFunc(strings.Split(path, "/"), skipped) {
+		if path == "" || !keep(path) {
 			continue
 		}
-		// The index still lists a file deleted since the last commit.
+		// The index still lists a file deleted since the last commit, and a
+		// nested repository is listed as its directory.
 		if IsRegularFile(filepath.Join(root, filepath.FromSlash(path))) {
 			files = append(files, path)
 		}
@@ -122,36 +111,6 @@ func gitListed(ctx context.Context, runner execx.Runner, root string) ([]string,
 	}
 
 	return strings.Split(out, "\x00"), nil
-}
-
-func walked(root string) ([]string, error) {
-	var paths []string
-
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if entry.IsDir() && path != root && skipped(entry.Name()) {
-			return filepath.SkipDir
-		}
-
-		if entry.Type().IsRegular() {
-			rel, relErr := filepath.Rel(root, path)
-			if relErr != nil {
-				return fmt.Errorf("relative path of `%s`: %w", path, relErr)
-			}
-
-			paths = append(paths, filepath.ToSlash(rel))
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("walk `%s`: %w", root, err)
-	}
-
-	return paths, nil
 }
 
 func isDirectory(path string) bool {

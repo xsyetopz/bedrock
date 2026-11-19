@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -92,13 +93,28 @@ func readBunfigTestIgnores(root string) ([]string, error) {
 	return out, nil
 }
 
+// inDependencies reports whether path is under node_modules, which Bun's
+// test scanner and workspaces, tsc's default exclude, and oxlint all skip,
+// even where git does not ignore it.
+func inDependencies(path string) bool {
+	return slices.Contains(strings.Split(path, "/"), "node_modules")
+}
+
+// inHiddenDirectory reports whether path is under a directory whose name
+// starts with a dot, which `bun test` does not scan.
+func inHiddenDirectory(path string) bool {
+	dirs := strings.Split(path, "/")
+
+	return slices.ContainsFunc(dirs[:len(dirs)-1], func(dir string) bool { return strings.HasPrefix(dir, ".") })
+}
+
 // listSources lists the files under root that the glob matches, minus
-// git-ignored files, skipped directories, and the ignore entries.
+// git-ignored files, dependencies, and the ignore entries.
 func listSources(ctx context.Context, runner execx.Runner, root, glob string, ignore []string) ([]string, error) {
 	files, err := fsutil.ListFiles(ctx, runner, root, func(path string) bool {
 		ok, matchErr := doublestar.Match(glob, path)
 
-		return matchErr == nil && ok && !isIgnored(path, ignore)
+		return matchErr == nil && ok && !inDependencies(path) && !isIgnored(path, ignore)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list sources: %w", err)

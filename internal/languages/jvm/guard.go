@@ -134,11 +134,10 @@ func scriptFindings(file, text string, hasSettings bool) []language.Finding {
 		": applies no `bedrock.*` plugin, so it skips the toolchain, Java 8 bytecode, and lints"}
 }
 
-// isOwn reports whether a path is the project's, not OpenSpec's or the managed
-// `gradle/bedrock` build.
+// isOwn reports whether a path is the project's, not the managed
+// `gradle/bedrock` build's.
 func (g guardPatterns) isOwn(file string) bool {
-	return !strings.HasPrefix(file, "openspec/") && !strings.HasPrefix(file, "gradle/bedrock/") &&
-		!g.proguard.MatchString(file)
+	return !strings.HasPrefix(file, "gradle/bedrock/") && !g.proguard.MatchString(file)
 }
 
 // Guard reports what the compilers and linters cannot see: foreign build

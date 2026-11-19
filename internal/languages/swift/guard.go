@@ -141,8 +141,13 @@ func (Swift) Guard(ctx context.Context, c *language.Context, fix bool) ([]langua
 		findings = dumpFindings(ctx, c)
 	}
 
+	excluded, err := lintExcluded(c.Root)
+	if err != nil {
+		return nil, err
+	}
+
 	sources, err := fsutil.ListFiles(ctx, c.Runner, c.Root, func(file string) bool {
-		return strings.HasSuffix(file, ".swift")
+		return strings.HasSuffix(file, ".swift") && !excluded(file)
 	})
 	if err != nil {
 		return nil, err

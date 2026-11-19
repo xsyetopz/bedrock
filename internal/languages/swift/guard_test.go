@@ -130,6 +130,35 @@ func TestGuardFlagsXCTestOutsideUITests(t *testing.T) {
 	}
 }
 
+func TestGuardSkipsWhatSwiftLintExcludes(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	files := map[string]string{
+		".swiftlint.yml":                "excluded:\n  - Vendor\n  - \"**/Generated\"\n",
+		"Vendor/Kit/A.swift":            xctestSource,
+		"Sources/App/Generated/B.swift": xctestSource,
+		"Sources/App/Generated.swift":   xctestSource,
+		"Sources/Lib/Vendor/C.swift":    xctestSource,
+	}
+
+	// Act
+	found, _ := guardWith(t, files, dumper{present: false}, false)
+
+	// Assert
+	for _, kept := range []string{"Sources/App/Generated.swift", "Sources/Lib/Vendor/C.swift"} {
+		if !anyContains(found, "`"+kept+"`") {
+			t.Errorf("no finding for %s: %v", kept, found)
+		}
+	}
+
+	for _, excluded := range []string{"Vendor/Kit/A.swift", "Sources/App/Generated/B.swift"} {
+		if anyContains(found, "`"+excluded+"`") {
+			t.Errorf("finding for excluded %s: %v", excluded, found)
+		}
+	}
+}
+
 func TestGuardLeavesXCTestInUITestTargets(t *testing.T) {
 	t.Parallel()
 

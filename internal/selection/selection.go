@@ -4,11 +4,11 @@
 package selection
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/xsyetopz/bedrock/internal/config"
+	"github.com/xsyetopz/bedrock/internal/execx"
 	"github.com/xsyetopz/bedrock/internal/fsutil"
 	"github.com/xsyetopz/bedrock/internal/language"
 	"github.com/xsyetopz/bedrock/internal/plan"
@@ -40,6 +41,8 @@ type Named struct {
 type Selector struct {
 	Registry  *language.Registry
 	Templates fs.FS
+	// Runner lists the repository's files with git for glob markers.
+	Runner execx.Runner
 }
 
 // Parse reads <name>[:<kind>], checking the name and each kind.
@@ -89,16 +92,23 @@ func (s Selector) Parse(arg string) (Named, error) {
 }
 
 // Detect returns the languages whose markers sit at root.
-func (s Selector) Detect(root string) []language.Language {
+func (s Selector) Detect(ctx context.Context, root string) ([]language.Language, error) {
 	var found []language.Language
 
+	search := s.markers(ctx, root)
+
 	for _, lang := range s.Registry.All() {
-		if hasMarker(root, lang.Spec().Markers, nil) {
+		has, err := search.has(lang.Spec().Markers, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		if has {
 			found = append(found, lang)
 		}
 	}
 
-	return found
+	return found, nil
 }
 
 // Dropped returns the languages a run leaves out that no marker at root
@@ -106,8 +116,10 @@ func (s Selector) Detect(root string) []language.Language {
 // whose markers remain, such as a repository adopted before bedrock recorded
 // its languages, keeps it. Markers bedrock writes itself, such as gradlew,
 // do not count: they outlive the code they were written for.
-func (s Selector) Dropped(root string, selected []plan.Selected) ([]language.Language, error) {
+func (s Selector) Dropped(ctx context.Context, root string, selected []plan.Selected) ([]language.Language, error) {
 	var dropped []language.Language
+
+	search := s.markers(ctx, root)
 
 	for _, lang := range s.Registry.All() {
 		if slices.ContainsFunc(selected, func(entry plan.Selected) bool { return entry.Language == lang }) {
@@ -119,7 +131,12 @@ func (s Selector) Dropped(root string, selected []plan.Selected) ([]language.Lan
 			return nil, fmt.Errorf("list %s files: %w", lang.Spec().ID, err)
 		}
 
-		if !hasMarker(root, lang.Spec().Markers, written) {
+		has, err := search.has(lang.Spec().Markers, written)
+		if err != nil {
+			return nil, err
+		}
+
+		if !has {
 			dropped = append(dropped, lang)
 		}
 	}
@@ -228,9 +245,28 @@ func MissingTools(selected []plan.Selected, lookPath func(string) bool) []string
 	return missing
 }
 
-// hasMarker reports whether a marker other than those ignored, a path or a
-// glob, matches a file under root.
-func hasMarker(root string, markers, ignored []string) bool {
+// markerSearch finds markers under one root. It lists the files for glob
+// markers at most once, through git, so a search skips what git ignores, such
+// as node_modules or other worktrees, as the language checks do.
+type markerSearch struct {
+	list  func() ([]string, error)
+	root  string
+	files []string
+	ready bool
+}
+
+func (s Selector) markers(ctx context.Context, root string) *markerSearch {
+	return &markerSearch{
+		root: root,
+		list: func() ([]string, error) {
+			return fsutil.ListFiles(ctx, s.Runner, root, func(string) bool { return true })
+		},
+	}
+}
+
+// has reports whether a marker other than those ignored, a path or a glob,
+// matches a file under the root.
+func (m *markerSearch) has(markers, ignored []string) (bool, error) {
 	var globs []string
 
 	for _, marker := range markers {
@@ -238,21 +274,29 @@ func hasMarker(root string, markers, ignored []string) bool {
 		case slices.Contains(ignored, marker):
 		case strings.ContainsAny(marker, "*?{["):
 			globs = append(globs, marker)
-		case fsutil.Exists(filepath.Join(root, marker)):
-			return true
+		case fsutil.Exists(filepath.Join(m.root, marker)):
+			return true, nil
 		}
 	}
 
-	return slices.ContainsFunc(globs, func(glob string) bool { return matchesFile(root, glob) })
-}
+	if len(globs) == 0 {
+		return false, nil
+	}
 
-// errFound stops a glob walk at its first match.
-var errFound = errors.New("found")
+	if !m.ready {
+		files, err := m.list()
+		if err != nil {
+			return false, fmt.Errorf("list the files under `%s`: %w", m.root, err)
+		}
 
-func matchesFile(root, glob string) bool {
-	err := doublestar.GlobWalk(os.DirFS(root), glob, func(string, fs.DirEntry) error {
-		return errFound
-	}, doublestar.WithFilesOnly())
+		m.files, m.ready = files, true
+	}
 
-	return errors.Is(err, errFound)
+	for _, file := range m.files {
+		if slices.ContainsFunc(globs, func(glob string) bool { return doublestar.MatchUnvalidated(glob, file) }) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
