@@ -94,7 +94,43 @@ bedrock init <dir> go:command               # or library
 - XCTest outside UI tests, which `just lint-fix` converts to Swift Testing, and JUnit 4 outside Android tests;
 - ProGuard rules that turn shrinking off;
 - public API without docs;
-- managed files that drifted from what adopt writes.
+- managed files that drifted from what adopt writes;
+- code size where a language's own linters set no bound.
+
+### Size Bounds
+
+Each language's linters bound what they can: oxlint, golangci-lint, SwiftLint, Clippy, and clang-tidy check function length and complexity themselves. bedrock-lizard fills only the gaps, running the pinned [lizard](https://github.com/terryyin/lizard) 1.26.1 through `uvx` or `pipx`. `just setup` installs uv, and the CI workflows that run the guard install it too:
+
+| Language | Native bounds | bedrock-lizard checks |
+| --- | --- | --- |
+| rust | Clippy: function lines, arguments | file code lines |
+| cpp | clang-tidy: function size, cognitive complexity | file code lines |
+| jvm | none | file code lines; function code lines, cyclomatic complexity, parameters |
+
+The bounds are [EditorConfig](https://spec.editorconfig.org/) properties in each language's block of `.editorconfig`, so they apply by glob like any other setting, and editors ignore them. A value over `bedrock_<metric>_error` fails the guard; a value over `bedrock_<metric>_warning` only prints. The metrics are `file_code_lines`, `test_file_code_lines`, `function_code_lines`, `function_complexity`, and `function_parameters`. A test file takes `test_file_code_lines` in place of `file_code_lines`. A test file is one the language's compiler, build, or test runner treats as test-only, not one a naming habit marks:
+
+- Rust: a file a `#[cfg(test)] mod` declares and the files below it, a file `#![cfg(test)]` gates, and a crate's `tests/` directory. A `#[test]` function alone does not count, since rustc still builds the rest of its file;
+- Java and Kotlin: a Gradle test source set, such as `src/test`, `src/testFixtures`, `src/androidTest`, or `src/commonTest`;
+- C and C++: a SwiftPM package's `Tests/` directory, and a source only test targets compile: a CMake target a CTest test runs, a Meson target a `meson test` test runs, an xmake target `xmake test` runs, and a library only those link. A source a product target also compiles stays product code, as does one a product target compiles only under an option that is off by default.
+
+The other languages' linters set their own test bounds the same way: oxlint by the names `bun test` runs, golangci-lint by `_test.go`, and SwiftLint by the `.swiftlint.yml` in `Tests/`. The defaults come from studies of defect and maintenance cost: 56 code lines and complexity 15 per function, 7 parameters, and a warning at 603 code lines per file, since no study finds a file-length optimum.
+
+A section after bedrock's blocks overrides a bound for the files it matches, `unset` turns one off, and adopt leaves those sections alone:
+
+```ini
+[*.kt]
+bedrock_file_code_lines_warning = 800
+bedrock_function_complexity_error = unset
+
+[*.rs]
+bedrock_test_file_code_lines_warning = 1500
+
+[generated/**]
+bedrock_file_code_lines_warning = unset
+bedrock_function_code_lines_error = unset
+```
+
+`bedrock guard` reads each file's bounds the way an editor does: from the `.editorconfig` in its directory and each one above it, up to the nearest that sets `root = true`, so a nested `.editorconfig` overrides the root one for its subtree. Section globs follow the EditorConfig spec, `{1..12}` ranges included. The guard rejects a bound that is not a positive integer or `unset`, and names the `.editorconfig` that sets it.
 
 ## Claude Code Plugin
 

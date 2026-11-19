@@ -1,4 +1,11 @@
+# clang-tidy bounds function size but not file length, so bedrock guard counts
+# each file's code lines with lizard. A file only test code compiles takes the
+# test file bound instead: one in a SwiftPM package's Tests/, or one only the
+# targets a CMake, Meson, or xmake project runs as tests build. A section after this block
+# overrides a bound, and unset turns one off.
 [*.{c,cc,cpp,cxx,h,hh,hpp,hxx,m,mm}]
 indent_style = space
 indent_size = 4
 max_line_length = 100
+bedrock_file_code_lines_warning = 603
+bedrock_test_file_code_lines_warning = 603

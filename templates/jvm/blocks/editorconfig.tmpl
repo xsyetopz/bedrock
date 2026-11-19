@@ -7,3 +7,14 @@ indent_size = 2
 [*.{kt,kts}]
 indent_style = space
 indent_size = 4
+
+# No JVM linter bedrock runs bounds code size, so bedrock guard measures it with
+# lizard. A file in a Gradle test source set, such as src/test or src/commonTest,
+# takes the test file bound instead. A section after this block overrides a
+# bound, and unset turns one off.
+[*.{java,kt,kts,scala}]
+bedrock_file_code_lines_warning = 603
+bedrock_test_file_code_lines_warning = 603
+bedrock_function_code_lines_error = 56
+bedrock_function_complexity_error = 15
+bedrock_function_parameters_error = 7

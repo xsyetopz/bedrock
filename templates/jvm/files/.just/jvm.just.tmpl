@@ -4,8 +4,10 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 set working-directory := ".."
 
 # Check for the JDK that starts Gradle, then fetch Gradle and the plugins. The first compile
-# fetches the GraalVM Community JDK the build compiles with.
+# fetches the GraalVM Community JDK the build compiles with. uv runs the pinned lizard
+# that bedrock guard bounds file and function size with.
 setup: (gradle "--quiet" "help")
+    if ! command -v uvx >/dev/null && ! command -v pipx >/dev/null; then brew install uv; fi
 
 # Format the Java with google-java-format and the Kotlin with ktfmt's kotlinlang style.
 format: (gradle "spotlessApply")

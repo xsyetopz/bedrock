@@ -3,6 +3,7 @@ import { editionPending, migrateEditions } from "./editions.ts";
 import { guardRust } from "./guard.ts";
 import { crateVariables, KINDS, packageName } from "./kinds.ts";
 import { planRust } from "./plan.ts";
+import { rustTestFiles } from "./test-files.ts";
 
 /** Rust projects: Cargo workspaces on strict Clippy and rustdoc lints. */
 export const rust: Language = {
@@ -37,4 +38,7 @@ export const rust: Language = {
 	runPending: async (context) =>
 		Bun.which("cargo") !== null && (await editionPending(context.root)),
 	guard: guardRust,
+	// Clippy has function lints (too_many_lines, too_many_arguments, cognitive_complexity) but no file-length lint.
+	lizard: ["rust"],
+	testFiles: rustTestFiles,
 };

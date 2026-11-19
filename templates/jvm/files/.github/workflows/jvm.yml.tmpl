@@ -25,7 +25,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      # uv runs the pinned lizard that bedrock guard bounds sizes with.
       - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
-          tool: just@1.59.0
+          tool: just@1.59.0,uv@0.13.7
       - run: just jvm::verify

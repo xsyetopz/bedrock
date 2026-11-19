@@ -144,9 +144,9 @@ To fix the errors, run `just lint-fix`, which also converts XCTest files to Swif
 
 - `just lint` runs `bedrock cpp compile-commands`, then clang-tidy over the database it writes from SwiftPM's Clang targets, each CMake and Meson project, and each xmake project. A project is a build file no other one encloses, such as `port/CMakeLists.txt`. CMake configures with `-DBUILD_TESTING=ON` and Meson with its defaults, each in `.cache/bedrock/<system>/<project>`.
 - `just test` runs `bedrock cpp test`: `cmake --build` and `ctest`, `meson test`, and `xmake test` for each project, every one even after another fails. `swift test` covers SwiftPM's C++ targets.
-- `just setup` installs LLVM, and CMake, Meson, or xmake when the repo tracks its build file.
+- `just setup` installs LLVM and uv, and CMake, Meson, or xmake when the repo tracks its build file.
 
-A subproject that cannot configure, such as a starter that needs an SDK fetched first, is skipped with a warning, while the root project's failure fails the recipe. Bedrock configures with each build's defaults, so a project that needs a preset or an option to configure fails until it builds with its defaults. A repo built only by Make or another build system has no compile database, so clang-tidy and the tests see none of its files; clang-format still covers them.
+A subproject that cannot configure, such as a starter that needs an SDK fetched first, is skipped with a warning, while the root project's failure fails the recipe. Bedrock configures with each build's defaults, so a project that needs a preset or an option to configure fails until it builds with its defaults. A repo built only by Make or another build system has no compile database, so clang-tidy and the tests see none of its files; clang-format and the size bounds still cover them.
 
 ## Java and Kotlin
 

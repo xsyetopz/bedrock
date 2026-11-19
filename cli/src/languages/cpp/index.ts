@@ -1,6 +1,7 @@
 import { existing } from "../../core/fs.ts";
 import type { Language } from "../../core/language.ts";
 import { compileCommands } from "./compile-commands.ts";
+import { cppTestFiles } from "./test-files.ts";
 import { cppTest } from "./test.ts";
 
 /** Renamed to the dotted names the tools read; the underscore forms are older. */
@@ -49,5 +50,8 @@ export const cpp: Language = {
 		};
 	},
 	guard: () => Promise.resolve([]),
+	// clang-tidy has function checks (readability-function-size, readability-function-cognitive-complexity) but no file-length check.
+	lizard: ["cpp", "objectivec"],
+	testFiles: cppTestFiles,
 	subcommands: { "compile-commands": compileCommands, test: cppTest },
 };

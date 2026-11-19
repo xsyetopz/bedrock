@@ -1,3 +1,12 @@
 [*.{rs,toml}]
 indent_style = space
 indent_size = 4
+
+# Clippy bounds function size but not file length, so bedrock guard counts each
+# file's code lines with lizard. A file rustc compiles only under test, one a
+# #[cfg(test)] mod declares, one #![cfg(test)] gates, or one in a crate's
+# tests/, takes the test file bound instead. A section after this block
+# overrides a bound, and unset turns one off.
+[*.rs]
+bedrock_file_code_lines_warning = 603
+bedrock_test_file_code_lines_warning = 603

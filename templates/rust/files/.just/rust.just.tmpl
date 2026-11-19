@@ -7,7 +7,9 @@ set working-directory := ".."
 # route Cargo through kache. `kache init` sets the wrapper for this user, not
 # this repo, skips the steps already done, and leaves shell startup files alone.
 # Cargo runs the wrapper by name, so setup stops first when kache is off PATH.
+# uv runs the pinned lizard that bedrock guard bounds file length with.
 setup:
+    if ! command -v uvx >/dev/null && ! command -v pipx >/dev/null; then brew install uv; fi
     rustup toolchain install --no-self-update
     if [[ "$(cargo deny --version 2>/dev/null || true)" != "cargo-deny 0.20.2" ]]; then cargo install --locked cargo-deny@0.20.2; fi
     if [[ "$(kache --version 2>/dev/null || true)" != "kache 2.0.0" ]]; then cargo install --locked kache@2.0.0; fi

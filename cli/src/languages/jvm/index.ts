@@ -6,6 +6,7 @@ import { j2k } from "./j2k.ts";
 import { findJdk } from "./java.ts";
 import { KINDS, packageName } from "./kinds.ts";
 import { groupOf, planJvm } from "./plan.ts";
+import { jvmTestFiles } from "./test-files.ts";
 
 /** Runs `./gradlew --version` when a JDK is found, which downloads the Gradle distribution; a failure never fails the adopt. */
 const afterApply = async (context: Context): Promise<void> => {
@@ -71,5 +72,8 @@ export const jvm: Language = {
 	afterApply,
 	runs: "./gradlew --version, which fetches Gradle",
 	guard: (context) => guardJvm(context.root),
+	// javac, kotlinc, Error Prone, and NullAway bound no sizes, so lizard covers files and functions.
+	lizard: ["java", "kotlin", "scala"],
+	testFiles: jvmTestFiles,
 	subcommands: { j2k },
 };

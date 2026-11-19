@@ -7,9 +7,11 @@ set working-directory := ".."
 
 llvm := `if command -v brew >/dev/null && [[ -d "$(brew --prefix llvm 2>/dev/null)" ]]; then echo "$(brew --prefix llvm)/bin/"; fi`
 
-# Install LLVM, for clang-format and clang-tidy, and CMake, Meson, or xmake when
-# a project uses it.
+# Install LLVM, for clang-format and clang-tidy, CMake, Meson, or xmake when a
+# project uses it, and uv, which runs the pinned lizard that bedrock guard
+# bounds file length with.
 setup:
+    if ! command -v uvx >/dev/null && ! command -v pipx >/dev/null; then brew install uv; fi
     if [[ ! -x "{{ llvm }}clang-tidy" ]] && ! command -v clang-tidy >/dev/null; then brew install llvm; fi
     if [[ -n "$(git ls-files --cached --others --exclude-standard -- CMakeLists.txt '*/CMakeLists.txt')" ]] && ! command -v cmake >/dev/null; then brew install cmake; fi
     if [[ -n "$(git ls-files --cached --others --exclude-standard -- meson.build '*/meson.build')" ]] && ! command -v meson >/dev/null; then brew install meson; fi

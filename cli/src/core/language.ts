@@ -72,6 +72,23 @@ export interface Language {
 	readonly runPending?: (context: Context) => Promise<boolean>;
 	/** Reports what the linters cannot see. With `fix`, repairs what it can first. */
 	readonly guard: (context: Context, fix: boolean) => Promise<Finding[]>;
+	/**
+	 * lizard `-l` names, such as `rust` or `kotlin`, for the sources whose size
+	 * `bedrock guard` bounds because this language's linters leave a metric
+	 * out. The `bedrock_*` bounds in `.editorconfig` say which metrics apply.
+	 * Absent when the linters bound them all.
+	 */
+	readonly lizard?: readonly string[];
+	/**
+	 * The files of `files`, relative to `root`, that the language's compiler,
+	 * build, or test runner treats as test-only, so the size guard bounds them
+	 * by `bedrock_test_file_code_lines_*` in place of `bedrock_file_code_lines_*`.
+	 * Absent when nothing in the toolchain sets test files apart.
+	 */
+	readonly testFiles?: (
+		root: string,
+		files: readonly string[],
+	) => Promise<ReadonlySet<string>>;
 	/** Extra commands, such as `swift compile-commands` or `jvm j2k`. */
 	readonly subcommands?: Readonly<Record<string, Subcommand>>;
 }
