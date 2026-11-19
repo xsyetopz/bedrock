@@ -11,6 +11,7 @@ import (
 	"github.com/xsyetopz/bedrock/internal/catalog"
 	"github.com/xsyetopz/bedrock/internal/cli"
 	"github.com/xsyetopz/bedrock/internal/execx"
+	"github.com/xsyetopz/bedrock/internal/sizeguard"
 )
 
 func main() {
@@ -58,6 +59,7 @@ func newApp() (*cli.App, error) {
 		Version:     version,
 		Dir:         dir,
 		Interactive: isTerminal(os.Stdin),
+		Sizes:       sizeguard.Guard,
 	}, nil
 }
 
