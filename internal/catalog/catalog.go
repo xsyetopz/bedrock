@@ -7,11 +7,13 @@ package catalog
 import (
 	"github.com/xsyetopz/bedrock/internal/language"
 	"github.com/xsyetopz/bedrock/internal/languages/golang"
+	"github.com/xsyetopz/bedrock/internal/languages/swift"
 )
 
 // Languages returns every language in block order.
 func Languages() []language.Language {
 	return []language.Language{
+		swift.New(),
 		golang.New(),
 	}
 }
