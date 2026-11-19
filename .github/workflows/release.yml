@@ -5,7 +5,7 @@ name: Release
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: [Base, TypeScript, E2E]
+    workflows: [Base, Go, TypeScript, E2E]
     types: [completed]
     branches: [main]
 
@@ -33,7 +33,7 @@ jobs:
         run: |
           passed=$(gh run list --commit "$SHA" --event push --json workflowName,conclusion \
             --jq '[.[] | select(.conclusion == "success") | .workflowName] | unique | join(" ")')
-          if [[ "$passed" == "Base E2E TypeScript" ]]; then
+          if [[ "$passed" == "Base E2E Go TypeScript" ]]; then
             echo "passed=true" >> "$GITHUB_OUTPUT"
           else
             echo "Only [$passed] passed on $SHA so far; the last check to pass releases it."
@@ -54,15 +54,18 @@ jobs:
             echo "version=$version" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.version.outputs.version != ''
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          bun-version-file: .bun-version
+          go-version-file: go.mod
+      - if: steps.version.outputs.version != ''
+        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          tool: just@1.59.0
       # `just setup` in adopted repos downloads these assets and checks them against SHA256SUMS.
       - name: Build and release the binaries
         if: steps.version.outputs.version != ''
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          bun install --frozen-lockfile
-          bun cli/build.ts
+          just dist
           gh release create "v$VERSION" dist/* --target "$SHA" --title "bedrock v$VERSION" --generate-notes

@@ -23,6 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Bun installs, type-checks, lints, and tests each kind.
+          - language: typescript
+            os: ubuntu-latest
           - language: rust
             os: ubuntu-latest
           # The Android SDK the runner ships builds the android, cmp, and kmp kinds. The runner's
@@ -34,6 +37,7 @@ jobs:
             os: xcode-27
           # Go and golangci-lint run the starter files through the same format and lint recipes.
           - language: go
+            package: golang
             os: ubuntu-latest
           # CMake and Meson build the C test projects; the xmake cases skip without xmake.
           - language: cpp
@@ -56,10 +60,10 @@ jobs:
       - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: just@1.59.0,uv@0.13.7
-      - if: matrix.language == 'go'
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      # bedrock is a Go program; each job runs one language's tests, e2e included.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27"
+          go-version-file: go.mod
       - if: matrix.language == 'go'
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
@@ -84,5 +88,4 @@ jobs:
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           dotnet-version: 10.0.x
-      - run: bun install --frozen-lockfile
-      - run: bun test "cli/src/languages/${{ matrix.language }}/e2e.test.ts"
+      - run: go test -timeout 50m "./internal/languages/${{ matrix.package || matrix.language }}/..."
