@@ -1,0 +1,58 @@
+// Compiles the entry point into a standalone executable per platform:
+// `bun scripts/build.ts src/cli.ts linux macos windows`. Bun cross-compiles
+// every target from any host, so one machine builds them all. With no
+// platform, the executable is for the host.
+import { basename } from "node:path";
+
+import pkg from "../package.json" with { type: "json" };
+
+const targets = {
+	linux: ["bun-linux-x64", "bun-linux-arm64"],
+	macos: ["bun-darwin-x64", "bun-darwin-arm64"],
+	windows: ["bun-windows-x64", "bun-windows-arm64"]
+} as const satisfies Record<string, readonly Bun.Build.CompileTarget[]>;
+
+const isPlatform = (name: string): name is keyof typeof targets =>
+	Object.hasOwn(targets, name);
+
+const [entry, ...platforms] = Bun.argv.slice(2);
+
+if (entry === undefined) {
+	throw new Error("usage: bun scripts/build.ts <entry> [platform...]");
+}
+
+const executable = basename(pkg.name);
+const builds = platforms.flatMap((platform) => {
+	if (!isPlatform(platform)) {
+		throw new Error(
+			`unknown platform "${platform}"; use ${Object.keys(targets).join(", ")}`
+		);
+	}
+
+	return targets[platform].map((target) => ({
+		outfile: `dist/${executable}-${target.slice("bun-".length)}`,
+		target
+	}));
+});
+
+const compile = (outfile: string, target?: Bun.Build.CompileTarget) =>
+	Bun.build({
+		compile: target === undefined ? { outfile } : { outfile, target },
+		entrypoints: [entry]
+	});
+
+const results = await Promise.all(
+	builds.length === 0
+		? [compile(`dist/${executable}`)]
+		: builds.map(({ outfile, target }) => compile(outfile, target))
+);
+
+for (const result of results) {
+	if (!result.success) {
+		throw new AggregateError(result.logs, "build failed");
+	}
+
+	for (const output of result.outputs) {
+		process.stdout.write(`${output.path}\n`);
+	}
+}

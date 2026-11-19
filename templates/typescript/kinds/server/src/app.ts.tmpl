@@ -1,0 +1,22 @@
+/**
+ * The routes of the HTTP server, kept apart from `Bun.serve` so a test can
+ * start the server on a free port.
+ */
+export const routes = {
+	"/api/health": Response.json({ status: "ok" }),
+	"/api/hello/:name": (request: Bun.BunRequest<"/api/hello/:name">) =>
+		Response.json({ message: `Hello, ${request.params.name}!` })
+};
+
+/**
+ * Starts the server.
+ *
+ * @param port The port to listen on; `0` picks a free one.
+ * @returns The running server.
+ */
+export const start = (port: number): Bun.Server<undefined> =>
+	Bun.serve({
+		fetch: () => new Response("Not found", { status: 404 }),
+		port,
+		routes
+	});

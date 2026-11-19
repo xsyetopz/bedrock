@@ -1,0 +1,5 @@
+import { start } from "./app.ts";
+
+const server = start(Number(process.env["PORT"] ?? 3000));
+
+process.stdout.write(`Listening on ${server.url.href}\n`);

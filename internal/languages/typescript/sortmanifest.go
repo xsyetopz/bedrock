@@ -11,7 +11,7 @@ func keyOrder() []string {
 	return []string{
 		"name", "version", "private", "description", "keywords", "homepage", "bugs", "license", "author",
 		"repository", "bin", "workspaces", "files", "type", "sideEffects", "main", "module", "types",
-		"exports", "publishConfig", "scripts", nameDependencies, nameDevDeps, "peerDependencies",
+		"exports", "publishConfig", nameScripts, nameDependencies, nameDevDeps, "peerDependencies",
 		"optionalDependencies", "overrides", "engines", "packageManager", "trustedDependencies",
 	}
 }
@@ -19,7 +19,7 @@ func keyOrder() []string {
 // sortedMaps are the maps of names that `bun fmt` sorts alphabetically.
 func sortedMaps() []string {
 	return []string{
-		"scripts", nameDependencies, nameDevDeps, "peerDependencies", "optionalDependencies", "overrides",
+		nameScripts, nameDependencies, nameDevDeps, "peerDependencies", "optionalDependencies", "overrides",
 	}
 }
 

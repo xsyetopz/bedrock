@@ -90,10 +90,19 @@ func planTsconfig(c *language.Context) (part, error) {
 		return part{}, err
 	}
 
+	kindOptions, err := kindsTsconfig(c)
+	if err != nil {
+		return part{}, err
+	}
+
 	if current == nil {
+		// A kind that needs compiler options, such as React's `jsx`, sets them in
+		// the template's text, which keeps its comments and layout.
+		text, err = withOptions(text, kindOptions)
+
 		return part{
 			steps: []step.Step{step.Write{Path: nameTsconfig, Content: []byte(text), Executable: false}},
-		}, nil
+		}, err
 	}
 
 	base, err := parseObject(text)

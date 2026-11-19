@@ -26,6 +26,12 @@ func (Typescript) Spec() language.Spec {
 		Sources: []string{
 			"**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}", "**/package.json", nameBunfig, "**/tsconfig.json",
 		},
-		Kinds: []string{"library", "cli", "plugin"},
+		Kinds: []string{"library", kindCLI, "plugin", kindServer, kindReact},
+		// An executable comes from `bun build --compile`, which cross-compiles
+		// each of these from any host.
+		Platforms: map[string][]string{
+			kindCLI:    compilePlatforms(),
+			kindServer: compilePlatforms(),
+		},
 	}
 }
