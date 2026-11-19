@@ -18,12 +18,21 @@ func Platforms() []string {
 	}
 }
 
+// AllKinds names the directory under templates/<id>/platforms whose
+// <platform> files an init writes for every kind, such as a CMake preset each
+// kind shares; no kind may take the name.
+const AllKinds = "all"
+
 // KindPlatforms returns the platforms kind builds for, nil when it takes none.
 func (s Spec) KindPlatforms(kind string) []string { return s.Platforms[kind] }
 
 // checkPlatforms rejects a Spec whose Platforms name a kind it lacks or a
-// platform outside the shared vocabulary.
+// platform outside the shared vocabulary, and a kind named AllKinds.
 func checkPlatforms(spec Spec) error {
+	if slices.Contains(spec.Kinds, AllKinds) {
+		return fmt.Errorf("%w: %s names a kind %q, which means every kind", ErrInvalidSpec, spec.ID, AllKinds)
+	}
+
 	for kind, names := range spec.Platforms {
 		if !slices.Contains(spec.Kinds, kind) {
 			return fmt.Errorf(

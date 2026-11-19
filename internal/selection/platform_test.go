@@ -109,10 +109,18 @@ func (misspelled) Spec() language.Spec {
 	}
 }
 
+// everyKind names a kind after the directory that holds every kind's
+// platform files.
+type everyKind struct{}
+
+func (everyKind) Spec() language.Spec {
+	return language.Spec{ID: "every", Block: "every-bedrock", Kinds: []string{language.AllKinds}}
+}
+
 func TestRegistryRejectsUnknownPlatformsAndKinds(t *testing.T) {
 	t.Parallel()
 
-	for _, lang := range []language.Language{unlisted{}, misspelled{}} {
+	for _, lang := range []language.Language{unlisted{}, misspelled{}, everyKind{}} {
 		// Act
 		_, err := language.NewRegistry(lang)
 

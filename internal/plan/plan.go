@@ -289,16 +289,7 @@ func (e *Engine) languageSteps(
 			return contribution{}, fmt.Errorf("platform: %w", platformErr)
 		}
 
-		for _, kind := range kinds {
-			dirs = append(dirs, "kinds/"+kind)
-
-			// A platform adds its files over the kind's, such as an Info.plist
-			// only iOS needs; most platforms change build settings alone and
-			// leave this directory out.
-			for _, platform := range platforms {
-				dirs = append(dirs, "platforms/"+kind+"/"+platform)
-			}
-		}
+		dirs = append(dirs, platformDirs(kinds, platforms)...)
 	}
 
 	var starters []step.Step
@@ -315,6 +306,31 @@ func (e *Engine) languageSteps(
 	own.Steps = append(files, own.Steps...)
 
 	return contribution{Contribution: own, Starters: starters}, nil
+}
+
+// platformDirs returns the starter directories an init of kinds for
+// platforms reads, a later one winning for the same path: each kind, then
+// each platform's files for every kind (platforms/all/<platform>, such as a
+// CMake preset), then each platform's files for one kind
+// (platforms/<kind>/<platform>, such as an Info.plist only an iOS app
+// needs). Most platforms change build settings alone and leave both out.
+func platformDirs(kinds, platforms []string) []string {
+	dirs := make([]string, 0, len(kinds)*(len(platforms)+1)+len(platforms))
+	for _, kind := range kinds {
+		dirs = append(dirs, "kinds/"+kind)
+	}
+
+	for _, platform := range platforms {
+		dirs = append(dirs, "platforms/"+language.AllKinds+"/"+platform)
+	}
+
+	for _, kind := range kinds {
+		for _, platform := range platforms {
+			dirs = append(dirs, "platforms/"+kind+"/"+platform)
+		}
+	}
+
+	return dirs
 }
 
 // copySteps writes every template under dir. A path that matches one of
