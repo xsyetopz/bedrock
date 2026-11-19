@@ -113,10 +113,15 @@ jobs:
         with:
           tool: wasmtime@50.0.1
       # The Meson introspection the test-file split reads matches the version tested locally.
-      # clang-tidy brings the run-clang-tidy the cpp::lint recipe runs.
+      # The starter .clang-format and .clang-tidy target LLVM 23, which apt.llvm.org packages
+      # for Ubuntu with run-clang-tidy and clang-apply-replacements in /usr/lib/llvm-23/bin.
       - if: matrix.language == 'cpp' && runner.os == 'Linux'
         run: |
-          sudo apt-get install -y --no-install-recommends cmake ninja-build clang-tidy
+          curl -fsSL https://apt.llvm.org/llvm.sh -o "$RUNNER_TEMP/llvm.sh"
+          sudo bash "$RUNNER_TEMP/llvm.sh" 23
+          sudo apt-get install -y --no-install-recommends ninja-build clang-format-23 clang-tidy-23 clang-tools-23
+          echo /usr/lib/llvm-23/bin >> "$GITHUB_PATH"
+          uv tool install cmake==3.31.6
           uv tool install meson==1.12.1
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       # wasi-sdk builds the @wasi presets and emsdk the @wasm ones; the tests skip
@@ -132,12 +137,13 @@ jobs:
           "$RUNNER_TEMP/emsdk/emsdk" activate 7.0.0
           echo "EMSDK=$RUNNER_TEMP/emsdk" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
-      # The image's Homebrew LLVM has run-clang-tidy; CMake and Ninja come with the image.
+      # The recipes run Homebrew's current llvm, as cpp::setup installs it; CMake and Ninja
+      # come with the image.
       - if: matrix.language == 'cpp' && runner.os == 'macOS'
         run: |
+          brew install llvm
           uv tool install meson==1.12.1
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          echo "$(brew --prefix llvm@20)/bin" >> "$GITHUB_PATH"
       - if: matrix.language == 'haxe'
         uses: krdlab/setup-haxe@18e4b483cfffca2fb8881530bf8a6cec39dac8fb # v2.1.1
         with:
