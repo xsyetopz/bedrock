@@ -37,11 +37,16 @@ func requireTools(t *testing.T, tools ...string) {
 }
 
 // initRepo inits kind in a new repository and commits it.
-func initRepo(t *testing.T, kind string) string {
+func initRepo(t *testing.T, kind string, platforms ...string) string {
 	t.Helper()
 
+	options := config.Options{"kind": kind}
+	if len(platforms) != 0 {
+		options["platform"] = strings.Join(platforms, ",")
+	}
+
 	root := bedrocktest.Repo(t, nil)
-	bedrocktest.Adopt(t, root, true, bedrocktest.Select(t, "go", config.Options{"kind": kind}))
+	bedrocktest.Adopt(t, root, true, bedrocktest.Select(t, "go", options))
 	bedrocktest.CommitAll(t, root)
 
 	return root
@@ -50,7 +55,7 @@ func initRepo(t *testing.T, kind string) string {
 func TestInitBuildsTestsAndKeepsGoModTidy(t *testing.T) {
 	t.Parallel()
 
-	for _, kind := range []string{"command", "library"} {
+	for _, kind := range []string{"command", "library", "service"} {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
 			requireTools(t, "go")
@@ -90,7 +95,7 @@ func TestInitBuildsTestsAndKeepsGoModTidy(t *testing.T) {
 func TestInitPassesTheFormatAndLintRecipesCommands(t *testing.T) {
 	t.Parallel()
 
-	for _, kind := range []string{"command", "library"} {
+	for _, kind := range []string{"command", "library", "service"} {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
 			requireTools(t, "go", "golangci-lint")

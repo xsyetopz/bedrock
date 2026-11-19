@@ -39,6 +39,48 @@ lint-fix:
     golangci-lint run --fix
     golangci-lint fmt
 
+# Build for another platform into dist/<platform>/: the commands under cmd/ or, when there are
+# none, a compile check of every package. The platform is one of linux, macos, windows, freebsd,
+# wasi (wasip1), wasm (js, with wasm_exec.js beside the build), or ios (a gomobile xcframework
+# of the root package). arch overrides the platform's default GOARCH.
+build platform arch="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    arch="{{ arch }}"
+    ext=""
+    case "{{ platform }}" in
+        linux)   goos=linux;   arch="${arch:-amd64}" ;;
+        macos)   goos=darwin;  arch="${arch:-arm64}" ;;
+        windows) goos=windows; arch="${arch:-amd64}"; ext=.exe ;;
+        freebsd) goos=freebsd; arch="${arch:-amd64}" ;;
+        wasi)    goos=wasip1;  arch=wasm; ext=.wasm ;;
+        wasm)    goos=js;      arch=wasm; ext=.wasm ;;
+        ios)
+            # gomobile binds the root package and needs the iOS SDK, which comes with Xcode.
+            # gobind has to be on PATH, so build the one the module pins into a scratch directory.
+            tools="$(mktemp -d)"
+            trap 'rm -rf "$tools"' EXIT
+            name="$(go list -f '{{{{.Name}}' .)"
+            mkdir -p dist
+            GOBIN="$tools" go install golang.org/x/mobile/cmd/gobind
+            PATH="$tools:$PATH" go tool gomobile bind -target ios -o "dist/$(tr '[:lower:]' '[:upper:]' <<<"${name:0:1}")${name:1}.xcframework" .
+            exit 0 ;;
+        *) echo "unknown platform {{ platform }}; use linux, macos, windows, freebsd, wasi, wasm, or ios" >&2; exit 1 ;;
+    esac
+    export CGO_ENABLED=0 GOOS="$goos" GOARCH="$arch"
+    out="dist/{{ platform }}"
+    rm -rf "$out"
+    mkdir -p "$out"
+    mains="$(go list ./cmd/... 2>/dev/null || true)"
+    if [[ -z "$mains" ]]; then go build ./...; exit 0; fi
+    for pkg in $mains; do
+        go build -trimpath -o "$out/${pkg##*/}$ext" "$pkg"
+    done
+    if [[ "{{ platform }}" == wasm ]]; then
+        cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$out/"
+        if [[ -f web/index.html ]]; then cp web/index.html "$out/"; fi
+    fi
+
 # Run the tests.
 test:
     go test ./...

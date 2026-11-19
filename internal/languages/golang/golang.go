@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
+	"github.com/xsyetopz/bedrock/internal/config"
 	"github.com/xsyetopz/bedrock/internal/execx"
 	"github.com/xsyetopz/bedrock/internal/fsutil"
 	"github.com/xsyetopz/bedrock/internal/language"
@@ -32,6 +34,9 @@ func New() Go { return Go{} }
 
 // Spec declares Go's templates, markers, and tools.
 func (Go) Spec() language.Spec {
+	// Pure Go cross-compiles to these operating systems, which a service also runs on.
+	servers := []string{"freebsd", "linux", "macos", "windows"}
+
 	return language.Spec{
 		ID:      "go",
 		Block:   "go-bedrock",
@@ -39,7 +44,12 @@ func (Go) Spec() language.Spec {
 		Markers: []string{goMod, "go.work", ".golangci.yml"},
 		Tools:   []language.Tool{{Name: "go", Install: "https://go.dev/dl, such as `brew install go`"}},
 		Sources: []string{"**/*.go", goMod, "go.sum", "go.work", ".golangci.yml"},
-		Kinds:   []string{"command", "library"},
+		Kinds:   []string{"command", "library", "service"},
+		Platforms: map[string][]string{
+			"command": append(slices.Clone(servers), "wasi", "wasm"),
+			"library": append(slices.Clone(servers), "ios", "wasi", "wasm"),
+			"service": servers,
+		},
 	}
 }
 
@@ -74,12 +84,30 @@ func (Go) Plan(_ context.Context, c *language.Context) (language.Contribution, e
 	return language.Contribution{
 		Steps: []step.Step{step.Write{
 			Path:       goMod,
-			Content:    fmt.Appendf(nil, "module %s\n\ngo %s\n", module, Version),
+			Content:    []byte(moduleFile(module, c)),
 			Executable: false,
 		}},
 		Notes:        notes,
 		ProjectFiles: []string{goMod},
 	}, nil
+}
+
+// mobileTools is the tool block `just go::build ios` runs gomobile from; go mod
+// tidy adds the requirement and its checksums.
+const mobileTools = "\ntool (\n\tgolang.org/x/mobile/cmd/gobind\n\tgolang.org/x/mobile/cmd/gomobile\n)\n"
+
+// moduleFile returns a new go.mod. A library built for iOS also pins gomobile.
+func moduleFile(module string, c *language.Context) string {
+	text := fmt.Sprintf("module %s\n\ngo %s\n", module, Version)
+
+	kinds, _ := config.SplitList(c.Options["kind"])
+	platforms, _ := config.SplitList(c.Options["platform"])
+
+	if slices.Contains(kinds, "library") && slices.Contains(platforms, "ios") {
+		text += mobileTools
+	}
+
+	return text
 }
 
 // AfterApply records the starter code's dependencies in go.mod and go.sum.

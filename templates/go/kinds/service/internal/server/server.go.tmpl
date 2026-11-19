@@ -1,0 +1,67 @@
+// Package server holds the HTTP handler and the server lifecycle.
+package server
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"html"
+	"net/http"
+	"time"
+)
+
+const (
+	readHeaderTimeout = 5 * time.Second
+	shutdownTimeout   = 10 * time.Second
+)
+
+// Handler returns the routes the service answers.
+func Handler() http.Handler {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	mux.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
+		// Escaped because a client that sniffs the body as HTML must not run the name.
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = fmt.Fprintf(w, "Hello, %s!\n", html.EscapeString(r.PathValue("name")))
+	})
+
+	return mux
+}
+
+// Run serves Handler on addr until ctx ends, then lets requests in flight finish.
+func Run(ctx context.Context, addr string) error {
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           Handler(),
+		ReadHeaderTimeout: readHeaderTimeout,
+	}
+
+	failed := make(chan error, 1)
+
+	go func() { failed <- srv.ListenAndServe() }()
+
+	select {
+	case err := <-failed:
+		return err
+	case <-ctx.Done():
+	}
+
+	// The cancelled ctx cannot bound the shutdown, so it gets a fresh one.
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
+	defer cancel()
+
+	err := srv.Shutdown(shutdownCtx)
+	if err != nil {
+		return fmt.Errorf("shutdown: %w", err)
+	}
+
+	if err = <-failed; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	return nil
+}

@@ -75,4 +75,5 @@ coverage/
 *.test
 *.out
 go.work.sum
+/dist/
 # <<< go-bedrock

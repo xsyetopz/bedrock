@@ -1,0 +1,32 @@
+// Command @@name@@ serves HTTP until it is interrupted.
+package main
+
+import (
+	"context"
+	"errors"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"@@module@@/internal/server"
+)
+
+func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
+	addr := os.Getenv("ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
+
+	err := server.Run(ctx, addr)
+
+	stop()
+
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Print(err)
+		os.Exit(1)
+	}
+}

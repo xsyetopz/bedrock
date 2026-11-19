@@ -2,6 +2,7 @@ package golang_test
 
 import (
 	"errors"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -68,6 +69,7 @@ func TestInitStartsAModuleWithEachKindsStarter(t *testing.T) {
 	for kind, starter := range map[string]string{
 		"command": "internal/greeting/greeting.go",
 		"library": ".golangci.yml",
+		"service": "internal/server/server.go",
 	} {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
@@ -170,5 +172,94 @@ func TestGuardPassesAModuleWithItsConfig(t *testing.T) {
 
 	if len(found) != 0 {
 		t.Errorf("findings: %v", found)
+	}
+}
+
+func TestInitAddsTheWebFilesOnlyForTheWasmPlatform(t *testing.T) {
+	t.Parallel()
+
+	for platform, want := range map[string]bool{"wasm": true, "wasi": false, "linux": false, "windows": false} {
+		t.Run(platform, func(t *testing.T) {
+			t.Parallel()
+
+			root := bedrocktest.Repo(t, nil)
+
+			result := bedrocktest.Plan(t, root, true,
+				bedrocktest.Select(t, "go", config.Options{"kind": "command", "platform": platform}))
+
+			paths := bedrocktest.Paths(result.Steps)
+			if got := slices.Contains(paths, "web/index.html"); got != want {
+				t.Errorf("web/index.html planned = %v, want %v: %v", got, want, paths)
+			}
+
+			if !slices.Contains(paths, "cmd/"+filepath.Base(root)+"/main.go") {
+				t.Errorf("plan misses the command: %v", paths)
+			}
+		})
+	}
+}
+
+func TestInitPinsGomobileForALibraryBuiltForIOSOnly(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name    string
+		options config.Options
+		want    bool
+	}{
+		{"library ios", config.Options{"kind": "library", "platform": "ios"}, true},
+		{"library linux", config.Options{"kind": "library", "platform": "linux"}, false},
+		{"library", config.Options{"kind": "library"}, false},
+		{"command linux", config.Options{"kind": "command", "platform": "linux"}, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			root := bedrocktest.Repo(t, nil)
+
+			result := bedrocktest.Plan(t, root, true, bedrocktest.Select(t, "go", test.options))
+
+			mod := bedrocktest.Written(result.Steps, "go.mod")
+			if got := strings.Contains(mod, "golang.org/x/mobile/cmd/gomobile"); got != test.want {
+				t.Errorf("go.mod pins gomobile = %v, want %v:\n%s", got, test.want, mod)
+			}
+		})
+	}
+}
+
+func TestInitWritesTheBuildRecipeAndIgnoresDist(t *testing.T) {
+	t.Parallel()
+
+	root := bedrocktest.Repo(t, nil)
+
+	result := bedrocktest.Plan(t, root, true,
+		bedrocktest.Select(t, "go", config.Options{"kind": "command", "platform": "wasi,linux"}))
+
+	if recipe := bedrocktest.Written(
+		result.Steps,
+		".just/go.just",
+	); !strings.Contains(
+		recipe,
+		"\nbuild platform arch=",
+	) {
+		t.Errorf("`.just/go.just` has no build recipe:\n%s", recipe)
+	}
+}
+
+func TestInitRejectsAPlatformTheKindLacks(t *testing.T) {
+	t.Parallel()
+
+	spec := bedrocktest.Language(t, "go").Spec()
+
+	for kind, platform := range map[string]string{"service": "wasm", "command": "ios", "library": "android"} {
+		if slices.Contains(spec.KindPlatforms(kind), platform) {
+			t.Errorf("%s offers %s", kind, platform)
+		}
+	}
+
+	for _, platform := range spec.KindPlatforms("command") {
+		if !slices.Contains(language.Platforms(), platform) {
+			t.Errorf("unknown platform %s", platform)
+		}
 	}
 }
