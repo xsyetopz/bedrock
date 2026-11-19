@@ -293,7 +293,7 @@ func ownsDirectory(file string) bool {
 	switch filepath.Base(parent) {
 	case "tests", "examples", "benches":
 		owner = filepath.Dir(parent)
-	case binKind:
+	case "bin": // src/bin, Cargo's directory of extra binaries
 		owner = filepath.Dir(filepath.Dir(parent))
 	default:
 		return false

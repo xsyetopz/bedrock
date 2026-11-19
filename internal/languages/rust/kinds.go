@@ -22,7 +22,8 @@ func kinds() []string {
 	}
 }
 
-// binKind and the platform names recur across the maps below.
+// The kind and platform names the kind list, the target maps, and the crate
+// templates share.
 const (
 	wasmName        = "wasm" // both the `wasm` kind and the `wasm` platform
 	libKind         = "lib"
