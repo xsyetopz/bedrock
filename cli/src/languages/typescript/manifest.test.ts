@@ -8,8 +8,8 @@ const template = {
 	devDependencies: { oxlint: "catalog:" },
 	workspaces: { packages: [], catalog: { oxlint: "1.90.0" } },
 	overrides: { "@types/node": "26.6.6" },
-	packageManager: "bun@1.4.4",
-	engines: { bun: ">=1.4.4" },
+	packageManager: "bun@1.4.5",
+	engines: { bun: ">=1.4.5" },
 };
 
 describe("migrateManifest", () => {
@@ -59,9 +59,9 @@ describe("migrateManifest", () => {
 			dependencies: { zod: "^3.0.0" },
 			devDependencies: { vite: "^6.0.0", oxlint: "catalog:" },
 			workspaces: { packages: [], catalog: { oxlint: "1.90.0" } },
-			engines: { node: ">=20", bun: ">=1.4.4" },
+			engines: { node: ">=20", bun: ">=1.4.5" },
 			overrides: { "@types/node": "26.6.6" },
-			packageManager: "bun@1.4.4",
+			packageManager: "bun@1.4.5",
 		});
 	});
 

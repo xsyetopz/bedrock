@@ -4,7 +4,7 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C and C++, Java and 
 
 | Language | Kinds | Tooling |
 | --- | --- | --- |
-| `typescript` | `library`, `cli`, `plugin` | Bun 1.4.4, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
+| `typescript` | `library`, `cli`, `plugin` | Bun 1.4.5, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
 | `rust` | `lib`, `bin`, `no-std`, `ffi`, `wasm`, `bun-ffi` | Rust 1.100.0, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, unit tests in `tests.rs` files |
 | `swift` | `library`, `executable`, `app` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config |
 | `cpp` | | C and C++ alone or beside any other language, clang-format and clang-tidy over the `compile_commands.json` of SwiftPM, CMake, Meson, and xmake, each build system's tests |
