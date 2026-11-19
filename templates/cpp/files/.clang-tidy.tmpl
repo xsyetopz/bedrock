@@ -86,7 +86,9 @@ Checks:
   - -portability-avoid-pragma-once
 WarningsAsErrors: "*"
 HeaderFilterRegex: "(^|.*/)(include|src|Sources)/.*"
-ExcludeHeaderFilterRegex: ""
+# .cache/bedrock holds the CMake and Meson builds: generated headers, such as
+# CMake's export header, and fetched dependencies, which the project does not edit.
+ExcludeHeaderFilterRegex: "(^|.*/)\\.cache/bedrock/.*"
 SystemHeaders: false
 FormatStyle: file
 CheckOptions:
