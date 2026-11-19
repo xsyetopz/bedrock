@@ -13,22 +13,75 @@ import (
 	"time"
 
 	"github.com/xsyetopz/bedrock/internal/bedrocktest"
+	"github.com/xsyetopz/bedrock/internal/plan"
 )
 
 // gradleTimeout bounds one real Gradle run, which downloads Gradle, a JDK,
 // and every plugin on a cold cache.
 const gradleTimeout = 20 * time.Minute
 
+// buildCase is one kind built for the platforms in its init option; empty
+// platforms build the kind's defaults.
+type buildCase struct {
+	kind, platforms string
+}
+
+func (c buildCase) name() string {
+	if c.platforms == "" {
+		return c.kind
+	}
+
+	// Commas would land in the temp directory name, and the Kotlin native compiler
+	// splits its -Xfragment-sources argument on them.
+	return c.kind + "@" + strings.ReplaceAll(c.platforms, ",", "+")
+}
+
+func (c buildCase) selected(t *testing.T) plan.Selected {
+	t.Helper()
+
+	if c.platforms == "" {
+		return jvm(t, c.kind, "")
+	}
+
+	return jvmOn(t, c.kind, c.platforms)
+}
+
 func kinds() []string {
 	return []string{
-		"android", "cmp", "java-application", "java-library", "java-native",
-		"kmp", "kotlin-application", "kotlin-library", "kotlin-native",
+		"android", "cmp", "java-application", "java-gradle-plugin", "java-library", "java-native",
+		"kmp", "kotlin-application", "kotlin-gradle-plugin", "kotlin-library", "kotlin-native",
+		"scala-application", "scala-library",
 	}
 }
 
-// needsAndroid reports whether a kind builds against the Android SDK.
-func needsAndroid(kind string) bool {
-	return kind == "android" || kind == "cmp" || kind == "kmp"
+// cases lists each kind with its defaults, then the platform choices that
+// reach build files the defaults do not.
+func cases() []buildCase {
+	all := make([]buildCase, 0, len(kinds())+5)
+	for _, kind := range kinds() {
+		all = append(all, buildCase{kind: kind, platforms: ""})
+	}
+
+	return append(all,
+		buildCase{kind: "kmp", platforms: "ios,macos,linux,windows"},
+		buildCase{kind: "kmp", platforms: "wasm,wasi"},
+		buildCase{kind: "kmp", platforms: "android,ios,macos,linux,windows,wasm,wasi"},
+		buildCase{kind: "cmp", platforms: "ios,macos,linux,windows,wasm"},
+		buildCase{kind: "kotlin-native", platforms: "macos,linux,windows"},
+	)
+}
+
+// needsAndroid reports whether a case builds against the Android SDK: the
+// android kind, and kmp and cmp unless their platforms leave android out.
+func needsAndroid(c buildCase) bool {
+	switch c.kind {
+	case "android":
+		return true
+	case "cmp", "kmp":
+		return c.platforms == "" || strings.Contains(c.platforms, "android")
+	default:
+		return false
+	}
 }
 
 func androidSDK() bool {
@@ -38,13 +91,13 @@ func androidSDK() bool {
 func TestInitedKindsPassTheGuard(t *testing.T) {
 	t.Parallel()
 
-	for _, kind := range kinds() {
-		t.Run(kind, func(t *testing.T) {
+	for _, c := range cases() {
+		t.Run(c.name(), func(t *testing.T) {
 			t.Parallel()
 
 			// Arrange
 			root := bedrocktest.Repo(t, nil)
-			bedrocktest.Adopt(t, root, true, jvm(t, kind, ""))
+			bedrocktest.Adopt(t, root, true, c.selected(t))
 			bedrocktest.CommitAll(t, root)
 
 			// Act
@@ -109,15 +162,15 @@ func TestInitedKindsBuildWithGradle(t *testing.T) {
 		t.Skip("no JDK on PATH")
 	}
 
-	for _, kind := range kinds() {
-		t.Run(kind, func(t *testing.T) {
-			if needsAndroid(kind) && !androidSDK() {
+	for _, c := range cases() {
+		t.Run(c.name(), func(t *testing.T) {
+			if needsAndroid(c) && !androidSDK() {
 				t.Skip("no Android SDK: set ANDROID_HOME or ANDROID_SDK_ROOT")
 			}
 
 			// Arrange
 			root := bedrocktest.Repo(t, nil)
-			bedrocktest.Adopt(t, root, true, jvm(t, kind, ""))
+			bedrocktest.Adopt(t, root, true, c.selected(t))
 			bedrocktest.CommitAll(t, root)
 
 			if want, have := toolchainMajor(t, root), javaMajor(t); want != have {

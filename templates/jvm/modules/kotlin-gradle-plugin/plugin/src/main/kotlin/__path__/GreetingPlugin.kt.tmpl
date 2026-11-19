@@ -1,0 +1,15 @@
+package @@package@@
+
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+
+/** Registers a `greet` task that prints a greeting. */
+public class GreetingPlugin : Plugin<Project> {
+    override fun apply(project: Project) {
+        project.tasks.register("greet") { task ->
+            task.group = "help"
+            task.description = "Prints a greeting."
+            task.doLast { println("Hello from ${project.name}") }
+        }
+    }
+}

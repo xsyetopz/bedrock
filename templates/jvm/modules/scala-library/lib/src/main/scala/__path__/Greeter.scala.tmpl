@@ -1,0 +1,7 @@
+package @@package@@
+
+/** Greets people. */
+object Greeter:
+
+  /** Returns a greeting for `name`, or for everyone when there is none. */
+  def greet(name: Option[String]): String = s"Hello, ${name.getOrElse("everyone")}"

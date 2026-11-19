@@ -56,15 +56,27 @@ func (JVM) Spec() language.Spec {
 			filePomXML, fileBuildGradle, fileBuildGradleKts, fileSettingsGradle, fileSettingsGradleKts,
 			"build.sbt", "build.xml", "ivy.xml", "gradlew",
 		},
-		Sources: []string{"**/*.java", "**/*.kt", "**/*.kts", "**/*.pro", "gradle/**", fileGradleProperties},
+		Sources: []string{
+			"**/*.java", "**/*.kt", "**/*.kts", "**/*.scala", "**/*.pro", "gradle/**", fileGradleProperties,
+		},
 		Kinds: []string{
-			"android", "cmp", "java-application", "java-library", "java-native",
-			"kmp", "kotlin-application", "kotlin-library", "kotlin-native",
+			kindAndroid, kindCmp, "java-application", "java-gradle-plugin", "java-library", "java-native",
+			kindKmp, "kotlin-application", "kotlin-gradle-plugin", "kotlin-library", kindKotlinNative,
+			"scala-application", "scala-library",
+		},
+		// The JVM is always a target of kmp and cmp; these add to it. cmp's desktop
+		// platforms all run Compose on the JVM, and kotlin-native links one
+		// executable per platform. java-native stays on the host, since
+		// GraalVM's native-image cannot cross-compile.
+		Platforms: map[string][]string{
+			kindKmp:          {kindAndroid, "ios", nameLinux, nameMacos, "wasi", "wasm", nameWindows},
+			kindCmp:          {kindAndroid, "ios", nameLinux, nameMacos, "wasm", nameWindows},
+			kindKotlinNative: {nameLinux, nameMacos, nameWindows},
 		},
 		Executables: []string{"**/gradlew"},
 		// javac, kotlinc, Error Prone, and NullAway bound no sizes, so lizard
 		// covers files and functions.
-		Lizard: []string{nameJava, "kotlin", "scala"},
+		Lizard: []string{nameJava, "kotlin", nameScala},
 	}
 }
 

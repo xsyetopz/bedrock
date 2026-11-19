@@ -1,0 +1,13 @@
+plugins {
+    id("bedrock.kotlin")
+    id("bedrock.gradle-plugin")
+}
+
+gradlePlugin {
+    plugins {
+        register("greeting") {
+            id = "@@package@@.greeting"
+            implementationClass = "@@package@@.GreetingPlugin"
+        }
+    }
+}

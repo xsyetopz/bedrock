@@ -1,0 +1,16 @@
+package @@package@@
+
+import kotlin.test.Test
+import kotlin.test.assertNotNull
+import org.gradle.testfixtures.ProjectBuilder
+
+class GreetingPluginTest {
+    @Test
+    fun registersTheGreetTask() {
+        val project = ProjectBuilder.builder().build()
+
+        project.pluginManager.apply(GreetingPlugin::class.java)
+
+        assertNotNull(project.tasks.findByName("greet"))
+    }
+}

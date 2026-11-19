@@ -8,6 +8,20 @@ dependencyResolutionManagement {
   repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
   repositories {
     mavenCentral()
+    // Kotlin/Wasm downloads Node.js and Binaryen as ivy distributions, which
+    // FAIL_ON_PROJECT_REPOS would reject when the plugin adds them to each project.
+    ivy("https://nodejs.org/dist") {
+      name = "Node.js distributions"
+      patternLayout { artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]") }
+      metadataSources { artifact() }
+      content { includeModule("org.nodejs", "node") }
+    }
+    ivy("https://github.com/WebAssembly/binaryen/releases/download") {
+      name = "Binaryen distributions"
+      patternLayout { artifact("version_[revision]/[artifact]-version_[revision]-[classifier].[ext]") }
+      metadataSources { artifact() }
+      content { includeModule("com.github.webassembly", "binaryen") }
+    }
     google {
       content {
         includeGroupByRegex("""androidx\..*""")

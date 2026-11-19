@@ -1,0 +1,9 @@
+package @@package@@
+
+/** Prints a greeting. */
+object Main:
+
+  def greet(name: Option[String]): String = s"Hello, ${name.getOrElse("everyone")}"
+
+  def main(args: Array[String]): Unit =
+    println(greet(args.headOption))
