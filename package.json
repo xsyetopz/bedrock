@@ -9,7 +9,7 @@
 		"catalog": {
 			"@types/bun": "1.4.4",
 			"@types/node": "26.6.6",
-			"eslint-plugin-jsdoc": "65.4.11",
+			"eslint-plugin-jsdoc": "65.4.12",
 			"markdownlint-cli2": "0.24.1",
 			"markdownlint-rule-title-case-style": "0.4.3",
 			"oxlint": "1.94.0",
