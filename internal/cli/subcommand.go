@@ -61,7 +61,7 @@ func (a *App) subcommand(
 		return ExitFailed, fmt.Errorf("read `%s`: %w", config.Path, err)
 	}
 
-	selected, err := a.selector().Select(cfg, []selection.Named{{Language: lang, Kind: ""}}, nil)
+	selected, err := a.selector().Select(cfg, []selection.Named{{Language: lang, Kind: "", Platform: ""}}, nil)
 	if err != nil {
 		return ExitFailed, err
 	}

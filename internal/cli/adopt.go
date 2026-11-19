@@ -246,7 +246,7 @@ func (a *App) selection(
 		}
 
 		for _, lang := range detected {
-			named = append(named, selection.Named{Language: lang, Kind: ""})
+			named = append(named, selection.Named{Language: lang, Kind: "", Platform: ""})
 		}
 	}
 

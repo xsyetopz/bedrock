@@ -183,7 +183,7 @@ func (a *App) usage() string {
 
 		entry := spec.ID
 		if len(spec.Kinds) > 0 {
-			entry += " (kinds: " + strings.Join(spec.Kinds, ", ") + ")"
+			entry += " (kinds: " + strings.Join(kindUsages(spec), ", ") + ")"
 		}
 
 		kinds = append(kinds, entry)
@@ -267,4 +267,19 @@ func (a *App) confirm(yes bool) bool {
 	answer, _ := bufio.NewReader(a.Stdin).ReadString('\n')
 
 	return strings.EqualFold(strings.TrimSpace(answer), "y")
+}
+
+// kindUsages lists each kind as `<kind>` or `<kind>@<platform>|<platform>`.
+func kindUsages(spec language.Spec) []string {
+	usages := make([]string, 0, len(spec.Kinds))
+
+	for _, kind := range spec.Kinds {
+		if platforms := spec.KindPlatforms(kind); len(platforms) > 0 {
+			kind += "@" + strings.Join(platforms, "|")
+		}
+
+		usages = append(usages, kind)
+	}
+
+	return usages
 }

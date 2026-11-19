@@ -52,6 +52,11 @@ type Spec struct {
 	// Kinds are the starters bedrock init can write, each a
 	// templates/<id>/kinds/<kind> directory.
 	Kinds []string
+	// Platforms maps a kind to the targets `bedrock init <lang>:<kind>@<platform>`
+	// may name for it, drawn from Platforms(). A kind left out builds for the
+	// host alone. Each platform's extra templates, if any, sit under
+	// templates/<id>/platforms/<kind>/<platform>.
+	Platforms map[string][]string
 	// Executables are globs of written paths that must run as programs,
 	// such as **/gradlew.
 	Executables []string

@@ -30,11 +30,14 @@ var ErrUsage = errors.New("usage")
 // lacks, such as one a newer bedrock added.
 var ErrUnknownRecorded = errors.New("unknown recorded language")
 
-// Named is a language the command line names, as <name> or <name>:<kind>[,<kind>].
+// Named is a language the command line names, as <name> or
+// <name>:<kind>[,<kind>][@<platform>[,<platform>]].
 type Named struct {
 	Language language.Language
 	// Kind is the comma list after the colon; empty when there is none.
 	Kind string
+	// Platform is the comma list after the at sign; empty when there is none.
+	Platform string
 }
 
 // Selector selects among one registry's languages.
@@ -45,7 +48,9 @@ type Selector struct {
 	Runner execx.Runner
 }
 
-// Parse reads <name>[:<kind>], checking the name and each kind.
+// Parse reads <name>[:<kind>[@<platform>]], checking the name, each kind,
+// and that every kind named builds for each platform. The at sign splits
+// first, so `swift:library,app@ios,macos` gives both kinds both platforms.
 func (s Selector) Parse(arg string) (Named, error) {
 	name, kind, hasKind := strings.Cut(arg, ":")
 
@@ -55,40 +60,91 @@ func (s Selector) Parse(arg string) (Named, error) {
 	}
 
 	if !hasKind {
-		return Named{Language: lang, Kind: ""}, nil
+		return Named{Language: lang, Kind: "", Platform: ""}, nil
 	}
 
-	kinds := lang.Spec().Kinds
+	kind, platform, hasPlatform := strings.Cut(kind, "@")
 
-	entries, err := config.SplitList(kind)
+	kinds, err := parseKinds(lang.Spec(), arg, kind)
 	if err != nil {
-		return Named{}, fmt.Errorf("%w: %s: %w", ErrUsage, arg, err)
+		return Named{}, err
+	}
+
+	var platforms []string
+
+	if hasPlatform {
+		if platforms, err = parsePlatforms(lang.Spec(), arg, kinds, platform); err != nil {
+			return Named{}, err
+		}
+	}
+
+	return Named{Language: lang, Kind: strings.Join(kinds, ","), Platform: strings.Join(platforms, ",")}, nil
+}
+
+// parseKinds checks the comma list of kinds after the colon.
+func parseKinds(spec language.Spec, arg, list string) ([]string, error) {
+	entries, err := config.SplitList(list)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s: %w", ErrUsage, arg, err)
 	}
 
 	if len(entries) == 0 {
-		return Named{}, fmt.Errorf("%w: `%s` needs a kind after the colon, as in `%s:<kind>[,<kind>]`",
-			ErrUsage, arg, lang.Spec().ID)
+		return nil, fmt.Errorf("%w: `%s` needs a kind after the colon, as in `%s:<kind>[,<kind>]`",
+			ErrUsage, arg, spec.ID)
 	}
 
 	var unknown []string
 
 	for _, entry := range entries {
-		if !slices.Contains(kinds, entry) {
+		if !slices.Contains(spec.Kinds, entry) {
 			unknown = append(unknown, entry)
 		}
 	}
 
 	if len(unknown) > 0 {
-		known := strings.Join(kinds, ", ")
+		known := strings.Join(spec.Kinds, ", ")
 		if known == "" {
 			known = "none"
 		}
 
-		return Named{}, fmt.Errorf("%w: %s has no kind `%s`. Kinds: %s",
-			ErrUsage, lang.Spec().ID, strings.Join(unknown, ", "), known)
+		return nil, fmt.Errorf("%w: %s has no kind `%s`. Kinds: %s",
+			ErrUsage, spec.ID, strings.Join(unknown, ", "), known)
 	}
 
-	return Named{Language: lang, Kind: strings.Join(entries, ",")}, nil
+	return entries, nil
+}
+
+// parsePlatforms checks the comma list after the at sign against every kind.
+func parsePlatforms(spec language.Spec, arg string, kinds []string, list string) ([]string, error) {
+	entries, err := config.SplitList(list)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s: %w", ErrUsage, arg, err)
+	}
+
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("%w: `%s` needs a platform after the at sign, as in `%s:<kind>@<platform>[,<platform>]`",
+			ErrUsage, arg, spec.ID)
+	}
+
+	for _, kind := range kinds {
+		offered := spec.KindPlatforms(kind)
+
+		for _, entry := range entries {
+			if slices.Contains(offered, entry) {
+				continue
+			}
+
+			known := strings.Join(offered, ", ")
+			if known == "" {
+				known = "none; it builds for the host"
+			}
+
+			return nil, fmt.Errorf("%w: %s kind `%s` has no platform `%s`. Platforms: %s",
+				ErrUsage, spec.ID, kind, entry, known)
+		}
+	}
+
+	return entries, nil
 }
 
 // Detect returns the languages whose markers sit at root.
@@ -170,6 +226,10 @@ func (s Selector) Select(cfg config.Config, named []Named, flags map[string]stri
 		extra := config.Options{}
 		if entry.Kind != "" {
 			extra["kind"] = entry.Kind
+		}
+
+		if entry.Platform != "" {
+			extra["platform"] = entry.Platform
 		}
 
 		add(entry.Language.Spec().ID, extra)

@@ -44,6 +44,10 @@ func NewRegistry(languages ...Language) (*Registry, error) {
 			return nil, err
 		}
 
+		if err := checkPlatforms(spec); err != nil {
+			return nil, err
+		}
+
 		for _, flag := range spec.Flags {
 			if err := claim(flags, flag.Name, spec.ID, "flag"); err != nil {
 				return nil, err

@@ -284,8 +284,20 @@ func (e *Engine) languageSteps(
 			return contribution{}, fmt.Errorf("kind: %w", kindErr)
 		}
 
+		platforms, platformErr := config.SplitList(c.Options["platform"])
+		if platformErr != nil {
+			return contribution{}, fmt.Errorf("platform: %w", platformErr)
+		}
+
 		for _, kind := range kinds {
 			dirs = append(dirs, "kinds/"+kind)
+
+			// A platform adds its files over the kind's, such as an Info.plist
+			// only iOS needs; most platforms change build settings alone and
+			// leave this directory out.
+			for _, platform := range platforms {
+				dirs = append(dirs, "platforms/"+kind+"/"+platform)
+			}
 		}
 	}
 

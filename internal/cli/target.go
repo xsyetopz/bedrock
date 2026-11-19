@@ -107,8 +107,10 @@ func (a *App) adoptUsage(mode mode) string {
 			"configs, migrates each language's tooling, and removes the tools it replaces.\n" +
 			"Without a language, it adopts the ones `.editorconfig` lists or the repo has.\n")
 	case modeInit:
-		text.WriteString("Usage: bedrock init <dir> <language>[:<kind>]... [options]\n\n" +
-			"Starts a repo in <dir>, which must be empty or missing, then adopts it.\n")
+		text.WriteString("Usage: bedrock init <dir> <language>[:<kind>[@<platform>,...]]... [options]\n\n" +
+			"Starts a repo in <dir>, which must be empty or missing, then adopts it.\n" +
+			"A platform list builds every kind before the at sign for those targets, as in\n" +
+			"`swift:app@ios,macos`; `bedrock` lists each kind's platforms.\n")
 	case modeUpdate:
 		text.WriteString("Usage: bedrock update [<dir>] [options]\n\n" +
 			"Rewrites every managed file for the languages `.editorconfig` lists, with the\n" +
