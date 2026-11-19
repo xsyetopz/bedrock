@@ -1,13 +1,13 @@
 # Bedrock
 
-Strict, shared setups for TypeScript (on Bun), Rust, Swift, C++20, Java and Kotlin, and Go repositories. Bedrock is one CLI, `bedrock`, and a Claude Code plugin that runs it. It starts a repo, or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run it the same way, and the repo it sets up depends on no bedrock package.
+Strict, shared setups for TypeScript (on Bun), Rust, Swift, C and C++, Java and Kotlin, and Go repositories, alone or mixed in one repo. Bedrock is one CLI, `bedrock`, and a Claude Code plugin that runs it. It starts a repo, or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run it the same way, and the repo it sets up depends on no bedrock package.
 
 | Language | Kinds | Tooling |
 | --- | --- | --- |
 | `typescript` | `library`, `cli`, `plugin` | Bun 1.4.4, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
 | `rust` | `lib`, `bin`, `no-std`, `ffi`, `wasm`, `bun-ffi` | Rust 1.100.0, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, unit tests in `tests.rs` files |
 | `swift` | `library`, `executable`, `app` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config |
-| `cpp` | | C++20 beside Swift, clang-format and clang-tidy, xmake |
+| `cpp` | | C and C++ alone or beside any other language, clang-format and clang-tidy over the `compile_commands.json` of SwiftPM, CMake, Meson, and xmake, each build system's tests |
 | `jvm` | `java-library`, `java-application`, `java-native`, `kotlin-library`, `kotlin-application`, `kotlin-native`, `kmp`, `cmp`, `android` | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |
 | `go` | `command`, `library` | Go 1.27, golangci-lint 2.15 with a strict config, `go test`, `GOMEMLIMIT`, `-p`, and `run.concurrency` bounds on every recipe |
 
@@ -53,7 +53,7 @@ bedrock adopt <dir> ts rust          # print it, then ask before applying
 bedrock adopt <dir> swift cpp --yes  # apply without asking
 ```
 
-Without a language, adopt takes the ones `.editorconfig` lists or the repo has. Language names are case-insensitive, and `ts` or `bun`, `cxx` or `c++`, `java` or `kotlin`, and `golang` work too. Then run `just setup` and `just verify` in the target and fix what they report. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes the ones git already holds, and lists the rest.
+Without a language, adopt takes the ones `.editorconfig` lists or the repo has. Language names are case-insensitive, and `ts` or `bun`, `cxx`, `c++`, or `c`, `java` or `kotlin`, and `golang` work too. Then run `just setup` and `just verify` in the target and fix what they report. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes the ones git already holds, and lists the rest.
 
 ## Start a Repo
 
@@ -79,6 +79,7 @@ bedrock init <dir> go:command               # or library
 | `bedrock languages [--staged]` | List the adopted languages, or those a commit touches |
 | `bedrock swift convert-tests [<path>...]` | Convert XCTest unit tests to Swift Testing |
 | `bedrock cpp compile-commands` | Write `compile_commands.json` for clang-tidy and clangd |
+| `bedrock cpp test` | Build and run the tests of each CMake, Meson, and xmake project |
 | `bedrock jvm j2k <path>...` | Convert Java files to Kotlin with IntelliJ IDEA's J2K |
 
 `bedrock <command> --help` lists each command's options.

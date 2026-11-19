@@ -126,7 +126,7 @@ const jvmOptions = (
 
 /**
  * The languages a run covers: those `.editorconfig` lists, plus those named,
- * plus the ones they require, in block order.
+ * in block order. Each stands alone, so a repo mixes any of them.
  */
 export const select = (
 	config: Config | undefined,
@@ -136,29 +136,17 @@ export const select = (
 	const options = new Map<string, LanguageOptions>(
 		Object.entries(config?.languages ?? {}),
 	);
-	const add = (language: Language, extra: LanguageOptions): void => {
-		options.set(language.id, { ...options.get(language.id), ...extra });
-		for (const id of language.requires ?? []) {
-			const required = findLanguage(id);
-			if (required !== undefined && !options.has(required.id)) {
-				add(required, {});
-			}
-		}
+	const add = (id: string, extra: LanguageOptions): void => {
+		options.set(id, { ...options.get(id), ...extra });
 	};
 	for (const entry of named) {
-		add(entry.language, entry.kind === undefined ? {} : { kind: entry.kind });
+		add(
+			entry.language.id,
+			entry.kind === undefined ? {} : { kind: entry.kind },
+		);
 	}
 	if (flags["cxx"] === true) {
-		const cpp = findLanguage("cpp");
-		if (cpp !== undefined) {
-			add(cpp, {});
-		}
-	}
-	for (const id of options.keys()) {
-		const language = findLanguage(id);
-		if (language !== undefined) {
-			add(language, {});
-		}
+		add("cpp", {});
 	}
 	if (typeof flags["group"] === "string") {
 		const group = flags["group"];

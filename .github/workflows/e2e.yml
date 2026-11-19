@@ -35,6 +35,9 @@ jobs:
           # Go and golangci-lint run the starter files through the same format and lint recipes.
           - language: go
             os: ubuntu-latest
+          # CMake and Meson build the C test projects; the xmake cases skip without xmake.
+          - language: cpp
+            os: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -44,7 +47,7 @@ jobs:
           bun-version-file: .bun-version
       - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
-          tool: just@1.59.0
+          tool: just@1.59.0,uv@0.13.7
       - if: matrix.language == 'go'
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -54,5 +57,11 @@ jobs:
         with:
           version: v2.15.0
           install-only: true
+      # The Meson introspection the test-file split reads matches the version tested locally.
+      - if: matrix.language == 'cpp'
+        run: |
+          sudo apt-get install -y --no-install-recommends cmake ninja-build
+          uv tool install meson==1.12.1
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: bun install --frozen-lockfile
       - run: bun test "cli/src/languages/${{ matrix.language }}/e2e.test.ts"

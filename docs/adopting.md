@@ -123,20 +123,30 @@ After applying, adopt migrates each manifest that declares an edition before 202
 
 To fix the errors, run `just lint-fix`, which moves each inline `#[cfg(test)] mod tests { … }` to a `tests.rs` file beside the file it tests (`bedrock guard rust --fix`), and applies Clippy's fixes to every target, tests included, then work through `just lint` one lint at a time. Silence a lint only with `#[expect(lint, reason = "…")]`, and document each public item, with `# Panics` and `# Errors` sections where they apply.
 
-## Swift and C++
+## Swift
 
-`bedrock adopt` on a Swift repo works with a `Package.swift` or an `.xcodeproj`; with neither, it prints a note, and `bedrock init <dir> swift:library` (or `swift:executable`, `swift:app`) starts a package. Naming `cpp`, or passing `--cxx`, turns on the C++ setup. Adopt never turns it on by itself: when it finds C, C++, or Objective-C++ files and `cpp` is not adopted, it prints a note to adopt `cpp` too. Adopt:
+`bedrock adopt` on a Swift repo works with a `Package.swift` or an `.xcodeproj`; with neither, it prints a note, and `bedrock init <dir> swift:library` (or `swift:executable`, `swift:app`) starts a package. Naming `cpp`, or passing `--cxx`, adds the C++ setup, which [C and C++](#c-and-c) describes; when a repo whose `.editorconfig` already lists its languages has C, C++, or Objective-C++ files and no `cpp`, adopt prints a note to add it. Adopt:
 
 - writes `.swift-version`, `.swift-format`, and `.swiftlint.yml`, `Tests/.swiftlint.yml` when `Tests` exists, and `Config/Bedrock.xcconfig` when the repo has an Xcode project, and removes `.swiftformat`, `.swiftlint.yaml`, and `Mintfile`;
 - raises `Package.swift` to tools version 6.4, raises a macOS platform below 12 to `.macOS(.v12)`, and adds the `// >>> swift-bedrock` block, which turns on Swift 6 mode, the upcoming features, strict memory safety, and warnings as errors for each target;
 - runs `swift package migrate` for the upcoming features it can rewrite code for. InternalImportsByDefault and ImmutableWeakCaptures need a person;
 - sets `Config/Bedrock.xcconfig` as the base configuration of each Xcode project's build configurations;
 - removes the `BuildTools` package that swift-bedrock releases before 0.2 wrote, and notes each `project.just`, `.gitignore`, `.just/*.just`, or workflow file that still mentions it;
-- with C++, adds the `// >>> swift-bedrock-cxx` block to `Package.swift`, which sets C++20 and turns on C++ interop for each Swift target, writes `.clang-format` and `.clang-tidy` in place of `_clang-format` and `_clang-tidy`, and writes `.just/cpp.just`. Adopt detects C++ from those configs or from a C, C++, or Objective-C file under `Sources/`. clang-tidy reads the compile database that `bedrock cpp compile-commands` writes from the SwiftPM targets and each xmake project, and `just setup` installs xmake when the repo tracks an `xmake.lua`.
+- with C++, adds the `// >>> swift-bedrock-cxx` block to `Package.swift`, which sets C++20 and turns on C++ interop for each Swift target.
 
 The Swift recipes run SwiftPM with `--disable-sandbox`, so a build inside an outer sandbox, such as a coding agent's or a git hook's, does not fail on SwiftPM's nested one. On macOS, outside CI and without C++, they also cache compiler output across checkouts.
 
 To fix the errors, run `just lint-fix`, which also converts XCTest files to Swift Testing outside `*UITests` targets (`bedrock swift convert-tests [<path>...]` does the same on its own), then work through `just lint`. Mark each unsafe expression with `unsafe`, spell existentials `any P`, and document each `public` or `open` declaration.
+
+## C and C++
+
+`cpp` stands alone or beside any other language. Adopt with no language named, in a repo whose `.editorconfig` lists none yet, detects it from `.clang-format` or `.clang-tidy`, a root `CMakeLists.txt`, `meson.build`, or `xmake.lua`, a C or C++ file at the top two levels, or a C, C++, or Objective-C file under `Sources/`. Adopt writes `.clang-format` and `.clang-tidy` in place of `_clang-format` and `_clang-tidy`, `.just/cpp.just`, and the C++ workflow. The recipes cover each build system the repo uses:
+
+- `just lint` runs `bedrock cpp compile-commands`, then clang-tidy over the database it writes from SwiftPM's Clang targets, each CMake and Meson project, and each xmake project. A project is a build file no other one encloses, such as `port/CMakeLists.txt`. CMake configures with `-DBUILD_TESTING=ON` and Meson with its defaults, each in `.cache/bedrock/<system>/<project>`.
+- `just test` runs `bedrock cpp test`: `cmake --build` and `ctest`, `meson test`, and `xmake test` for each project, every one even after another fails. `swift test` covers SwiftPM's C++ targets.
+- `just setup` installs LLVM, and CMake, Meson, or xmake when the repo tracks its build file.
+
+A subproject that cannot configure, such as a starter that needs an SDK fetched first, is skipped with a warning, while the root project's failure fails the recipe. Bedrock configures with each build's defaults, so a project that needs a preset or an option to configure fails until it builds with its defaults. A repo built only by Make or another build system has no compile database, so clang-tidy and the tests see none of its files; clang-format still covers them.
 
 ## Java and Kotlin
 

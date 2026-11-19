@@ -1,0 +1,31 @@
+# Managed by bedrock.
+name: C++
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpp:
+    # A macOS runner with Xcode 27: just cpp::setup installs with Homebrew, and
+    # SwiftPM's C++ targets build with Xcode's toolchain.
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: brew install just
+      # A repo whose checks need more on the runner, such as a library a C target links, adds those steps in this composite action.
+      - if: hashFiles('.github/actions/project-setup/action.yml') != ''
+        uses: ./.github/actions/project-setup
+      - run: just cpp::setup
+      - run: just cpp::verify

@@ -47,8 +47,6 @@ export interface Language {
 	readonly aliases: readonly string[];
 	/** Paths, or globs such as `Sources/**\/*.cpp`, whose match under the root shows the repo uses the language. */
 	readonly markers: readonly string[];
-	/** Languages adopted with this one, such as `swift` for `cpp`. */
-	readonly requires?: readonly string[];
 	/** Executables adopt needs, each with how to install it. */
 	readonly tools: Readonly<Record<string, string>>;
 	/** Globs of the files this language's checks read; the pre-commit and pre-push hooks run them only when a changed path matches. */

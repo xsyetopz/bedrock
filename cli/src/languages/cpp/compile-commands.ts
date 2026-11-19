@@ -1,12 +1,11 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, extname, join, resolve } from "node:path";
-
-import { $ } from "bun";
+import { extname, join, resolve } from "node:path";
 
 import type { Subcommand } from "../../core/language.ts";
 import { asArray, asRecord, asString } from "../swift/json.ts";
-import { firstLine, run, toolEnv } from "../swift/shell.ts";
+import { firstLine, run } from "../swift/shell.ts";
+import { cmakeEntries } from "./cmake.ts";
+import { mesonEntries } from "./meson.ts";
+import { xmakeEntries } from "./xmake.ts";
 
 /** One entry of compile_commands.json. */
 export interface CompileCommand {
@@ -86,66 +85,6 @@ export const swiftEntries = (
 	);
 };
 
-/** The xmake projects that no other tracked xmake.lua includes. */
-export const topProjects = (lists: readonly string[]): string[] => {
-	const projects = lists
-		.map((path) => dirname(path))
-		.map((dir) => (dir === "." ? "" : dir));
-	return projects.filter(
-		(project) =>
-			!projects.some(
-				(other) =>
-					other !== project &&
-					(other === "" || project.startsWith(`${other}/`)),
-			),
-	);
-};
-
-const xmakeEntries = async (root: string): Promise<unknown[]> => {
-	const listed =
-		await $`git ls-files -z --cached --others --exclude-standard -- xmake.lua '*/xmake.lua'`
-			.cwd(root)
-			.env(toolEnv())
-			.nothrow()
-			.quiet();
-	const lists = listed.stdout
-		.toString()
-		.split("\0")
-		.filter((path) => path !== "");
-	const output = await mkdtemp(join(tmpdir(), "bedrock-xmake-"));
-	try {
-		const entries = await Promise.all(
-			topProjects(lists).map(async (project) => {
-				const result = await run(
-					[
-						"xmake",
-						"project",
-						"-q",
-						"-y",
-						"-P",
-						join(root, project),
-						"-k",
-						"compile_commands",
-						output,
-					],
-					root,
-				);
-				if (result.code !== 0) {
-					throw new Error(`xmake project failed: ${firstLine(result.stderr)}`);
-				}
-				return asArray(
-					JSON.parse(
-						await Bun.file(join(output, "compile_commands.json")).text(),
-					),
-				);
-			}),
-		);
-		return entries.flat();
-	} finally {
-		await rm(output, { recursive: true, force: true });
-	}
-};
-
 const swiftJson = async (
 	root: string,
 	command: readonly string[],
@@ -165,36 +104,49 @@ const sorted = (entry: unknown): unknown =>
 			)
 		: entry;
 
+/** The entries of the Clang targets of the SwiftPM package at `root`, if any. */
+const packageEntries = async (root: string): Promise<CompileCommand[]> => {
+	if (!(await Bun.file(join(root, "Package.swift")).exists())) {
+		return [];
+	}
+	const [describe, info, sdk] = await Promise.all([
+		swiftJson(root, [
+			"swift",
+			"package",
+			"--disable-sandbox",
+			"describe",
+			"--type",
+			"json",
+		]),
+		swiftJson(root, ["swift", "-print-target-info"]),
+		run(["xcrun", "--show-sdk-path"], root),
+	]);
+	return swiftEntries(root, {
+		describe,
+		info,
+		sdk: sdk.code === 0 ? sdk.stdout.trim() : "",
+	});
+};
+
 /**
  * `bedrock cpp compile-commands`: writes compile_commands.json for clang-tidy and
- * clangd, which SwiftPM does not emit, from the package's Clang targets and each
- * xmake project.
+ * clangd from each build system the repo uses: a SwiftPM package's Clang
+ * targets, which SwiftPM emits no database for, and each CMake, Meson, and
+ * xmake project. CMake and Meson configure in `.cache/bedrock`, where the
+ * guard and `bedrock cpp test` find the builds.
  */
 export const compileCommands: Subcommand = {
 	summary: "Write compile_commands.json for clang-tidy and clangd.",
 	run: async (context) => {
 		const { root } = context;
 		try {
-			const [describe, info, sdk] = await Promise.all([
-				swiftJson(root, [
-					"swift",
-					"package",
-					"--disable-sandbox",
-					"describe",
-					"--type",
-					"json",
-				]),
-				swiftJson(root, ["swift", "-print-target-info"]),
-				run(["xcrun", "--show-sdk-path"], root),
+			const lists = await Promise.all([
+				packageEntries(root),
+				cmakeEntries(root),
+				mesonEntries(root),
+				xmakeEntries(root),
 			]);
-			const entries = [
-				...swiftEntries(root, {
-					describe,
-					info,
-					sdk: sdk.code === 0 ? sdk.stdout.trim() : "",
-				}),
-				...(await xmakeEntries(root)),
-			];
+			const entries = lists.flat();
 			await Bun.write(
 				join(root, "compile_commands.json"),
 				`${JSON.stringify(

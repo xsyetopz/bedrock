@@ -89,6 +89,34 @@ describe("detect", () => {
 		// Assert
 		expect(found.map((language) => language.id)).toEqual(["swift"]);
 	});
+
+	test("finds C++ by a root CMakeLists.txt beside another language", async () => {
+		// Arrange
+		const root = await tempRepo({
+			"Cargo.toml": "[package]\n",
+			"CMakeLists.txt": "project(native C)\n",
+		});
+
+		// Act
+		const found = await detect(root);
+
+		// Assert
+		expect(found.map((language) => language.id)).toEqual(["rust", "cpp"]);
+	});
+
+	test("finds C in a Make-built repo by its top-level sources", async () => {
+		// Arrange
+		const root = await tempRepo({
+			Makefile: "all:\n",
+			"py/obj.c": "int x;\n",
+		});
+
+		// Act
+		const found = await detect(root);
+
+		// Assert
+		expect(found.map((language) => language.id)).toEqual(["cpp"]);
+	});
 });
 
 describe("dropped", () => {

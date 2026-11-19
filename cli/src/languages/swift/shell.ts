@@ -47,6 +47,28 @@ export const run = async (
 	}
 };
 
+/**
+ * Runs `command` in `cwd` with its output shown, after printing it, and gives
+ * whether it passed; a missing executable fails.
+ */
+export const passes = async (
+	cwd: string,
+	command: readonly string[],
+): Promise<boolean> => {
+	console.error(`$ ${command.join(" ")}`);
+	try {
+		const child = Bun.spawn([...command], {
+			cwd,
+			env: toolEnv(),
+			stdio: ["inherit", "inherit", "inherit"],
+		});
+		return (await child.exited) === 0;
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : String(error));
+		return false;
+	}
+};
+
 /** The first non-blank line of a tool's error output, for a finding. */
 export const firstLine = (text: string): string =>
 	text

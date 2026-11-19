@@ -3,11 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { tempRepo } from "../../core/testing.ts";
 import { adoptSwift, commitAll, contextIn } from "../swift/harness.ts";
 import { asArray, asRecord, asString, asStrings } from "../swift/json.ts";
-import {
-	compileCommands,
-	swiftEntries,
-	topProjects,
-} from "./compile-commands.ts";
+import { compileCommands, swiftEntries } from "./compile-commands.ts";
 
 const INFO = {
 	paths: { runtimeResourcePath: "/tc/usr/lib/swift" },
@@ -81,20 +77,6 @@ describe("swiftEntries", () => {
 		});
 
 		expect(entries).toEqual([]);
-	});
-});
-
-describe("topProjects", () => {
-	test("keeps the projects no other project contains", () => {
-		expect(topProjects(["xmake.lua", "a/xmake.lua", "b/c/xmake.lua"])).toEqual([
-			"",
-		]);
-	});
-
-	test("keeps sibling projects", () => {
-		expect(
-			topProjects(["a/xmake.lua", "b/xmake.lua", "a/x/xmake.lua"]),
-		).toEqual(["a", "b"]);
 	});
 });
 

@@ -44,7 +44,7 @@ export type Mode = "adopt" | "init" | "update";
 
 const OPTIONS = `
 Options:
-  --cxx          Add C++20 to a Swift repo (same as naming cpp).
+  --cxx          Add C and C++ (same as naming cpp).
   --dry-run      Print the plan. Change nothing.
   --group <pkg>  The JVM group and package, such as com.example.app; kept in .editorconfig.
   --yes          Apply without asking (agents, CI).

@@ -11,7 +11,7 @@ const selected = [
 	{ language: cpp, options: {} },
 ];
 
-test("adopting cpp writes the C++ files and the cxx block", async () => {
+test("adopting cpp writes the C++ files", async () => {
 	const root = await tempRepo({ "Package.swift": "let package = 1\n" });
 
 	const plan = await buildPlan(root, selected, { init: false });
@@ -20,9 +20,23 @@ test("adopting cpp writes the C++ files and the cxx block", async () => {
 	expect(paths).toContain(".clang-format");
 	expect(paths).toContain(".clang-tidy");
 	expect(paths).toContain(".just/cpp.just");
-	expect(written(plan.steps, "Package.swift")).toContain(
-		"// >>> swift-bedrock-cxx",
-	);
+});
+
+test("adopting cpp alone writes its files and workflow without Swift's", async () => {
+	// Arrange
+	const root = await tempRepo({ "CMakeLists.txt": "project(app C)\n" });
+
+	// Act
+	const plan = await buildPlan(root, [{ language: cpp, options: {} }], {
+		init: false,
+	});
+
+	// Assert
+	const paths = plan.steps.map((step) => step.path);
+	expect(paths).toContain(".just/cpp.just");
+	expect(paths).toContain(".github/workflows/cpp.yml");
+	expect(paths).not.toContain("Package.swift");
+	expect(paths).not.toContain(".github/workflows/swift.yml");
 });
 
 test.each(["_clang-format", "_clang-tidy"])(

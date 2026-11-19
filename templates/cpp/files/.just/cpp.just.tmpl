@@ -1,14 +1,18 @@
-# Managed by bedrock. SwiftPM and Xcode build and test the C++ targets, so
-# this file formats and lints them. Put project recipes in project.just.
+# Managed by bedrock. Formats, lints, and tests the C and C++ code of each
+# build system the repo uses: SwiftPM's C++ targets, which swift test covers,
+# and each CMake, Meson, and xmake project. Put project recipes in project.just.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set working-directory := ".."
 
 llvm := `if command -v brew >/dev/null && [[ -d "$(brew --prefix llvm 2>/dev/null)" ]]; then echo "$(brew --prefix llvm)/bin/"; fi`
 
-# Install LLVM, for clang-format and clang-tidy, and xmake when a project uses it.
+# Install LLVM, for clang-format and clang-tidy, and CMake, Meson, or xmake when
+# a project uses it.
 setup:
     if [[ ! -x "{{ llvm }}clang-tidy" ]] && ! command -v clang-tidy >/dev/null; then brew install llvm; fi
+    if [[ -n "$(git ls-files --cached --others --exclude-standard -- CMakeLists.txt '*/CMakeLists.txt')" ]] && ! command -v cmake >/dev/null; then brew install cmake; fi
+    if [[ -n "$(git ls-files --cached --others --exclude-standard -- meson.build '*/meson.build')" ]] && ! command -v meson >/dev/null; then brew install meson; fi
     if [[ -n "$(git ls-files --cached --others --exclude-standard -- xmake.lua '*/xmake.lua')" ]] && ! command -v xmake >/dev/null; then brew install xmake; fi
 
 # Format the C and C++ code.
@@ -19,10 +23,11 @@ format:
 format-check:
     just cpp::files | xargs -0 -r {{ llvm }}clang-format --dry-run --Werror
 
-# SwiftPM type-checks the C++ targets with the Swift ones.
+# clang-tidy in lint compiles each translation unit, and the build systems
+# compile them in test, so no separate type check runs.
 typecheck:
 
-# Run clang-tidy over each translation unit SwiftPM or xmake builds, with its flags.
+# Run clang-tidy over each translation unit a build system builds, with its flags.
 lint:
     {{ just_executable() }} bedrock cpp compile-commands
     {{ llvm }}run-clang-tidy -quiet -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements
@@ -33,15 +38,17 @@ lint-fix:
     -{{ llvm }}run-clang-tidy -quiet -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements -fix
     just cpp::format
 
-# SwiftPM runs the tests that cover the C++ targets.
+# Build each CMake, Meson, and xmake project and run its tests; swift test
+# covers SwiftPM's C++ targets.
 test:
+    {{ just_executable() }} bedrock cpp test
 
 # Report what the C++ linters cannot see; bedrock guard swift covers the C++ targets' manifest.
 guard:
     {{ just_executable() }} bedrock guard cpp
 
 # Run every C++ check CI runs.
-verify: format-check lint
+verify: format-check lint test
 
 # The C++ checks the pre-commit hook runs.
 pre-commit: format-check
