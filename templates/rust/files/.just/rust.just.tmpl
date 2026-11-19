@@ -28,6 +28,17 @@ format-check:
 typecheck:
     cargo check --workspace --all-targets --all-features --locked
 
+# Build the workspace for each target rust-toolchain.toml lists (`bedrock init
+# rust:lib@ios,android` writes them); rustup installs them with the toolchain.
+# Android links with the NDK's clang, which must be on PATH.
+build-targets:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    targets=$(sed -n 's/^targets *= *\[\(.*\)\]/\1/p' rust-toolchain.toml | tr -d '" ' | tr ',' ' ')
+    for target in $targets; do
+        cargo build --workspace --locked --target "$target"
+    done
+
 # Run Clippy, the rustdoc lints, and cargo-deny.
 lint:
     cargo clippy --workspace --all-targets --all-features --locked -- -D warnings

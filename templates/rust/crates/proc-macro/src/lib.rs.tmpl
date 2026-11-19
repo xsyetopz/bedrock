@@ -1,0 +1,22 @@
+//! Procedural macros: `#[derive(Named)]` gives a type a `NAME` constant.
+
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::{DeriveInput, parse_macro_input};
+
+/// Derives `const NAME: &'static str`, the type's name.
+#[proc_macro_derive(Named)]
+pub fn derive_named(input: TokenStream) -> TokenStream {
+    let DeriveInput {
+        ident, generics, ..
+    } = parse_macro_input!(input as DeriveInput);
+    let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
+    let name = ident.to_string();
+    quote! {
+        impl #impl_generics #ident #type_generics #where_clause {
+            /// The type's name.
+            pub const NAME: &'static str = #name;
+        }
+    }
+    .into()
+}

@@ -1,0 +1,18 @@
+use super::*;
+
+#[test]
+fn adds_with_wrapping() {
+    assert_eq!(@@crate@@_add(2, 3), 5);
+    assert_eq!(@@crate@@_add(i32::MAX, 1), i32::MIN);
+}
+
+#[test]
+fn sums_a_slice_and_tolerates_null() {
+    let values = [1, 2, 3];
+    // SAFETY: the pointer and length come from a live array.
+    let total = unsafe { @@crate@@_sum(values.as_ptr(), values.len()) };
+    assert_eq!(total, 6);
+    // SAFETY: null is allowed.
+    let empty = unsafe { @@crate@@_sum(std::ptr::null(), 4) };
+    assert_eq!(empty, 0);
+}

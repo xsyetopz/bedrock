@@ -1,0 +1,35 @@
+//! Greets each name: `@@package@@ --shout Ada Grace`.
+#![expect(clippy::print_stdout, reason = "a command-line tool reports on stdout")]
+
+use clap::Parser;
+
+/// Command-line arguments.
+#[derive(Debug, Parser)]
+#[command(version, about)]
+struct Cli {
+    /// Greet in capitals.
+    #[arg(long)]
+    shout: bool,
+    /// Who to greet.
+    #[arg(required = true)]
+    names: Vec<String>,
+}
+
+fn greetings(cli: &Cli) -> Vec<String> {
+    cli.names
+        .iter()
+        .map(|name| {
+            let line = format!("Hello, {name}!");
+            if cli.shout { line.to_uppercase() } else { line }
+        })
+        .collect()
+}
+
+fn main() {
+    for line in greetings(&Cli::parse()) {
+        println!("{line}");
+    }
+}
+
+#[cfg(test)]
+mod tests;
