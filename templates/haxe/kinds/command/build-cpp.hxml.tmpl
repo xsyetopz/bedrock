@@ -1,0 +1,6 @@
+# A native binary through hxcpp, for the OS it builds on; `just haxe::build <platform>` runs it.
+-cp src
+-lib hxcpp
+--main Main
+-D HAXE_OUTPUT_FILE=@@package@@
+--cpp bin/cpp

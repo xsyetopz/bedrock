@@ -1,0 +1,9 @@
+import @@package@@.Greeting;
+import utest.Assert;
+import utest.Test;
+
+class TestGreeting extends Test {
+	function testGreetsByName():Void {
+		Assert.equals("Hello, world!", Greeting.of("world"));
+	}
+}

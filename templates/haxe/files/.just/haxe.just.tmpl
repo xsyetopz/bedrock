@@ -12,6 +12,41 @@ setup:
     if [[ ! -d .haxelib ]]; then haxelib newrepo; fi
     haxelib install checkstyle 2.9.0 --always
     haxelib install formatter 1.18.0 --always
+    if [[ -f libraries.hxml ]]; then haxelib install libraries.hxml --always; fi
+
+# Build a native binary into dist/<platform>/ through hxcpp: build-cpp.hxml names the program.
+# hxcpp compiles for the OS it runs on, so the platform, one of linux, macos, or windows,
+# has to be this machine's; it defaults to it. CI builds each platform on its own runner.
+build platform="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "$(uname -s)" in
+        Darwin) host=macos ;;
+        Linux) host=linux ;;
+        MINGW* | MSYS* | CYGWIN*) host=windows ;;
+        *) host=unknown ;;
+    esac
+    platform="{{ platform }}"
+    platform="${platform:-$host}"
+    case "$platform" in
+        linux | macos | windows) ;;
+        *) echo "unknown platform $platform; use linux, macos, or windows" >&2; exit 1 ;;
+    esac
+    if [[ "$platform" != "$host" ]]; then
+        echo "hxcpp builds for the OS it runs on: build $platform on a $platform machine" >&2
+        exit 1
+    fi
+    if [[ ! -f build-cpp.hxml ]]; then
+        echo "build-cpp.hxml is missing: this repo has no native build" >&2
+        exit 1
+    fi
+    ext=""
+    if [[ "$platform" == windows ]]; then ext=.exe; fi
+    name="$(sed -n 's/^-D HAXE_OUTPUT_FILE=//p' build-cpp.hxml)"
+    rm -rf bin/cpp "dist/$platform"
+    haxe build-cpp.hxml
+    mkdir -p "dist/$platform"
+    cp "bin/cpp/$name$ext" "dist/$platform/"
 
 # Format the Haxe code.
 format:
