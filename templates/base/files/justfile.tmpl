@@ -21,8 +21,8 @@ languages := "typescript rust swift cpp jvm go haxe dotnet"
 # The bedrock release bedrock_version in .editorconfig pins; "source" runs the CLI from this checkout.
 bedrock_version := `sed -n 's/^bedrock_version = //p' .editorconfig 2>/dev/null | tail -n 1 || true`
 bedrock_asset := "bedrock-" + replace(os(), "macos", "darwin") + "-" + replace(replace(arch(), "aarch64", "arm64"), "x86_64", "x64")
-# One copy per release, shared by every checkout and worktree.
-bedrock_bin := cache_directory() / "bedrock" / bedrock_version / bedrock_asset
+# One copy per release, shared by every checkout and worktree; a source build stays in its own checkout.
+bedrock_bin := if bedrock_version == "source" { justfile_directory() / "bin" / "bedrock" } else { cache_directory() / "bedrock" / bedrock_version / bedrock_asset }
 # The lefthook release that runs the git hooks lefthook.yml lists.
 lefthook_version := "2.2.2"
 lefthook_asset := "lefthook_" + lefthook_version + "_" + replace(replace(os(), "macos", "MacOS"), "linux", "Linux") + "_" + replace(arch(), "aarch64", "arm64")
@@ -104,9 +104,6 @@ pre-push: (bedrock "guard" "base") lint-markdown lint-hooks
 bedrock *args: install-bedrock
     #!/usr/bin/env bash
     set -euo pipefail
-    if [[ "{{ bedrock_version }}" == source ]]; then
-        exec bun cli/src/main.ts "$@"
-    fi
     exec "{{ bedrock_bin }}" "$@"
 
 [private]
@@ -118,7 +115,11 @@ install-bedrock:
         echo ".editorconfig has no bedrock_version. Run bedrock adopt." >&2
         exit 1
     fi
-    if [[ "$version" == source || -x "{{ bedrock_bin }}" ]]; then exit 0; fi
+    # bedrock's own checkout builds itself; `go run` would turn each exit code into 1.
+    if [[ "$version" == source ]]; then
+        exec go build -o "{{ bedrock_bin }}" ./cmd/bedrock
+    fi
+    if [[ -x "{{ bedrock_bin }}" ]]; then exit 0; fi
     {{ just_executable() }} download "bedrock $version" \
         "https://github.com/xsyetopz/bedrock/releases/download/v$version" \
         "{{ bedrock_asset }}" SHA256SUMS "{{ bedrock_bin }}"

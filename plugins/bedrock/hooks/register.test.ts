@@ -1,8 +1,15 @@
 import { describe, expect, test } from "bun:test";
 
-import cli from "../../../package.json" with { type: "json" };
-import manifest from "../.claude-plugin/plugin.json" with { type: "json" };
-import type { Engine, Next, On, ProcessResult } from "./engine.ts";
+import type { Engine, On } from "./engine.ts";
+import {
+	BUILD,
+	BUILT,
+	engine,
+	INSTALLED,
+	next,
+	offline,
+	OK
+} from "./fake-engine.ts";
 import {
 	announce,
 	answerAdopt,
@@ -13,73 +20,6 @@ import {
 	register,
 	runBedrock
 } from "./register.ts";
-import { assetName, findBedrock, VERSION } from "./runner.ts";
-
-const CHECKOUT = "/src/bedrock";
-const ROOT = `${CHECKOUT}/plugins/bedrock`;
-const INSTALLED = "/home/me/.claude/plugins/cache/bedrock";
-const MAIN = `${CHECKOUT}/cli/src/main.ts`;
-
-const OK: ProcessResult = { exitCode: 0, stdout: "", stderr: "" };
-
-interface Fake {
-	readonly root?: string;
-	readonly files?: readonly string[];
-	readonly calls?: string[][];
-	/** Answers one process call; the default succeeds with no output. */
-	readonly answer?: (argv: readonly string[]) => ProcessResult;
-}
-
-const engine = ({
-	root = ROOT,
-	files = [MAIN],
-	calls = [],
-	answer = () => OK
-}: Fake = {}): Engine => ({
-	plugin: { name: "bedrock", root },
-	command: { register: () => Promise.resolve({}) },
-	fs: { exists: (path) => Promise.resolve(files.includes(path)) },
-	process: {
-		run: (argv) => {
-			calls.push([...argv]);
-			return Promise.resolve(answer(argv));
-		}
-	},
-	session: { cwd: () => Promise.resolve("/work") }
-});
-
-const next =
-	<E>(): Next<E> =>
-	() =>
-		Promise.resolve("ran");
-
-/** The machine and PATH a plugin installed alone sees. */
-const machine =
-	(onPath: string) =>
-	(argv: readonly string[]): ProcessResult => {
-		const replies: Record<string, string> = {
-			"bedrock version": onPath,
-			"uname -m": "arm64",
-			"uname -s": "Darwin"
-		};
-		return { ...OK, stdout: replies[argv.join(" ")] ?? "" };
-	};
-
-/** A machine where the release download fails with `stderr`. */
-const offline =
-	(stderr: string) =>
-	(argv: readonly string[]): ProcessResult =>
-		argv[0] === "sh" ? { exitCode: 1, stdout: "", stderr } : machine("")(argv);
-
-describe("version", () => {
-	test("the plugin runs the release the CLI builds", () => {
-		expect(VERSION).toBe(cli.version);
-	});
-
-	test("the plugin manifest names the release the plugin runs", () => {
-		expect(manifest.version).toBe(VERSION);
-	});
-});
 
 describe("bedrockArgs", () => {
 	test.each([
@@ -99,69 +39,6 @@ describe("bedrockArgs", () => {
 		expect(bedrockArgs(input)).toEqual(args);
 	});
 });
-
-describe("assetName", () => {
-	test.each([
-		["Darwin", "arm64", "bedrock-darwin-arm64"],
-		["Linux", "aarch64", "bedrock-linux-arm64"],
-		["Linux", "x86_64", "bedrock-linux-x64"]
-	])("names the %s %s asset", (system, arch, asset) => {
-		expect(assetName(system, arch)).toBe(asset);
-	});
-});
-
-describe("findBedrock", () => {
-	test("runs the source tree when the plugin sits in a bedrock checkout", async () => {
-		expect(await findBedrock(engine())).toEqual(["bun", MAIN]);
-	});
-
-	test("runs bedrock on PATH when its version matches", async () => {
-		const $ = engine({ root: INSTALLED, files: [], answer: machine(VERSION) });
-		expect(await findBedrock($)).toEqual(["bedrock"]);
-	});
-
-	test("downloads the pinned release once", async () => {
-		const calls: string[][] = [];
-		const $ = engine({
-			root: INSTALLED,
-			files: [],
-			calls,
-			answer: machine("0.0.1")
-		});
-		const binary = `${INSTALLED}/.bedrock/${VERSION}/bedrock-darwin-arm64`;
-
-		expect(await findBedrock($)).toEqual([binary]);
-		expect(calls.at(-1)?.slice(3)).toEqual([
-			"sh",
-			binary,
-			`https://github.com/xsyetopz/bedrock/releases/download/v${VERSION}`,
-			"bedrock-darwin-arm64"
-		]);
-	});
-
-	test("reuses a downloaded release", async () => {
-		const calls: string[][] = [];
-		const binary = `${INSTALLED}/.bedrock/${VERSION}/bedrock-darwin-arm64`;
-		const $ = engine({
-			root: INSTALLED,
-			files: [binary],
-			calls,
-			answer: machine("")
-		});
-
-		expect(await findBedrock($)).toEqual([binary]);
-		expect(calls.map((argv) => argv[0])).toEqual(["bedrock", "uname", "uname"]);
-	});
-
-	test("reports a failed download", async () => {
-		const $ = engine({ root: INSTALLED, files: [], answer: offline("404\n") });
-
-		const failure = await findBedrock($).catch((error: unknown) => error);
-
-		expect(failure).toBeInstanceOf(Error);
-	});
-});
-
 describe("runBedrock", () => {
 	test("runs bedrock in the session folder with a dry run", async () => {
 		const calls: string[][] = [];
@@ -170,14 +47,14 @@ describe("runBedrock", () => {
 		const result = await runBedrock($, "adopt rust");
 
 		expect(calls).toEqual([
+			BUILD,
 			[
 				"sh",
 				"-c",
 				'cd "$1" && shift && exec "$@"',
 				"sh",
 				"/work",
-				"bun",
-				MAIN,
+				BUILT,
 				"adopt",
 				"rust",
 				"--dry-run"
@@ -188,7 +65,8 @@ describe("runBedrock", () => {
 
 	test("reports the exit code of a failed run", async () => {
 		const $ = engine({
-			answer: () => ({ exitCode: 2, stdout: "", stderr: "no\n" })
+			answer: (argv) =>
+				argv[0] === "go" ? OK : { exitCode: 2, stdout: "", stderr: "no\n" }
 		});
 
 		const { text } = await runBedrock($, "guard");
@@ -256,13 +134,13 @@ describe("hooks", () => {
 	test("answerBedrock passes the typed command through", async () => {
 		const calls: string[][] = [];
 		await answerBedrock(engine({ calls }), { args: "clean" }, next());
-		expect(calls[0]?.slice(5)).toEqual(["bun", MAIN, "clean"]);
+		expect(calls.at(-1)?.slice(5)).toEqual([BUILT, "clean"]);
 	});
 
 	test("answerAdopt previews adopt with the typed arguments", async () => {
 		const calls: string[][] = [];
 		await answerAdopt(engine({ calls }), { args: "rust" }, next());
-		expect(calls[0]?.slice(7)).toEqual(["adopt", "rust", "--dry-run"]);
+		expect(calls.at(-1)?.slice(6)).toEqual(["adopt", "rust", "--dry-run"]);
 	});
 
 	test("blockForeign denies npm in a Bun repo only", async () => {

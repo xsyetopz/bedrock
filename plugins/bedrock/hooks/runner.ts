@@ -26,6 +26,23 @@ async function output($: Engine, argv: readonly string[]): Promise<string> {
 	return exitCode === 0 ? stdout.trim() : "";
 }
 
+// `go run` would report a failed check as exit 1 whatever bedrock returned, and
+// it resolves the module from the working folder, which is the user's repo.
+/** Builds the checkout's bedrock into its gitignored `bin/` and returns the binary. */
+async function buildSource($: Engine, checkout: string): Promise<string> {
+	const binary = `${checkout}/bin/bedrock`;
+	const { exitCode, stderr } = await $.process.run(
+		["go", "-C", checkout, "build", "-o", binary, "./cmd/bedrock"],
+		{ timeoutMs: 300_000 }
+	);
+	if (exitCode !== 0) {
+		throw new Error(
+			`Building bedrock from ${checkout} failed: ${stderr.trim()}`
+		);
+	}
+	return binary;
+}
+
 /** The release asset name for this machine, such as `bedrock-darwin-arm64`. */
 export const assetName = (system: string, machine: string): string => {
 	const os = system.toLowerCase();
@@ -34,14 +51,14 @@ export const assetName = (system: string, machine: string): string => {
 };
 
 /**
- * The command that runs bedrock: the source tree when the plugin sits in a
- * bedrock checkout, else `bedrock` on PATH at this plugin's version, else the
+ * The command that runs bedrock: a build of the source tree when the plugin
+ * sits in a bedrock checkout, else `bedrock` on PATH at this plugin's version, else the
  * pinned release, downloaded once beside the plugin.
  */
 export async function findBedrock($: Engine): Promise<string[]> {
 	const checkout = $.plugin.root.replace(/\/plugins\/[^/]+\/?$/u, "");
-	if (await $.fs.exists(`${checkout}/cli/src/main.ts`)) {
-		return ["bun", `${checkout}/cli/src/main.ts`];
+	if (await $.fs.exists(`${checkout}/cmd/bedrock/main.go`)) {
+		return [await buildSource($, checkout)];
 	}
 	if ((await output($, ["bedrock", "version"])) === VERSION) {
 		return ["bedrock"];
