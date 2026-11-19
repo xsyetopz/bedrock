@@ -7,19 +7,16 @@ import (
 	"github.com/xsyetopz/bedrock/internal/execx"
 )
 
-// swiftCommand runs `swift` in dir without the git variables a hook sets.
-// A hook in a worktree exports GIT_DIR and its siblings, which send
-// SwiftPM's own git checkouts to the wrong repository. execx can only add
-// variables, so `env -u` drops them.
+// swiftCommand runs `swift` in dir without the git variables a hook sets,
+// which would send SwiftPM's own git checkouts to the hook's repository.
 func swiftCommand(dir string, args ...string) execx.Command {
-	prefix := []string{"-u", "GIT_DIR", "-u", "GIT_WORK_TREE", "-u", "GIT_INDEX_FILE", swiftTool}
-
 	return execx.Command{
 		Stdin:  nil,
 		Dir:    dir,
-		Name:   "env",
-		Args:   append(prefix, args...),
+		Name:   swiftTool,
+		Args:   args,
 		Env:    nil,
+		Unset:  execx.HookGitVars(),
 		Stream: false,
 	}
 }

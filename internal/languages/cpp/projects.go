@@ -58,6 +58,8 @@ func projectsOf(ctx context.Context, c *language.Context, name string) []string 
 		Dir:  c.Root,
 		Name: "git",
 		Args: []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", name, "*/" + name},
+		// A hook's git variables would list the hook's repository, not root.
+		Unset: execx.HookGitVars(),
 	})
 	// A failed git listing means no projects, as outside a work tree.
 	if err != nil {

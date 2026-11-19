@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 )
 
@@ -26,6 +27,9 @@ type Command struct {
 	Args []string
 	// Env adds KEY=value pairs to the inherited environment.
 	Env []string
+	// Unset names inherited variables the program does not see, such as
+	// those HookGitVars returns.
+	Unset []string
 	// Stream sends the program's output to the terminal instead of
 	// capturing it, for installs a person watches, such as bun install.
 	Stream bool
@@ -68,8 +72,8 @@ func (s System) Run(ctx context.Context, command Command) (Result, error) {
 	cmd.Dir = command.Dir
 	cmd.Stdin = command.Stdin
 
-	if len(command.Env) > 0 {
-		cmd.Env = append(os.Environ(), command.Env...)
+	if len(command.Env) > 0 || len(command.Unset) > 0 {
+		cmd.Env = environ(command.Unset, command.Env)
 	}
 
 	var stdout, stderr bytes.Buffer
@@ -140,6 +144,25 @@ func Output(ctx context.Context, runner Runner, command Command) (string, error)
 	}
 
 	return string(result.Stdout), nil
+}
+
+// HookGitVars returns the variables git exports to a hook that pin every git
+// run to the hook's repository. A hook in a worktree sets them, so a program
+// that runs git in another directory, such as SwiftPM fetching a package or
+// a listing of a nested project, unsets them.
+func HookGitVars() []string {
+	return []string{"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"}
+}
+
+// environ returns the inherited environment without the unset names, plus extra.
+func environ(unset, extra []string) []string {
+	env := slices.DeleteFunc(os.Environ(), func(pair string) bool {
+		name, _, _ := strings.Cut(pair, "=")
+
+		return slices.Contains(unset, name)
+	})
+
+	return append(env, extra...)
 }
 
 func writerOr(writer, fallback io.Writer) io.Writer {

@@ -175,19 +175,10 @@ func runIn(t *testing.T, c *language.Context, verb string) execx.Result {
 	t.Helper()
 
 	result, err := c.Runner.Run(t.Context(), execx.Command{
-		Dir:  c.Root,
-		Name: "env",
-		Args: []string{
-			"-u",
-			"GIT_DIR",
-			"-u",
-			"GIT_WORK_TREE",
-			"-u",
-			"GIT_INDEX_FILE",
-			"swift",
-			verb,
-			"--disable-sandbox",
-		},
+		Dir:   c.Root,
+		Name:  "swift",
+		Args:  []string{verb, "--disable-sandbox"},
+		Unset: execx.HookGitVars(),
 	})
 	if err != nil {
 		t.Fatal(err)

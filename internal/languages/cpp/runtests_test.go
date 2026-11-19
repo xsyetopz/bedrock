@@ -1,10 +1,12 @@
 package cpp_test
 
 import (
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/xsyetopz/bedrock/internal/bedrocktest"
 	"github.com/xsyetopz/bedrock/internal/execx"
 )
 
@@ -121,5 +123,36 @@ func TestTestReportsAConfigureFailureOfTheRootProject(t *testing.T) {
 
 	if want := "meson setup of . failed: bad option"; !strings.Contains(h.stderr.String(), want) {
 		t.Errorf("stderr = %q, want it to hold %q", h.stderr, want)
+	}
+}
+
+func TestTestFindsTheProjectsWhenAHookPointsGitAtAnotherRepository(t *testing.T) {
+	// Arrange
+	h := newHarness(t, map[string]string{"CMakeLists.txt": "project(a)\n"}, nil)
+	h.runner.tools = map[string]toolFunc{
+		"cmake": func(command execx.Command) execx.Result {
+			if slices.Contains(command.Args, "-S") {
+				return cmakeThatWritesCommands(t)(command)
+			}
+
+			return ok("")
+		},
+		"ctest": func(execx.Command) execx.Result { return ok("") },
+	}
+	// A hook in a worktree exports the worktree's git location to every program it starts.
+	other := bedrocktest.Repo(t, nil)
+	t.Setenv("GIT_DIR", filepath.Join(other, ".git"))
+	t.Setenv("GIT_WORK_TREE", other)
+
+	// Act
+	code, err := subcommand(t, "test").Run(t.Context(), h.ctx, nil)
+
+	// Assert
+	if err != nil || code != 0 {
+		t.Fatalf("code, err = %d, %v; stderr: %s", code, err, h.stderr)
+	}
+
+	if len(h.runner.called("ctest --test-dir")) != 1 {
+		t.Errorf("calls = %v, want the root project's `ctest`", h.runner.calls)
 	}
 }
