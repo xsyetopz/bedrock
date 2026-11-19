@@ -52,7 +52,7 @@ ignorePatterns = [
 	"**/target/",
 	".claude/",
 	"openspec/",
-	"**/blocks/dependabot.yml",
+	"**/blocks/dependabot.yml"
 ]
 
 # YAML cannot use tabs. Markdown is left to markdownlint, which keeps tables compact.

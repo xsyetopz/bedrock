@@ -1,11 +1,8 @@
 import { expect, test } from "bun:test";
 
-const build = Bun.spawn(
-	["cargo", "build", "--quiet", "--package", "@@package@@"],
-	{
-		stderr: "inherit",
-	},
-);
+const build = Bun.spawn(["cargo", "build", "--quiet", "--package", "@@package@@"], {
+	stderr: "inherit"
+});
 if ((await build.exited) !== 0) {
 	throw new Error("cargo build --package @@package@@ failed");
 }
