@@ -20,3 +20,13 @@ updates:
       bun-dependencies:
         patterns: ["*"]
 # <<< typescript-bedrock
+
+# >>> go-bedrock
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      gomod:
+        patterns: ["*"]
+# <<< go-bedrock

@@ -1,0 +1,58 @@
+# Managed by bedrock. Put project recipes in project.just.
+
+set shell := ["bash", "-euo", "pipefail", "-c"]
+set working-directory := ".."
+
+# Bounds that keep one run from taking the machine. GOMEMLIMIT is a soft limit on the Go
+# runtime, golangci-lint included. `-p` caps the build and test programs that run at once;
+# `run.concurrency` in .golangci.yml caps golangci-lint's own threads.
+jobs := env("BEDROCK_GO_JOBS", "4")
+export GOMEMLIMIT := env("BEDROCK_GO_MEMLIMIT", "2GiB")
+export GOFLAGS := env("GOFLAGS", "") + " -p=" + jobs
+
+# Install the pinned golangci-lint with `go install`, then download the modules. The binary lands in
+# GOBIN, or in $GOPATH/bin, which has to be on PATH.
+setup:
+    if [[ "$(golangci-lint version --short 2>/dev/null || true)" != "2.15.0" ]]; then go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0; fi
+    @command -v golangci-lint >/dev/null || { echo "golangci-lint is not on PATH: add the directory go env GOBIN names, or GOPATH/bin when that is empty, then run just setup again" >&2; exit 1; }
+    go mod download
+
+# Format the Go code.
+format:
+    golangci-lint fmt
+
+# Fail if the Go code is not formatted.
+format-check:
+    golangci-lint fmt --diff
+
+# Build every package and compile every test, without running anything.
+typecheck:
+    go build ./...
+    go test -run '^$' ./...
+
+# Run golangci-lint.
+lint:
+    golangci-lint run
+
+# Apply the fixes golangci-lint can make, then format.
+lint-fix:
+    golangci-lint run --fix
+    golangci-lint fmt
+
+# Run the tests.
+test:
+    go test ./...
+
+# Fail if go.mod or go.sum need tidying, then report what the linters cannot see.
+guard:
+    go mod tidy -diff
+    {{ just_executable() }} bedrock guard go
+
+# Run every Go check CI runs.
+verify: format-check typecheck lint guard test
+
+# The Go checks the pre-commit hook runs.
+pre-commit: format-check lint guard
+
+# The Go checks the pre-push hook runs: verify without the tests, which CI runs.
+pre-push: format-check typecheck lint guard

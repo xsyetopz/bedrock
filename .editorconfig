@@ -6,7 +6,7 @@ root = true
 # are what bedrock adopt and update keep. Editors ignore keys they don't know.
 [*]
 bedrock_version = source
-bedrock_languages = typescript
+bedrock_languages = go, typescript
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
@@ -35,3 +35,12 @@ indent_style = tab
 indent_size = 2
 max_line_length = 80
 # <<< typescript-bedrock
+
+# >>> go-bedrock
+# gofmt indents with tabs.
+[*.go]
+indent_style = tab
+
+[go.mod]
+indent_style = tab
+# <<< go-bedrock

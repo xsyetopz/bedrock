@@ -66,3 +66,12 @@ coverage/
 # Editors index the Rust and Swift templates with rust-analyzer and SourceKit-LSP.
 /target/
 /.build/
+
+# >>> go-bedrock
+# Go build outputs, test binaries, and coverage profiles.
+/bin/
+*.exe
+*.test
+*.out
+go.work.sum
+# <<< go-bedrock

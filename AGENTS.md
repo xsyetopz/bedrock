@@ -23,3 +23,11 @@
 - Use Bun APIs where Bun has one, such as `Bun.file`, `Bun.$`, and `Bun.spawn`.
 - Change the shared lint, type, and Markdown rules in bedrock's `templates/typescript`; this repo's configs are copies that `bedrock update` rewrites.
 <!-- /typescript-bedrock -->
+
+<!-- go-bedrock -->
+- Build and test Go through `just`: `just go::test`, `just go::lint`, and `just go::format`. The recipes cap parallelism with `GOMEMLIMIT` and `GOFLAGS=-p`; `BEDROCK_GO_MEMLIMIT` and `BEDROCK_GO_JOBS` raise the caps on a dedicated machine.
+- Put commands under `cmd/<name>/` and private code under `internal/`, as the golang-standards project layout does.
+- Fix the cause of each golangci-lint finding in the code. `.golangci.yml` is the project's own once written, but loosen it only with the user's approval, and keep `run.concurrency` set.
+- Silence a finding only with `//nolint:<linter> // <reason>`; nolintlint rejects a directive without a linter name or a reason.
+- Keep `go.mod` and `go.sum` tidy: `just go::guard` fails when `go mod tidy` would change them.
+<!-- /go-bedrock -->

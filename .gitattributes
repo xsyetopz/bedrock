@@ -27,3 +27,8 @@
 bun.lock text linguist-generated
 *.lockb binary
 # <<< typescript-bedrock
+
+# >>> go-bedrock
+*.go diff=golang
+go.sum text linguist-generated
+# <<< go-bedrock
