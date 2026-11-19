@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.25)
+project(@@project@@ VERSION 0.1.0 LANGUAGES CXX)
+
+include(CTest)
+include(GNUInstallDirs)
+
+# An INTERFACE library has no sources to build; its users compile the headers.
+add_library(@@project@@ INTERFACE)
+add_library(@@project@@::@@project@@ ALIAS @@project@@)
+target_compile_features(@@project@@ INTERFACE cxx_std_20)
+target_include_directories(@@project@@ INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+install(TARGETS @@project@@ EXPORT @@project@@Targets)
+install(DIRECTORY include/ TYPE INCLUDE)
+install(EXPORT @@project@@Targets
+    NAMESPACE @@project@@::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/@@project@@)
+
+# The test compiles the header for the target platform, so a cross build checks
+# it too; CTest runs it where the platform can.
+if(BUILD_TESTING)
+    add_executable(@@project@@_test tests/@@project@@_test.cpp)
+    target_link_libraries(@@project@@_test PRIVATE @@project@@::@@project@@)
+    set_target_properties(@@project@@_test PROPERTIES CXX_EXTENSIONS OFF)
+    if(MSVC)
+        target_compile_options(@@project@@_test PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(@@project@@_test PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+    add_test(NAME @@project@@ COMMAND @@project@@_test)
+endif()

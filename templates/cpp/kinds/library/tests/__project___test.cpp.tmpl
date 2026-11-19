@@ -1,0 +1,16 @@
+#include <cstdlib>
+#include <iostream>
+#include <@@project@@/@@project@@.hpp>
+#include <string>
+
+// CTest passes a test that exits 0, so the test needs no framework.
+auto main() -> int {
+    const std::string got = @@project@@::greeting("world");
+    if (got != "Hello, world!") {
+        std::cerr << "greeting(\"world\") = " << got << '\n';
+
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}

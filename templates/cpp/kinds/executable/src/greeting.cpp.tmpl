@@ -1,0 +1,16 @@
+#include "greeting.hpp"
+
+#include <string>
+#include <string_view>
+
+namespace @@project@@ {
+
+    auto greeting(std::string_view name) -> std::string {
+        std::string text = "Hello, ";
+        text += name;
+        text += '!';
+
+        return text;
+    }
+
+}  // namespace @@project@@

@@ -1,0 +1,19 @@
+#include <cstdio>
+#include <cstdlib>
+#include <@@project@@/@@project@@.hpp>
+
+// A constexpr function is checked at compile time, so a cross build verifies it
+// even where the test cannot run.
+static_assert(@@project@@::sum(2, 3) == 5);
+
+// CTest passes a test that exits 0, so the test needs no framework.
+auto main() -> int {
+    const int got = @@project@@::sum(2, 3);
+    if (got != 5) {
+        static_cast<void>(std::fputs("sum(2, 3) is not 5\n", stderr));
+
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}

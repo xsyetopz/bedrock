@@ -1,0 +1,22 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "wasm",
+      "displayName": "WebAssembly (Emscripten)",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "generator": "Ninja",
+      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "wasm", "configurePreset": "wasm", "configuration": "Debug" }
+  ],
+  "testPresets": [
+    { "name": "wasm", "configurePreset": "wasm", "configuration": "Debug", "output": { "outputOnFailure": true } }
+  ]
+}
