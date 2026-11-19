@@ -1,0 +1,18 @@
+use super::*;
+
+#[test]
+fn greets_each_name() {
+    let cli = Cli::try_parse_from(["app", "Ada", "Grace"]).unwrap();
+    assert_eq!(greetings(&cli), ["Hello, Ada!", "Hello, Grace!"]);
+}
+
+#[test]
+fn shouts_on_request() {
+    let cli = Cli::try_parse_from(["app", "--shout", "Ada"]).unwrap();
+    assert_eq!(greetings(&cli), ["HELLO, ADA!"]);
+}
+
+#[test]
+fn requires_a_name() {
+    assert!(Cli::try_parse_from(["app"]).is_err());
+}

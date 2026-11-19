@@ -31,9 +31,9 @@ func toolchainPart(c *language.Context, wanted []string) (language.Contribution,
 		return language.Contribution{}, err
 	}
 
-	var targets []string
-	if slices.Contains(wanted, "wasm") {
-		targets = []string{wasmTarget}
+	targets, err := targetsOf(c.Options, wanted)
+	if err != nil {
+		return language.Contribution{}, err
 	}
 
 	content := toolchainFile(base, current, targets)

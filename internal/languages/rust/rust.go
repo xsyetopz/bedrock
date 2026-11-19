@@ -46,7 +46,8 @@ func (Rust) Spec() language.Spec {
 			"**/*.rs", "**/Cargo.toml", "Cargo.lock", toolchainPath,
 			"rustfmt.toml", "clippy.toml", "deny.toml", ".cargo/**",
 		},
-		Kinds: kinds(),
+		Kinds:     kinds(),
+		Platforms: kindPlatforms(),
 		// Clippy has function lints (too_many_lines, too_many_arguments,
 		// cognitive_complexity) but no file-length lint.
 		Lizard: []string{"rust"},

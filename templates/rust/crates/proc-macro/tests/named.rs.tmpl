@@ -1,0 +1,16 @@
+//! Integration tests run against the public API, as another crate would.
+#![cfg(test)]
+
+use @@crate@@::Named;
+
+#[derive(Named)]
+struct Widget;
+
+#[derive(Named)]
+struct Wrapper<T>(T);
+
+#[test]
+fn names_the_type() {
+    assert_eq!(Widget::NAME, "Widget");
+    assert_eq!(Wrapper::<u8>::NAME, "Wrapper");
+}

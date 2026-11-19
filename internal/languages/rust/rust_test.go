@@ -19,6 +19,10 @@ const (
 	libSource   = "pub fn answer() -> u8 {\n    42\n}\n"
 )
 
+func allKinds() []string {
+	return []string{"lib", "bin", "no-std", "ffi", "wasm", "bun-ffi", "proc-macro", "cli", "service", "staticlib"}
+}
+
 func selectRust(t *testing.T, options config.Options) plan.Selected {
 	t.Helper()
 
@@ -332,7 +336,7 @@ func TestPackageNameFollowsTheDirectoryName(t *testing.T) {
 func TestInitWritesTheCratesOfEachKind(t *testing.T) {
 	t.Parallel()
 
-	for _, kind := range []string{"lib", "bin", "no-std", "ffi", "wasm", "bun-ffi"} {
+	for _, kind := range allKinds() {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
 

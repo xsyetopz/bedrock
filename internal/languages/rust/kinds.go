@@ -15,10 +15,108 @@ import (
 
 // kinds are what `bedrock init` can start; each has crate templates under
 // `templates/rust/crates`.
-func kinds() []string { return []string{"lib", "bin", "no-std", "ffi", "wasm", bunFFIKind} }
+func kinds() []string {
+	return []string{
+		libKind, binKind, "no-std", ffiKind, wasmName, bunFFIKind,
+		"proc-macro", "cli", "service", "staticlib",
+	}
+}
+
+// binKind and the platform names recur across the maps below.
+const (
+	wasmName        = "wasm" // both the `wasm` kind and the `wasm` platform
+	libKind         = "lib"
+	binKind         = "bin"
+	ffiKind         = "ffi"
+	platformLinux   = "linux"
+	platformMacOS   = "macos"
+	platformWASI    = "wasi"
+	platformWindows = "windows"
+)
 
 // wasmTarget is the Rust target a `wasm` crate builds for.
 const wasmTarget = "wasm32-unknown-unknown"
+
+// triples maps each platform to the rustup targets that build it. tvOS,
+// watchOS, and visionOS are tier 3: rustup ships no standard library for
+// them, so they need nightly `-Zbuild-std` and stay out.
+func triples() map[string][]string {
+	return map[string][]string{
+		"android":       {"aarch64-linux-android", "x86_64-linux-android"},
+		"ios":           {"aarch64-apple-ios", "aarch64-apple-ios-sim"},
+		platformLinux:   {"x86_64-unknown-linux-gnu"},
+		platformMacOS:   {"aarch64-apple-darwin", "x86_64-apple-darwin"},
+		platformWASI:    {"wasm32-wasip2"},
+		wasmName:        {wasmTarget},
+		platformWindows: {"x86_64-pc-windows-msvc"},
+	}
+}
+
+// kindPlatforms returns the platforms each kind builds for. A library, static
+// library, or C ABI crate goes anywhere Rust does; a program goes where it can
+// open files or a console; a `service` needs sockets, so no WASI. A kind left
+// out (`proc-macro`, which runs in the compiler, and `wasm`, which is already
+// one target) builds for the host.
+func kindPlatforms() map[string][]string {
+	everywhere := []string{"android", "ios", platformLinux, platformMacOS, platformWASI, wasmName, platformWindows}
+	programs := []string{platformLinux, platformMacOS, platformWASI, platformWindows}
+
+	return map[string][]string{
+		libKind:     everywhere,
+		"staticlib": everywhere,
+		ffiKind:     everywhere,
+		"no-std":    everywhere,
+		binKind:     programs,
+		"cli":       programs,
+		"service":   {platformLinux, platformMacOS, platformWindows},
+	}
+}
+
+// targetsOf returns the rustup targets the wanted kinds and the `platform`
+// option call for: each listed platform, plus the `wasm` kind's own target. A
+// platform no wanted kind supports is an error.
+func targetsOf(options config.Options, wanted []string) ([]string, error) {
+	listed, err := config.SplitList(options["platform"])
+	if err != nil {
+		return nil, fmt.Errorf("platform: %w", err)
+	}
+
+	var targets []string
+
+	if slices.Contains(wanted, wasmName) {
+		targets = append(targets, wasmTarget)
+	}
+
+	supported := kindPlatforms()
+
+	for _, platform := range listed {
+		known, ok := triples()[platform]
+		if !ok {
+			return nil, fmt.Errorf("platform %q: rust builds for %s", platform, strings.Join(platformNames(), ", "))
+		}
+
+		if !slices.ContainsFunc(wanted, func(kind string) bool { return slices.Contains(supported[kind], platform) }) {
+			return nil, fmt.Errorf(
+				"platform %q: none of the kinds %s builds for it", platform, strings.Join(wanted, ", "))
+		}
+
+		targets = append(targets, known...)
+	}
+
+	return targets, nil
+}
+
+// platformNames returns the platforms Rust maps, sorted.
+func platformNames() []string {
+	names := make([]string, 0, len(triples()))
+	for name := range triples() {
+		names = append(names, name)
+	}
+
+	slices.Sort(names)
+
+	return names
+}
 
 // kindsOf returns the kinds the `kind` option names, or a library when it
 // names none.
@@ -29,7 +127,7 @@ func kindsOf(options config.Options) ([]string, error) {
 	}
 
 	if len(listed) == 0 {
-		return []string{"lib"}, nil
+		return []string{libKind}, nil
 	}
 
 	var unique []string
@@ -103,7 +201,7 @@ func crateSteps(c *language.Context, kind, pkg string) ([]step.Step, error) {
 
 	source := kind
 	if kind == bunFFIKind {
-		source = "ffi"
+		source = ffiKind
 	}
 
 	steps, err := templateSteps(

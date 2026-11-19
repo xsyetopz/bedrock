@@ -22,6 +22,20 @@ func cargo(t *testing.T, root string, args ...string) (bool, string) {
 	return err == nil, string(output)
 }
 
+// cargoSharing runs `cargo args` in root with a target directory shared across
+// repos, so registry dependencies compile once for many generated workspaces.
+func cargoSharing(t *testing.T, root, targetDir string, args ...string) (bool, string) {
+	t.Helper()
+
+	command := exec.CommandContext(t.Context(), "cargo", args...)
+	command.Dir = root
+	command.Env = append(command.Environ(), "CARGO_TARGET_DIR="+targetDir)
+
+	output, err := command.CombinedOutput()
+
+	return err == nil, string(output)
+}
+
 func requireCargo(t *testing.T) {
 	t.Helper()
 
@@ -37,7 +51,7 @@ func requireCargo(t *testing.T) {
 func TestInitPassesFormatClippyTestsAndTheGuard(t *testing.T) {
 	t.Parallel()
 
-	for _, kind := range []string{"lib", "bin", "no-std", "ffi", "wasm", "bun-ffi"} {
+	for _, kind := range allKinds() {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
 			requireCargo(t)
