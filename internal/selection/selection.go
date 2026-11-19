@@ -25,6 +25,10 @@ import (
 // ErrUsage reports a command line that names languages or flags wrongly.
 var ErrUsage = errors.New("usage")
 
+// ErrUnknownRecorded reports a repository that records a language this build
+// lacks, such as one a newer bedrock added.
+var ErrUnknownRecorded = errors.New("unknown recorded language")
+
 // Named is a language the command line names, as <name> or <name>:<kind>[,<kind>].
 type Named struct {
 	Language language.Language
@@ -128,8 +132,17 @@ func (s Selector) Dropped(root string, selected []plan.Selected) ([]language.Lan
 // language flag's name to its value, "true" for a boolean one.
 func (s Selector) Select(cfg config.Config, named []Named, flags map[string]string) ([]plan.Selected, error) {
 	options := map[string]config.Options{}
-	for id, opts := range cfg.Languages {
-		options[id] = maps.Clone(opts)
+
+	for _, id := range slices.Sorted(maps.Keys(cfg.Languages)) {
+		// A release that predates a language would otherwise rewrite the repo
+		// without it, deleting its block and dropping it from the config.
+		if _, ok := s.Registry.Find(id); !ok {
+			return nil, fmt.Errorf("%w: `%s` lists `%s`, which this bedrock does not know. Known: %s; "+
+				"run the release `bedrock_version` pins, or a newer one", ErrUnknownRecorded, config.Path, id,
+				s.Registry.Known())
+		}
+
+		options[id] = maps.Clone(cfg.Languages[id])
 	}
 
 	add := func(id string, extra config.Options) {

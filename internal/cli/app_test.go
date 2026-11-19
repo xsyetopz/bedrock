@@ -218,6 +218,38 @@ func TestGuardRejectsAScopeNotAdopted(t *testing.T) {
 	expectContains(t, got.stderr, "not adopted here: cobol. Scopes: base, go")
 }
 
+func TestUpdateKeepsALanguageThisBuildDoesNotKnow(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	root := goRepo(t)
+	expectCode(t, bedrockIn(t, root, "adopt", "--yes", "--no-run"), cli.ExitOK)
+
+	config, err := os.ReadFile(filepath.Join(root, ".editorconfig"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorded := strings.Replace(string(config), "bedrock_languages = go", "bedrock_languages = cobol, go", 1)
+	bedrocktest.Write(t, root, ".editorconfig", recorded)
+
+	// Act
+	got := bedrockIn(t, root, "update", "--yes", "--no-run", "--allow-dirty")
+
+	// Assert
+	expectCode(t, got, cli.ExitFailed)
+	expectContains(t, got.stderr, "`.editorconfig` lists `cobol`, which this bedrock does not know")
+
+	after, err := os.ReadFile(filepath.Join(root, ".editorconfig"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(after) != recorded {
+		t.Errorf("`.editorconfig` changed:\n%s", after)
+	}
+}
+
 func TestAdoptRefusesToOverwriteUncommittedWork(t *testing.T) {
 	t.Parallel()
 
