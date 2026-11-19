@@ -106,10 +106,20 @@ func (e *Engine) Build(ctx context.Context, root string, selected []Selected, op
 	}
 
 	cfg := config.Config{Version: options.Version, Languages: languages}
+	ids := e.Registry.IDs()
+	// The justfile lists every registered language, not only the selected
+	// ones, so a registered language needs no edit to the base templates.
+	modules := make([]string, 0, len(ids))
+	for _, id := range ids {
+		modules = append(modules, fmt.Sprintf("mod? %s \".just/%s.just\"", id, id))
+	}
+
 	base := template.Variables{
-		"name":           filepath.Base(root),
-		"bedrockVersion": options.Version,
-		"bedrockConfig":  cfg.Pairs(),
+		"name":            filepath.Base(root),
+		"bedrockVersion":  options.Version,
+		"bedrockConfig":   cfg.Pairs(),
+		"languages":       strings.Join(ids, " "),
+		"languageModules": strings.Join(modules, "\n"),
 	}
 
 	var parts []contribution

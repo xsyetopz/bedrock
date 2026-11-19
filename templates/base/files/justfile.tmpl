@@ -5,18 +5,11 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-mod? typescript ".just/typescript.just"
-mod? rust ".just/rust.just"
-mod? swift ".just/swift.just"
-mod? cpp ".just/cpp.just"
-mod? jvm ".just/jvm.just"
-mod? go ".just/go.just"
-mod? haxe ".just/haxe.just"
-mod? dotnet ".just/dotnet.just"
+@@languageModules@@
 
 import? "project.just"
 
-languages := "typescript rust swift cpp jvm go haxe dotnet"
+languages := "@@languages@@"
 
 # The bedrock release bedrock_version in .editorconfig pins; "source" runs the CLI from this checkout.
 bedrock_version := `sed -n 's/^bedrock_version = //p' .editorconfig 2>/dev/null | tail -n 1 || true`

@@ -94,6 +94,16 @@ func (r *Registry) BlockOrder() []string {
 	return order
 }
 
+// IDs returns every language's id in block order.
+func (r *Registry) IDs() []string {
+	ids := make([]string, 0, len(r.languages))
+	for _, lang := range r.languages {
+		ids = append(ids, lang.Spec().ID)
+	}
+
+	return ids
+}
+
 // Flags returns every language's adopt flags with the language that owns each.
 func (r *Registry) Flags() []OwnedFlag {
 	var flags []OwnedFlag
