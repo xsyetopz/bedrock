@@ -1,0 +1,34 @@
+using @@project@@.Core;
+
+namespace @@project@@.MacOS;
+
+/// <summary>Shows the greeting in the app's only window.</summary>
+[Register("AppDelegate")]
+public sealed class AppLifecycle : NSApplicationDelegate
+{
+    private NSWindow? _window;
+
+    /// <inheritdoc />
+    public override void DidFinishLaunching(NSNotification notification)
+    {
+        _window = new NSWindow(
+            new CGRect(0, 0, 480, 270),
+            NSWindowStyle.Titled
+                | NSWindowStyle.Closable
+                | NSWindowStyle.Miniaturizable
+                | NSWindowStyle.Resizable,
+            NSBackingStore.Buffered,
+            false
+        )
+        {
+            Title = "@@project@@",
+            ContentView = NSTextField.CreateLabel(Greeting.Of("macOS")),
+        };
+        _window.Center();
+        _window.MakeKeyAndOrderFront(this);
+    }
+
+    /// <inheritdoc />
+    public override bool ApplicationShouldTerminateAfterLastWindowClosed(NSApplication sender) =>
+        true;
+}

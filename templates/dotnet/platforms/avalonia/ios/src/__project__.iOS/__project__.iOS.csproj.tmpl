@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    <!-- Avalonia.DesignerSupport ships trim warnings that the iOS linker reports as errors. -->
+    <NoWarn>$(NoWarn);IL2104</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.iOS" Version="12.1.6" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../@@project@@.Ui/@@project@@.Ui.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="@@project@@.Ui" />
+  </ItemGroup>
+</Project>

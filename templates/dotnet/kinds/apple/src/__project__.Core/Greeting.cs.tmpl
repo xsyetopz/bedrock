@@ -1,0 +1,10 @@
+namespace @@project@@.Core;
+
+/// <summary>Logic shared by every Apple app, free of platform APIs so it tests on any host.</summary>
+public static class Greeting
+{
+    /// <summary>Builds the greeting for <paramref name="name" />.</summary>
+    /// <param name="name">Who to greet.</param>
+    /// <returns>The greeting text.</returns>
+    public static string Of(string name) => $"Hello, {name}";
+}

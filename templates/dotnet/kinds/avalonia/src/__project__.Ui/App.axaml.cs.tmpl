@@ -1,0 +1,31 @@
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+
+namespace @@project@@.Ui;
+
+/// <summary>The application: one window on the desktop, one view on mobile and in the browser.</summary>
+public sealed class App : Application
+{
+    /// <inheritdoc />
+    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+
+    /// <inheritdoc />
+    public override void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.MainWindow = new MainWindow { DataContext = new MainViewModel() };
+        }
+        else if (ApplicationLifetime is IActivityApplicationLifetime activity)
+        {
+            activity.MainViewFactory = () => new MainView { DataContext = new MainViewModel() };
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+        {
+            singleView.MainView = new MainView { DataContext = new MainViewModel() };
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+}

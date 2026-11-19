@@ -24,6 +24,10 @@ const (
 // formatter and linter tools, and each project moved to `net10.0`, with notes
 // for what a person decides.
 func (Dotnet) Plan(ctx context.Context, c *language.Context) (language.Contribution, error) {
+	if err := checkKinds(c); err != nil {
+		return language.Contribution{}, err
+	}
+
 	tests, err := testProjects(ctx, c)
 	if err != nil {
 		return language.Contribution{}, err

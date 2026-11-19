@@ -1,0 +1,18 @@
+using @@project@@.Core;
+
+namespace @@project@@.Android;
+
+/// <summary>The launcher activity; it shows the greeting.</summary>
+[Activity(Label = "@string/app_name", MainLauncher = true)]
+public sealed class MainActivity : Activity
+{
+    /// <inheritdoc />
+    protected override void OnCreate(Bundle? savedInstanceState)
+    {
+        base.OnCreate(savedInstanceState);
+
+        SetContentView(
+            new TextView(this) { Text = Greeting.Of("Android"), Gravity = GravityFlags.Center }
+        );
+    }
+}

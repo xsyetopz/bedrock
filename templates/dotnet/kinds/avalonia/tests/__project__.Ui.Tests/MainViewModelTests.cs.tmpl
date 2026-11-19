@@ -1,0 +1,14 @@
+using Xunit;
+
+namespace @@project@@.Ui.Tests;
+
+public class MainViewModelTests
+{
+    [Fact]
+    public void GreetsTheProject()
+    {
+        MainViewModel model = new();
+
+        Assert.Equal("Hello, Avalonia", model.Greeting);
+    }
+}

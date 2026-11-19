@@ -43,7 +43,8 @@ func (Dotnet) Spec() language.Spec {
 			"dotnet-tools.json",
 			".editorconfig",
 		},
-		Kinds: nil,
+		Kinds:     kinds(),
+		Platforms: platforms(),
 		// The SDK analyzers and FSharpLint, as configured, bound no file,
 		// function, complexity, or parameter size, so lizard measures both
 		// languages.

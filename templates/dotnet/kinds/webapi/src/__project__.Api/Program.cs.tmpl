@@ -1,0 +1,16 @@
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+builder.Services.AddOpenApi();
+
+WebApplication app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
+
+app.UseHttpsRedirection();
+app.MapGet("/greeting/{name}", (string name) => $"Hello, {name}").WithName("GetGreeting");
+await app.RunAsync();
+
+/// <summary>The entry point, public so the tests can host the API.</summary>
+public partial class Program;

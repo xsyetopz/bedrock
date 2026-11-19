@@ -2,11 +2,17 @@ package dotnet_test
 
 import (
 	"maps"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/xsyetopz/bedrock/internal/bedrocktest"
+	"github.com/xsyetopz/bedrock/internal/config"
 	"github.com/xsyetopz/bedrock/internal/execx"
 	"github.com/xsyetopz/bedrock/internal/language"
 )
@@ -258,5 +264,180 @@ func TestAFailingTestFailsTheTestCommand(t *testing.T) {
 	// Assert
 	if tested != 1 {
 		t.Errorf("test exits %d, want 1", tested)
+	}
+}
+
+// workloads returns the installed .NET workload ids.
+func workloads(t *testing.T) []string {
+	t.Helper()
+
+	out, err := exec.CommandContext(t.Context(), "dotnet", "workload", "list").Output()
+	if err != nil {
+		t.Fatalf("dotnet workload list: %v", err)
+	}
+
+	var ids []string
+
+	for line := range strings.SplitSeq(string(out), "\n") {
+		if fields := strings.Fields(line); len(fields) > 1 && strings.Contains(fields[1], "/") {
+			ids = append(ids, fields[0])
+		}
+	}
+
+	return ids
+}
+
+// requireWorkloads skips the test unless every workload is installed.
+func requireWorkloads(t *testing.T, need ...string) {
+	t.Helper()
+
+	have := workloads(t)
+	for _, id := range need {
+		if !slices.Contains(have, id) {
+			t.Skipf("the %s workload is not installed (dotnet workload install %s)", id, id)
+		}
+	}
+}
+
+// androidAPI is the platform the android workload compiles against.
+const androidAPI = "android-36"
+
+// requireAndroidSDK skips the test unless an Android SDK with the platform
+// the workload compiles against is installed, which `dotnet workload` does
+// not provide and installing it means accepting the Android SDK licenses.
+func requireAndroidSDK(t *testing.T) {
+	t.Helper()
+
+	roots := []string{
+		os.Getenv("ANDROID_HOME"), os.Getenv("ANDROID_SDK_ROOT"),
+		"/opt/homebrew/share/android-commandlinetools",
+	}
+	for _, root := range roots {
+		if root == "" {
+			continue
+		}
+
+		if _, err := os.Stat(filepath.Join(root, "platforms", androidAPI, "android.jar")); err == nil {
+			return
+		}
+	}
+
+	t.Skipf("no Android SDK with %s (set ANDROID_HOME)", androidAPI)
+}
+
+// started is a repo a kind starts, with the pinned tools and the packages
+// restored.
+func started(t *testing.T, kind, platform string) *language.Context {
+	t.Helper()
+
+	options := config.Options{"kind": kind}
+	if platform != "" {
+		options["platform"] = platform
+	}
+
+	selected := bedrocktest.Select(t, "dotnet", options)
+	root := bedrocktest.Repo(t, map[string]string{})
+	bedrocktest.Adopt(t, root, true, selected)
+
+	ctx := bedrocktest.Context(t, root, selected)
+
+	restored, err := execx.Output(t.Context(), ctx.Runner,
+		execx.Command{Dir: root, Name: "dotnet", Args: []string{"tool", "restore"}})
+	if err != nil {
+		t.Fatalf("dotnet tool restore: %v\n%s", err, restored)
+	}
+
+	if exit := runSub(t, ctx, "restore"); exit != 0 {
+		t.Fatalf("restore exits %d", exit)
+	}
+
+	return ctx
+}
+
+// kindCase is one kind and platform with what building it needs besides the
+// SDK: a workload, or a host OS for the Apple targets.
+type kindCase struct {
+	name, kind, platform string
+	workloads            []string
+	goos                 string
+}
+
+func kindCases() []kindCase {
+	return []kindCase{
+		{"console", "console", "", nil, ""},
+		{"library", "library", "", nil, ""},
+		{"webapi", "webapi", "", nil, ""},
+		{"worker", "worker", "", nil, ""},
+		{"avalonia", "avalonia", "", nil, ""},
+		{"avalonia-wasm", "avalonia", "wasm", []string{"wasm-tools"}, ""},
+		{"avalonia-ios", "avalonia", "ios", []string{"ios"}, "darwin"},
+		{"avalonia-android", "avalonia", "android", []string{"android"}, ""},
+		{"apple-ios", "apple", "ios", []string{"ios"}, "darwin"},
+		{"apple-macos", "apple", "macos", []string{"macos"}, "darwin"},
+		{"apple-maccatalyst", "apple", "maccatalyst", []string{"maccatalyst"}, "darwin"},
+		{"apple-tvos", "apple", "tvos", []string{"tvos"}, "darwin"},
+		{"android", "android", "", []string{"android"}, ""},
+	}
+}
+
+func TestStartedKindsPassFormatTypecheckLintGuardAndTest(t *testing.T) {
+	t.Parallel()
+	requireDotnet(t)
+
+	var buildSlot sync.Mutex
+
+	for _, kase := range kindCases() {
+		t.Run(kase.name, func(t *testing.T) {
+			t.Parallel()
+			checkKind(t, kase, &buildSlot)
+		})
+	}
+}
+
+// checkKind starts the kind and runs the recipes a change must pass.
+func checkKind(t *testing.T, kase kindCase, buildSlot *sync.Mutex) {
+	t.Helper()
+
+	if kase.goos != "" && runtime.GOOS != kase.goos {
+		t.Skipf("%s builds on %s only", kase.name, kase.goos)
+	}
+
+	requireWorkloads(t, kase.workloads...)
+
+	if slices.Contains(kase.workloads, "android") {
+		requireAndroidSDK(t)
+	}
+
+	// The kinds build one at a time: each build holds a toolchain and, for the
+	// Apple and Android targets, gigabytes of memory.
+	buildSlot.Lock()
+	defer buildSlot.Unlock()
+
+	// Arrange
+	ctx := started(t, kase.kind, kase.platform)
+	guarder, _ := bedrocktest.Language(t, "dotnet").(language.Guarder)
+
+	// Act
+	exits := map[string]int{
+		"format":    runSub(t, ctx, "format", "--check"),
+		"typecheck": runSub(t, ctx, "typecheck"),
+		"lint":      runSub(t, ctx, "lint"),
+		"test":      runSub(t, ctx, "test"),
+	}
+
+	found, err := guarder.Guard(t.Context(), ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert
+	for name, exit := range exits {
+		if exit != 0 {
+			t.Errorf("%s exits %d", name, exit)
+		}
+	}
+
+	if len(found) != 0 {
+		t.Errorf("guard findings: %v", found)
 	}
 }

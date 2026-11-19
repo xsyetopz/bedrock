@@ -1,0 +1,9 @@
+using Android.Runtime;
+using Avalonia.Android;
+
+namespace @@project@@.Android;
+
+/// <summary>Starts the Avalonia application on Android.</summary>
+[Application]
+public sealed class MainApplication(nint javaReference, JniHandleOwnership transfer)
+    : AvaloniaAndroidApplication<App>(javaReference, transfer);

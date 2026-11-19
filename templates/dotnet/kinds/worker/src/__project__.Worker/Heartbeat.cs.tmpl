@@ -1,0 +1,23 @@
+namespace @@project@@.Worker;
+
+/// <summary>Logs a beat on an interval until the host stops.</summary>
+/// <param name="logger">Where the beats go.</param>
+public sealed partial class Heartbeat(ILogger<Heartbeat> logger) : BackgroundService
+{
+    /// <summary>The time between two beats.</summary>
+    public static TimeSpan Interval { get; } = TimeSpan.FromSeconds(1);
+
+    /// <inheritdoc />
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        using var timer = new PeriodicTimer(Interval);
+
+        while (await timer.WaitForNextTickAsync(stoppingToken))
+        {
+            LogBeat(logger, DateTimeOffset.UtcNow);
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Beat at {Time}")]
+    private static partial void LogBeat(ILogger<Heartbeat> logger, DateTimeOffset time);
+}
