@@ -55,8 +55,12 @@ export const mergeIgnoreList = (
 		return template;
 	}
 	const items = [...have, ...extra].map((entry) => JSON.stringify(entry));
-	const body = (found[2] ?? "").includes("\n")
-		? `\n${items.map((item) => `\t\t${item}`).join(",\n")}\n\t`
+	const original = found[2] ?? "";
+	// A JSONC list keeps the trailing comma `bun fmt` writes, or the formatter
+	// and the next adopt rewrite each other; a JSON list cannot have one.
+	const trailing = original.trimEnd().endsWith(",") ? "," : "";
+	const body = original.includes("\n")
+		? `\n${items.map((item) => `\t\t${item}`).join(",\n")}${trailing}\n\t`
 		: items.join(", ");
 	return template.replace(
 		arrayOf(key),
