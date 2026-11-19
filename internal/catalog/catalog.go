@@ -11,6 +11,7 @@ import (
 	"github.com/xsyetopz/bedrock/internal/languages/golang"
 	"github.com/xsyetopz/bedrock/internal/languages/haxe"
 	"github.com/xsyetopz/bedrock/internal/languages/jvm"
+	"github.com/xsyetopz/bedrock/internal/languages/rust"
 	"github.com/xsyetopz/bedrock/internal/languages/swift"
 	"github.com/xsyetopz/bedrock/internal/languages/typescript"
 )
@@ -19,6 +20,7 @@ import (
 func Languages() []language.Language {
 	return []language.Language{
 		typescript.New(),
+		rust.New(),
 		swift.New(),
 		cpp.New(),
 		jvm.New(),
