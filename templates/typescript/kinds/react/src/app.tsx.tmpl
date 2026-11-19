@@ -1,0 +1,31 @@
+import { useState } from "react";
+
+/** The props of {@link App}. */
+export interface AppProps {
+	/** Who the greeting is for. */
+	readonly name: string;
+}
+
+/**
+ * The page: a greeting and a counter.
+ *
+ * @param props The component props.
+ * @returns The page element.
+ */
+export const App = ({ name }: AppProps) => {
+	const [count, setCount] = useState(0);
+
+	return (
+		<main>
+			<h1>Hello, {name}!</h1>
+			<button
+				type="button"
+				onClick={() => {
+					setCount((current) => current + 1);
+				}}
+			>
+				Clicked {count} times
+			</button>
+		</main>
+	);
+};

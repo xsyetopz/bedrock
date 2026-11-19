@@ -1,0 +1,14 @@
+// Bundles the app into static files under dist/ that any web server can host.
+const result = await Bun.build({
+	entrypoints: ["src/index.html"],
+	minify: true,
+	outdir: "dist"
+});
+
+if (!result.success) {
+	throw new AggregateError(result.logs, "build failed");
+}
+
+for (const output of result.outputs) {
+	process.stdout.write(`${output.path}\n`);
+}

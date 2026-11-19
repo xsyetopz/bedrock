@@ -1,0 +1,17 @@
+import index from "./index.html";
+
+const server = Bun.serve({
+	development: process.env.NODE_ENV !== "production" && {
+		console: true,
+		hmr: true
+	},
+	port: Number(process.env["PORT"] ?? 3000),
+	routes: {
+		// Every path the API does not claim gets the app, which routes in the browser.
+		"/*": index,
+		"/api/hello/:name": (request) =>
+			Response.json({ message: `Hello, ${request.params.name}!` })
+	}
+});
+
+process.stdout.write(`Listening on ${server.url.href}\n`);
