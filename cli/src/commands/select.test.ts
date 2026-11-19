@@ -117,6 +117,34 @@ describe("detect", () => {
 		// Assert
 		expect(found.map((language) => language.id)).toEqual(["cpp"]);
 	});
+
+	test("finds Haxe by a nested hxml build beside TypeScript", async () => {
+		// Arrange
+		const root = await tempRepo({
+			"package.json": '{ "name": "game" }\n',
+			"services/api/build.hxml": "-cp src\n-js out.js\n",
+		});
+
+		// Act
+		const found = await detect(root);
+
+		// Assert
+		expect(found.map((language) => language.id)).toEqual([
+			"typescript",
+			"haxe",
+		]);
+	});
+
+	test("finds Haxe by a deep source without a build file", async () => {
+		// Arrange
+		const root = await tempRepo({ "lib/src/game/Main.hx": "class Main {}\n" });
+
+		// Act
+		const found = await detect(root);
+
+		// Assert
+		expect(found.map((language) => language.id)).toEqual(["haxe"]);
+	});
 });
 
 describe("dropped", () => {
@@ -129,6 +157,7 @@ describe("dropped", () => {
 			"swift",
 			"cpp",
 			"jvm",
+			"haxe",
 		]);
 	});
 
@@ -137,6 +166,7 @@ describe("dropped", () => {
 		const root = await tempRepo({
 			".swift-version": "6.3\n",
 			".just/cpp.just": "",
+			".just/haxe.just": "",
 			".clang-format": "",
 			gradlew: "",
 			"Cargo.toml": "[package]\n",
@@ -152,6 +182,7 @@ describe("dropped", () => {
 			"swift",
 			"cpp",
 			"jvm",
+			"haxe",
 		]);
 	});
 });

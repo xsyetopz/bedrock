@@ -1,6 +1,7 @@
 import type { Language } from "../core/language.ts";
 import { cpp } from "./cpp/index.ts";
 import { go } from "./go/index.ts";
+import { haxe } from "./haxe/index.ts";
 import { jvm } from "./jvm/index.ts";
 import { rust } from "./rust/index.ts";
 import { swift } from "./swift/index.ts";
@@ -14,6 +15,7 @@ export const LANGUAGES: readonly Language[] = [
 	cpp,
 	jvm,
 	go,
+	haxe,
 ];
 
 /** The language a command-line name means, or undefined. */

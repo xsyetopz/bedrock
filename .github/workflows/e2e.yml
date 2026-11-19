@@ -38,6 +38,9 @@ jobs:
           # CMake and Meson build the C test projects; the xmake cases skip without xmake.
           - language: cpp
             os: ubuntu-latest
+          # Haxe type-checks and runs an interpreter test; checkstyle and the formatter run the style case.
+          - language: haxe
+            os: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -64,5 +67,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends cmake ninja-build
           uv tool install meson==1.12.1
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - if: matrix.language == 'haxe'
+        uses: krdlab/setup-haxe@18e4b483cfffca2fb8881530bf8a6cec39dac8fb # v2.1.1
+        with:
+          haxe-version: 4.3.7
+      # The pinned versions just haxe::setup installs, into the global repo the tests run outside.
+      - if: matrix.language == 'haxe'
+        run: |
+          haxelib install checkstyle 2.9.0 --always
+          haxelib install formatter 1.18.0 --always
       - run: bun install --frozen-lockfile
       - run: bun test "cli/src/languages/${{ matrix.language }}/e2e.test.ts"

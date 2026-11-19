@@ -165,6 +165,18 @@ Adopt removes each old build file it migrates, so compare each new build with th
 
 To fix the errors, run `just lint-fix`, then work through `just verify`: code that needs a JDK API newer than Java 8, Error Prone findings, and NullAway's reports, which `@Nullable` from JSpecify answers where a value can be null. [jvm.md](jvm.md) explains the setup, and `just jvm::j2k <path>…` converts Java to Kotlin.
 
+## Haxe
+
+`haxe` stands alone or beside any other language, such as a Haxe game compiled to JavaScript in a Bun repo. Adopt with no language named, in a repo whose `.editorconfig` lists none yet, detects it from `haxelib.json`, or a tracked hxml or `.hx` file. Adopt writes `.just/haxe.just`, the Haxe workflow, and a starter `checkstyle.json`, which stays the project's own, and ignores `.haxelib/`. The recipes run the pinned tools from the repo's local haxelib repo:
+
+- `just haxe::setup` makes `.haxelib` with `haxelib newrepo` and installs haxe-checkstyle 2.9.0 and haxe-formatter 1.18.0 there. A `project-setup` recipe in `project.just` installs the project's own libraries, such as utest or a `haxelib dev` checkout, which `just setup` runs after it.
+- `just haxe::format` runs the formatter over each top-level directory that holds Haxe sources, with the `hxformat.json` it finds; `format-check` only reports.
+- `just haxe::lint` runs checkstyle with `checkstyle.json` and fails on an error-level finding. Its bounds mirror the other languages': 56 lines per method, complexity 15, 7 parameters, and a warning at 603 lines per file. Fix a finding in the code; loosen `checkstyle.json` only with the project owner's agreement.
+- `just haxe::typecheck` compiles each hxml file that names its target, such as `--js` or `--hl`, from the repo root with `--no-output`, so no file is written. An hxml file without a target is a part a recipe completes, such as one that adds `-js <file>`, and its target decides which packages it may import, so the recipe that completes it checks it.
+- `just haxe::test` runs each test hxml file, such as `test.hxml` or `test-native.hxml`, that says how its tests run: `--interp`, `--run`, or a `--cmd` after the compilation. Adopt notes each one that does not; a `project-test` recipe runs it on its target.
+
+Adopt replaces a `.github/workflows/haxe.yml` it did not write and notes it, since the old one's steps are the project's. A step the checks need on the runner, such as checking out a library repository, goes in `.github/actions/project-setup/action.yml`, which the Haxe workflow runs after `just haxe::setup`, so its libraries land in `.haxelib`. The workflow checks out only the repo itself, so a build that reads a sibling directory, such as `../framework`, needs that library installed into `.haxelib` there instead. Builds through lime's `project.xml` are not read; a `project-verify` recipe runs them.
+
 ## Commit the Migration
 
 The pre-commit hook runs the checks of each language the commit touches, over the whole repo, so it accepts a commit once every error in those languages is fixed. Markdown is the exception: the hook lints only the staged `.md` files, as they are staged, with the staged Markdown configs, so neither an untracked draft nor an unstaged edit decides the result. Plan the migration as one branch that you commit when `just verify` passes.

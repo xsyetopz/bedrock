@@ -1,0 +1,44 @@
+{
+	"version": 1,
+	"defaultSeverity": "ERROR",
+	"checks": [
+		{
+			"type": "FileLength",
+			"props": { "severity": "WARNING", "max": 603, "ignoreEmptyLines": true }
+		},
+		{
+			"type": "MethodLength",
+			"props": { "max": 56, "ignoreEmptyLines": true }
+		},
+		{
+			"type": "CyclomaticComplexity",
+			"props": { "thresholds": [{ "complexity": 15, "severity": "ERROR" }] }
+		},
+		{
+			"type": "ParameterNumber",
+			"props": { "max": 7, "ignoreOverriddenMethods": true }
+		},
+		{ "type": "NestedControlFlow", "props": { "max": 4 } },
+		{ "type": "AvoidStarImport" },
+		{ "type": "DefaultComesLast" },
+		{
+			"type": "EmptyBlock",
+			"props": {
+				"option": "text",
+				"tokens": ["FUNCTION", "IF", "FOR", "WHILE", "SWITCH", "TRY", "CATCH"]
+			}
+		},
+		{ "type": "InnerAssignment" },
+		{ "type": "MultipleVariableDeclarations" },
+		{ "type": "SimplifyBooleanExpression" },
+		{ "type": "SimplifyBooleanReturn" },
+		{ "type": "UnnecessaryConstructor" },
+		{ "type": "UnusedImport" },
+		{ "type": "UnusedLocalVar" },
+		{ "type": "ERegLiteral" },
+		{ "type": "TypeName" },
+		{ "type": "MethodName" },
+		{ "type": "LocalVariableName" },
+		{ "type": "ParameterName" }
+	]
+}

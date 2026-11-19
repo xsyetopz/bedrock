@@ -1,0 +1,3 @@
+- Check Haxe through `just`: `just haxe::format`, `just haxe::lint`, `just haxe::typecheck`, and `just haxe::test`. `just haxe::setup` starts the local haxelib repo, `.haxelib`, and installs the pinned checkstyle and formatter there; a `project-setup` recipe in `project.just` installs the project's own libraries after it.
+- `just haxe::typecheck` compiles, from the repo root, each hxml file that names its target. `just haxe::test` runs each test hxml file, such as `test.hxml`, that runs its tests with `--interp`, `--run`, or `--cmd`; run a test hxml file whose target a command line adds from a recipe in `project.just`.
+- Fix the cause of each checkstyle error in the code. `checkstyle.json` is the project's own once written, but loosen it only with the user's approval.

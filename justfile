@@ -11,10 +11,11 @@ mod? swift ".just/swift.just"
 mod? cpp ".just/cpp.just"
 mod? jvm ".just/jvm.just"
 mod? go ".just/go.just"
+mod? haxe ".just/haxe.just"
 
 import? "project.just"
 
-languages := "typescript rust swift cpp jvm go"
+languages := "typescript rust swift cpp jvm go haxe"
 
 # The bedrock release bedrock_version in .editorconfig pins; "source" runs the CLI from this checkout.
 bedrock_version := `sed -n 's/^bedrock_version = //p' .editorconfig 2>/dev/null | tail -n 1 || true`

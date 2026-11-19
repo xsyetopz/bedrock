@@ -28,7 +28,7 @@ const COMMAND_LINES: readonly (readonly [string, string])[] = [
 // Summaries start two spaces past the longest usage, so a new subcommand never runs into its text.
 const width = Math.max(...COMMAND_LINES.map(([usage]) => usage.length)) + 2;
 
-const USAGE = `bedrock ${VERSION}: one setup for TypeScript (Bun), Rust, Swift, C++, and JVM repos.
+const USAGE = `bedrock ${VERSION}: one setup for TypeScript (Bun), Rust, Swift, C and C++, JVM, Go, and Haxe repos.
 
 Usage: bedrock <command> [args]
 

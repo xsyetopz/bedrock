@@ -19,6 +19,7 @@ export const BLOCK_ORDER = [
 	"swift-bedrock-cxx",
 	"jvm-bedrock",
 	"go-bedrock",
+	"haxe-bedrock",
 ] as const;
 
 export const markers = (syntax: Syntax, name: string): [string, string] => {
