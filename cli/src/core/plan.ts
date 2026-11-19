@@ -177,7 +177,7 @@ export const buildPlan = async (
 		steps: await pending(root, steps),
 		notes: [
 			...removalNotes(removed),
-			...leftoverNotes(leftover),
+			...leftoverNotes(leftover, steps),
 			...parts.flatMap((part) => part.notes),
 		],
 		projectFiles: new Set([

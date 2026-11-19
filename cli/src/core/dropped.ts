@@ -1,6 +1,7 @@
 import { existing } from "./fs.ts";
 import type { Language } from "./language.ts";
 import { withBlocks } from "./shared.ts";
+import type { Step } from "./steps.ts";
 import { renderPath, templateDir, type Variables } from "./templates.ts";
 
 /** What a language a repo no longer uses left behind: its shared-file blocks and its managed files. */
@@ -28,18 +29,29 @@ export const leftovers = async (
 	};
 };
 
-/** The notes that tell what removing `found` changes. */
-export const leftoverNotes = (found: Leftovers): string[] => {
+/**
+ * The notes that tell what removing `found` changes. `steps` is the deduped
+ * plan: a leftover file that the base or a kept language still writes keeps
+ * its write step, so the note names only the files the plan removes.
+ */
+export const leftoverNotes = (
+	found: Leftovers,
+	steps: readonly Step[],
+): string[] => {
 	const reason =
 		"neither .editorconfig nor a marker file at the root names the language";
+	const removed = new Set(
+		steps.filter((step) => step.kind === "remove").map((step) => step.path),
+	);
+	const files = found.files.filter((path) => removed.has(path));
 	return [
 		...(found.blocks.length > 0
 			? [
 					`Removed the blocks of ${found.blocks.map((language) => language.id).join(", ")} from the shared files: ${reason}.`,
 				]
 			: []),
-		...(found.files.length > 0
-			? [`Removed ${found.files.join(", ")}: ${reason}. git still has them.`]
+		...(files.length > 0
+			? [`Removed ${files.join(", ")}: ${reason}. git still has them.`]
 			: []),
 	];
 };

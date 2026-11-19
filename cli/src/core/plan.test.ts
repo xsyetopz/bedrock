@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { go } from "../languages/go/index.ts";
 import { rust } from "../languages/rust/index.ts";
+import { typescript } from "../languages/typescript/index.ts";
 import { buildPlan } from "./plan.ts";
 import { applySteps } from "./steps.ts";
 import { tempRepo } from "./testing.ts";
@@ -86,5 +87,23 @@ describe("buildPlan", () => {
 
 		// Assert
 		expect(plan.notes.join("\n")).not.toContain("Removed");
+	});
+
+	test("keeps out of the removal note a dropped language's file the base still writes", async () => {
+		// Arrange
+		const root = await tempRepo({ ".markdownlint-cli2.jsonc": "{}\n" });
+
+		// Act
+		const plan = await buildPlan(root, selected, {
+			init: false,
+			dropped: [typescript],
+		});
+
+		// Assert
+		expect(plan.steps).not.toContainEqual({
+			kind: "remove",
+			path: ".markdownlint-cli2.jsonc",
+		});
+		expect(plan.notes.join("\n")).not.toContain(".markdownlint-cli2.jsonc");
 	});
 });
