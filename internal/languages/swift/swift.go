@@ -43,6 +43,9 @@ func (Swift) Spec() language.Spec {
 			"**/.swiftlint.yml", "**/*.xcodeproj/project.pbxproj", "Config/*.xcconfig",
 		},
 		Kinds: kinds(),
+		// Only the Xcode app is Apple-only; every package kind stays
+		// cross-platform and builds wherever the Swift toolchain does.
+		Platforms: map[string][]string{"app": appPlatforms()},
 	}
 }
 

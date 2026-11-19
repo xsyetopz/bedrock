@@ -1,0 +1,52 @@
+import Foundation
+import PackagePlugin
+
+@main
+struct @@typeName@@BuildToolPlugin: BuildToolPlugin {
+  /// Plans the commands that run while SwiftPM builds a target that uses the plugin.
+  func createBuildCommands(context: PluginContext, target: Target) throws -> [Command] {
+    // A target without Swift or C sources has no files to generate from.
+    guard let sourceFiles = target.sourceModule?.sourceFiles else { return [] }
+
+    // Replace `my-code-generator` with the executable the plugin runs; it must be
+    // a tool of the package or of a dependency.
+    let generator = try context.tool(named: "my-code-generator")
+
+    return sourceFiles.map(\.url).compactMap {
+      buildCommand(for: $0, in: context.pluginWorkDirectoryURL, with: generator.url)
+    }
+  }
+
+  /// Returns the command for an input file, or nothing for a file the plugin skips.
+  func buildCommand(for input: URL, in outputDirectory: URL, with generator: URL) -> Command? {
+    // Replace the extension with the one of the files the generator reads.
+    guard input.pathExtension == "my-input-suffix" else { return nil }
+
+    let output = outputDirectory.appendingPathComponent(
+      input.deletingPathExtension().lastPathComponent + ".swift"
+    )
+
+    return .buildCommand(
+      displayName: "Generating \(output.lastPathComponent) from \(input.lastPathComponent)",
+      executable: generator,
+      arguments: [input.path, "-o", output.path],
+      inputFiles: [input],
+      outputFiles: [output]
+    )
+  }
+}
+
+#if canImport(XcodeProjectPlugin)
+  import XcodeProjectPlugin
+
+  extension @@typeName@@BuildToolPlugin: XcodeBuildToolPlugin {
+    /// Plans the same commands for the targets of an Xcode project.
+    func createBuildCommands(context: XcodePluginContext, target: XcodeTarget) throws -> [Command] {
+      let generator = try context.tool(named: "my-code-generator")
+
+      return target.inputFiles.map(\.url).compactMap {
+        buildCommand(for: $0, in: context.pluginWorkDirectoryURL, with: generator.url)
+      }
+    }
+  }
+#endif

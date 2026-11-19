@@ -180,8 +180,12 @@ func TestInitStartsAPackageForEachKind(t *testing.T) {
 	t.Parallel()
 
 	for kind, want := range map[string]string{
-		"library":    ".library(name: ",
-		"executable": ".executableTarget(",
+		"library":           ".library(name: ",
+		"executable":        ".executableTarget(",
+		"tool":              `.product(name: "ArgumentParser"`,
+		"macro":             ".macro(",
+		"build-tool-plugin": ".buildTool()",
+		"command-plugin":    ".command(",
 	} {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()

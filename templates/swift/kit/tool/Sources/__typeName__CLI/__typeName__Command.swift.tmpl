@@ -1,0 +1,12 @@
+import ArgumentParser
+import @@typeName@@
+
+@main
+struct @@typeName@@Command: ParsableCommand {
+  @Argument(help: "The name to greet. An empty name greets the world.")
+  var name = ""
+
+  func run() {
+    print(greeting(for: name))
+  }
+}

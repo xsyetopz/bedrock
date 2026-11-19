@@ -216,7 +216,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
+				SDKROOT = @@sdkRoot@@;@@projectSettings@@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -229,7 +229,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				SDKROOT = macosx;
+				SDKROOT = @@sdkRoot@@;@@projectSettings@@
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -240,8 +240,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				@@appSettings@@
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.@@typeName@@App;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -253,8 +252,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				@@appSettings@@
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.@@typeName@@App;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
