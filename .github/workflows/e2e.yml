@@ -16,14 +16,18 @@ concurrency:
 
 jobs:
   e2e:
-    name: ${{ matrix.language }}
+    name: ${{ matrix.language }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: ${{ matrix.timeout || 60 }}
+    # A job per platform a kind builds for: each e2e test builds the platforms its
+    # host and installed SDKs reach and skips the rest, so the same `go test` run
+    # covers @linux on Ubuntu, @windows on Windows, and the Apple platforms on Xcode.
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Bun installs, type-checks, lints, and tests each kind.
+          # Bun installs, type-checks, lints, and tests each kind; bun build --compile
+          # cross-compiles the cli and server kinds for linux, macos, and windows.
           - language: typescript
             os: ubuntu-latest
           - language: rust
@@ -32,22 +36,56 @@ jobs:
           # JDK 17 starts Gradle, which fetches the JDK 25 daemon and GraalVM toolchains itself.
           - language: jvm
             os: ubuntu-latest
-          # The swift tests build Swift 6.4 packages, and the C++ interop, with Xcode 27.
+          # Kotlin/Native builds and tests the @ios and @macos targets of kmp, cmp, and
+          # kotlin-native on macOS, and @windows on Windows; other hosts compile them only.
+          - language: jvm
+            os: xcode-27
+          - language: jvm
+            os: windows-latest
+          # The swift tests build Swift 6.4 packages, the C++ interop, and the app for every
+          # Apple platform with Xcode 27.
           - language: swift
             os: xcode-27
-          # Go and golangci-lint run the starter files through the same format and lint recipes.
+          # Go and golangci-lint run the starter files through the same format and lint recipes,
+          # and go::build cross-compiles each platform; wasmtime runs the wasi build.
           - language: go
             package: golang
             os: ubuntu-latest
-          # CMake and Meson build the C test projects; the xmake cases skip without xmake.
+          # gomobile binds library@ios with the iOS SDK.
+          - language: go
+            package: golang
+            os: xcode-27
+          # CMake and Meson build the C test projects; the xmake cases skip without xmake. The
+          # presets build @linux here, @android with the runner's NDK, @wasi with wasi-sdk, and
+          # @wasm with emsdk.
           - language: cpp
             os: ubuntu-latest
-          # Haxe type-checks and runs an interpreter test; checkstyle and the formatter run the style case.
+          # The Apple presets build with the Xcode generator.
+          - language: cpp
+            os: xcode-27
+          - language: cpp
+            os: windows-latest
+          # Haxe type-checks and runs an interpreter test; checkstyle and the formatter run the style
+          # case. hxcpp builds command@<host>, since it does not cross-compile.
           - language: haxe
             os: ubuntu-latest
-          # The .NET 10 SDK builds, lints, and tests a C# and F# solution; dotnet tool restore fetches the formatters.
+          - language: haxe
+            os: xcode-27
+          - language: haxe
+            os: windows-latest
+          # The .NET 10 SDK builds, lints, and tests each kind; dotnet tool restore fetches the
+          # formatters. The runner's Android SDK has the android-36 platform the android kinds target.
           - language: dotnet
             os: ubuntu-latest
+            workloads: android wasm-tools
+          # The apple kind and avalonia@ios take 3 to 15 minutes a build.
+          - language: dotnet
+            os: xcode-27
+            workloads: ios maccatalyst macos tvos wasm-tools
+            timeout: 150
+            test-timeout: 140m
+          - language: dotnet
+            os: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -69,12 +107,37 @@ jobs:
         with:
           version: v2.15.0
           install-only: true
+      # wasmtime runs the go command@wasi build and the cpp @wasi tests.
+      - if: (matrix.language == 'go' || matrix.language == 'cpp') && runner.os == 'Linux'
+        uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
+        with:
+          tool: wasmtime@50.0.1
       # The Meson introspection the test-file split reads matches the version tested locally.
-      - if: matrix.language == 'cpp'
+      # clang-tidy brings the run-clang-tidy the cpp::lint recipe runs.
+      - if: matrix.language == 'cpp' && runner.os == 'Linux'
         run: |
-          sudo apt-get install -y --no-install-recommends cmake ninja-build
+          sudo apt-get install -y --no-install-recommends cmake ninja-build clang-tidy
           uv tool install meson==1.12.1
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      # wasi-sdk builds the @wasi presets and emsdk the @wasm ones; the tests skip
+      # each platform whose WASI_SDK_PATH or EMSDK is unset. The runner sets
+      # ANDROID_NDK_HOME for the @android presets.
+      - if: matrix.language == 'cpp' && runner.os == 'Linux'
+        run: |
+          curl -fsSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/wasi-sdk-34.0-x86_64-linux.tar.gz \
+            | tar -xz -C "$RUNNER_TEMP"
+          echo "WASI_SDK_PATH=$RUNNER_TEMP/wasi-sdk-34.0-x86_64-linux" >> "$GITHUB_ENV"
+          git clone --depth 1 --branch 7.0.0 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install 7.0.0
+          "$RUNNER_TEMP/emsdk/emsdk" activate 7.0.0
+          echo "EMSDK=$RUNNER_TEMP/emsdk" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+      # The image's Homebrew LLVM has run-clang-tidy; CMake and Ninja come with the image.
+      - if: matrix.language == 'cpp' && runner.os == 'macOS'
+        run: |
+          uv tool install meson==1.12.1
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix llvm@20)/bin" >> "$GITHUB_PATH"
       - if: matrix.language == 'haxe'
         uses: krdlab/setup-haxe@18e4b483cfffca2fb8881530bf8a6cec39dac8fb # v2.1.1
         with:
@@ -88,4 +151,7 @@ jobs:
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           dotnet-version: 10.0.x
-      - run: go test -timeout 50m "./internal/languages/${{ matrix.package || matrix.language }}/..."
+      # The workloads the platform kinds build with; each test skips a platform whose workload is absent.
+      - if: matrix.workloads
+        run: dotnet workload install ${{ matrix.workloads }}
+      - run: go test -timeout ${{ matrix.test-timeout || '50m' }} "./internal/languages/${{ matrix.package || matrix.language }}/..."
