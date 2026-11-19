@@ -47,7 +47,8 @@ func (Cpp) Spec() language.Spec {
 		Tools:       nil,
 		Flags:       nil,
 		Sources:     []string{"**/*.{c,cc,cpp,cxx,h,hh,hpp,hxx,m,mm}", ".clang-format", ".clang-tidy"},
-		Kinds:       nil,
+		Kinds:       kinds(),
+		Platforms:   platforms(),
 		Executables: nil,
 		// clang-tidy checks function size and complexity but not file length.
 		Lizard: []string{"cpp", "objectivec"},

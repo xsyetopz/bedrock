@@ -1,0 +1,23 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "wasi",
+      "displayName": "WASI (wasi-sdk)",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "generator": "Ninja",
+      "toolchainFile": "$env{WASI_SDK_PATH}/share/cmake/wasi-sdk-p1.cmake",
+      "cacheVariables": {
+        "CMAKE_CROSSCOMPILING_EMULATOR": "wasmtime",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "wasi", "configurePreset": "wasi", "configuration": "Debug" }
+  ],
+  "testPresets": [
+    { "name": "wasi", "configurePreset": "wasi", "configuration": "Debug", "output": { "outputOnFailure": true } }
+  ]
+}

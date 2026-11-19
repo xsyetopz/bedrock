@@ -1,0 +1,47 @@
+cmake_minimum_required(VERSION 3.25)
+project(@@project@@ VERSION 0.1.0 LANGUAGES CXX)
+
+include(CTest)
+include(GNUInstallDirs)
+include(GenerateExportHeader)
+
+# BUILD_SHARED_LIBS picks the library type; symbols are hidden unless the API
+# exports them, so a shared library exports the same set on every platform.
+add_library(@@project@@ src/@@project@@.cpp)
+add_library(@@project@@::@@project@@ ALIAS @@project@@)
+set_target_properties(@@project@@ PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR})
+target_compile_features(@@project@@ PUBLIC cxx_std_20)
+set_target_properties(@@project@@ PROPERTIES CXX_EXTENSIONS OFF)
+target_include_directories(@@project@@ PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+generate_export_header(@@project@@ EXPORT_FILE_NAME include/@@project@@/export.hpp)
+if(NOT BUILD_SHARED_LIBS)
+    target_compile_definitions(@@project@@ PUBLIC @@macro@@_STATIC_DEFINE)
+endif()
+
+if(MSVC)
+    target_compile_options(@@project@@ PRIVATE /W4 /permissive-)
+else()
+    target_compile_options(@@project@@ PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+install(TARGETS @@project@@ EXPORT @@project@@Targets)
+install(DIRECTORY include/ TYPE INCLUDE)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/@@project@@/export.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/@@project@@)
+install(EXPORT @@project@@Targets
+    NAMESPACE @@project@@::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/@@project@@)
+
+if(BUILD_TESTING)
+    add_executable(@@project@@_test tests/@@project@@_test.cpp)
+    target_link_libraries(@@project@@_test PRIVATE @@project@@::@@project@@)
+    add_test(NAME @@project@@ COMMAND @@project@@_test)
+endif()

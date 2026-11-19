@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 3.25)
+project(@@project@@ VERSION 0.1.0 LANGUAGES CXX)
+
+include(CTest)
+include(GNUInstallDirs)
+
+# The program's logic lives in a library, so the tests link it without main().
+add_library(@@project@@_core STATIC src/greeting.cpp)
+target_compile_features(@@project@@_core PUBLIC cxx_std_20)
+target_include_directories(@@project@@_core PUBLIC src)
+
+add_executable(@@project@@ src/main.cpp)
+target_link_libraries(@@project@@ PRIVATE @@project@@_core)
+
+foreach(target IN ITEMS @@project@@_core @@project@@)
+    set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endforeach()
+
+install(TARGETS @@project@@)
+
+if(BUILD_TESTING)
+    add_executable(@@project@@_test tests/greeting_test.cpp)
+    target_link_libraries(@@project@@_test PRIVATE @@project@@_core)
+    add_test(NAME greeting COMMAND @@project@@_test)
+
+    # The program run as a user would, through the shipped entry point.
+    add_test(NAME run COMMAND @@project@@ world)
+    set_tests_properties(run PROPERTIES PASS_REGULAR_EXPRESSION "Hello, world!")
+endif()

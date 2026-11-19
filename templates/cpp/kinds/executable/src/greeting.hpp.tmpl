@@ -1,0 +1,14 @@
+#ifndef @@macro@@_GREETING_HPP
+#define @@macro@@_GREETING_HPP
+
+#include <string>
+#include <string_view>
+
+namespace @@project@@ {
+
+    /// Returns a greeting for `name`.
+    [[nodiscard]] auto greeting(std::string_view name) -> std::string;
+
+}  // namespace @@project@@
+
+#endif  // @@macro@@_GREETING_HPP

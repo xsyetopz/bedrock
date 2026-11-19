@@ -1,0 +1,15 @@
+#ifndef @@macro@@_@@macro@@_HPP
+#define @@macro@@_@@macro@@_HPP
+
+#include <@@project@@/export.hpp>
+#include <string>
+#include <string_view>
+
+namespace @@project@@ {
+
+    /// Returns a greeting for `name`.
+    [[nodiscard]] @@macro@@_EXPORT auto greeting(std::string_view name) -> std::string;
+
+}  // namespace @@project@@
+
+#endif  // @@macro@@_@@macro@@_HPP
