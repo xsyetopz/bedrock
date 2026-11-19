@@ -145,6 +145,37 @@ describe("detect", () => {
 		// Assert
 		expect(found.map((language) => language.id)).toEqual(["haxe"]);
 	});
+
+	test("finds .NET by a nested project file beside TypeScript", async () => {
+		// Arrange
+		const root = await tempRepo({
+			"package.json": '{ "name": "tools" }\n',
+			"src/App/App.fsproj": '<Project Sdk="Microsoft.NET.Sdk" />\n',
+		});
+
+		// Act
+		const found = await detect(root);
+
+		// Assert
+		expect(found.map((language) => language.id)).toEqual([
+			"typescript",
+			"dotnet",
+		]);
+	});
+
+	test("finds .NET by a root solution and global.json", async () => {
+		// Arrange
+		const root = await tempRepo({
+			"App.slnx": "<Solution />\n",
+			"global.json": '{ "sdk": { "version": "10.0.100" } }\n',
+		});
+
+		// Act
+		const found = await detect(root);
+
+		// Assert
+		expect(found.map((language) => language.id)).toEqual(["dotnet"]);
+	});
 });
 
 describe("dropped", () => {
@@ -158,6 +189,7 @@ describe("dropped", () => {
 			"cpp",
 			"jvm",
 			"haxe",
+			"dotnet",
 		]);
 	});
 
@@ -183,6 +215,7 @@ describe("dropped", () => {
 			"cpp",
 			"jvm",
 			"haxe",
+			"dotnet",
 		]);
 	});
 });

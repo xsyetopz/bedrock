@@ -20,6 +20,7 @@ export const BLOCK_ORDER = [
 	"jvm-bedrock",
 	"go-bedrock",
 	"haxe-bedrock",
+	"dotnet-bedrock",
 ] as const;
 
 export const markers = (syntax: Syntax, name: string): [string, string] => {

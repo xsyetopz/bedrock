@@ -1,0 +1,55 @@
+# Managed by bedrock. Formats, lints, type-checks, and tests the C# and F# code.
+# Put project recipes in project.just.
+
+set shell := ["bash", "-euo", "pipefail", "-c"]
+set working-directory := ".."
+
+# Bounds that keep one run from taking the machine: MSBuild runs at most this
+# many build nodes, and none stays alive after the build, holding memory.
+export BEDROCK_DOTNET_JOBS := env("BEDROCK_DOTNET_JOBS", "4")
+export MSBUILDDISABLENODEREUSE := "1"
+export DOTNET_CLI_TELEMETRY_OPTOUT := "1"
+export DOTNET_NOLOGO := "1"
+
+# Restore the pinned CSharpier, Fantomas, and FSharpLint from the tool
+# manifest, then the NuGet packages of each solution or project.
+setup:
+    dotnet tool restore
+    {{ just_executable() }} bedrock dotnet restore
+
+# Format C# and the MSBuild files with CSharpier, and F# with Fantomas.
+format:
+    {{ just_executable() }} bedrock dotnet format
+
+# Fail if a C#, F#, or MSBuild file is not formatted.
+format-check:
+    {{ just_executable() }} bedrock dotnet format --check
+
+# Build each solution or project without the analyzers, failing on a compiler warning.
+typecheck:
+    {{ just_executable() }} bedrock dotnet typecheck
+
+# Rebuild with the analyzers and the .editorconfig code style as errors, then run FSharpLint.
+lint:
+    {{ just_executable() }} bedrock dotnet lint
+
+# Apply the code-style and analyzer fixes dotnet format can make, then format.
+lint-fix:
+    {{ just_executable() }} bedrock dotnet lint --fix
+
+# Run the tests.
+test:
+    {{ just_executable() }} bedrock dotnet test
+
+# Report what the .NET linters cannot see: suppressions without a reason, and sizes.
+guard:
+    {{ just_executable() }} bedrock guard dotnet
+
+# Run every .NET check CI runs.
+verify: format-check typecheck lint guard test
+
+# The .NET checks the pre-commit hook runs.
+pre-commit: format-check guard
+
+# The .NET checks the pre-push hook runs: verify without the tests, which CI runs.
+pre-push: format-check typecheck lint guard

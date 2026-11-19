@@ -1,0 +1,5 @@
+- Check C# and F# through `just`: `just dotnet::format`, `just dotnet::lint`, `just dotnet::typecheck`, and `just dotnet::test`. `just dotnet::setup` restores the pinned CSharpier, Fantomas, and FSharpLint from the tool manifest, and the NuGet packages.
+- Build on .NET 10, the LTS release `global.json` pins. Target `net10.0`, and keep `netstandard2.0` or a .NET Framework target only where a library's callers need it.
+- Keep the C# style and analyzer rules in `.editorconfig`: `just dotnet::lint` builds with `EnforceCodeStyleInBuild` and warnings as errors, so each rule set to `warning` there fails it. Fix the cause of each finding in the code.
+- Suppress a finding only with `#pragma warning disable <id> // <reason>` or `[SuppressMessage(..., Justification = "<reason>")]`, and in F# with `#nowarn "<id>" // <reason>`; `just dotnet::guard` rejects one without a reason.
+- `Directory.Build.props` is the project's own once written, but keep `Nullable`, `AnalysisLevel`, and `TreatWarningsAsErrors` as they are unless the user approves.

@@ -1,5 +1,6 @@
 import type { Language } from "../core/language.ts";
 import { cpp } from "./cpp/index.ts";
+import { dotnet } from "./dotnet/index.ts";
 import { go } from "./go/index.ts";
 import { haxe } from "./haxe/index.ts";
 import { jvm } from "./jvm/index.ts";
@@ -16,6 +17,7 @@ export const LANGUAGES: readonly Language[] = [
 	jvm,
 	go,
 	haxe,
+	dotnet,
 ];
 
 /** The language a command-line name means, or undefined. */

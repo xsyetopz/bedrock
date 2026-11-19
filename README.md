@@ -1,6 +1,6 @@
 # Bedrock
 
-Strict, shared setups for TypeScript (on Bun), Rust, Swift, C and C++, Java and Kotlin, Go, and Haxe repositories, alone or mixed in one repo. Bedrock is one CLI, `bedrock`, and a Claude Code plugin that runs it. It starts a repo, or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run it the same way, and the repo it sets up depends on no bedrock package.
+Strict, shared setups for TypeScript (on Bun), Rust, Swift, C and C++, Java and Kotlin, Go, Haxe, and C# and F# (.NET) repositories, alone or mixed in one repo. Bedrock is one CLI, `bedrock`, and a Claude Code plugin that runs it. It starts a repo, or moves an existing or legacy one onto its tooling, fully, so no old tool is left running beside it. People and AI agents run it the same way, and the repo it sets up depends on no bedrock package.
 
 | Language | Kinds | Tooling |
 | --- | --- | --- |
@@ -11,6 +11,7 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C and C++, Java and 
 | `jvm` | `java-library`, `java-application`, `java-native`, `kotlin-library`, `kotlin-application`, `kotlin-native`, `kmp`, `cmp`, `android` | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |
 | `go` | `command`, `library` | Go 1.27, golangci-lint 2.15 with a strict config, `go test`, `GOMEMLIMIT`, `-p`, and `run.concurrency` bounds on every recipe |
 | `haxe` | | Haxe 4.3.7 alone or beside any other language, haxe-formatter 1.18.0, haxe-checkstyle 2.9.0 with size bounds, a type check of each hxml build, the test hxml files that run their tests |
+| `dotnet` | | .NET 10 LTS for C# and F#, CSharpier 1.4.0 and Fantomas 8.1.3 reading `.editorconfig`, the SDK analyzers with the `.editorconfig` code style as errors, FSharpLint 0.27.2, `dotnet test` |
 
 ## What Every Repo Gets
 
@@ -54,7 +55,7 @@ bedrock adopt <dir> ts rust          # print it, then ask before applying
 bedrock adopt <dir> swift cpp --yes  # apply without asking
 ```
 
-Without a language, adopt takes the ones `.editorconfig` lists or the repo has. Language names are case-insensitive, and `ts` or `bun`, `cxx`, `c++`, or `c`, `java` or `kotlin`, `golang`, and `hx` work too. Then run `just setup` and `just verify` in the target and fix what they report. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes the ones git already holds, and lists the rest.
+Without a language, adopt takes the ones `.editorconfig` lists or the repo has. Language names are case-insensitive, and `ts` or `bun`, `cxx`, `c++`, or `c`, `java` or `kotlin`, `golang`, `hx`, and `.net`, `csharp`, `c#`, `cs`, `fsharp`, or `f#` work too. Then run `just setup` and `just verify` in the target and fix what they report. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes the ones git already holds, and lists the rest.
 
 ## Start a Repo
 
@@ -86,6 +87,11 @@ bedrock init <dir> go:command               # or library
 | `bedrock haxe lint` | Run checkstyle over the Haxe sources |
 | `bedrock haxe typecheck` | Type-check each hxml build that names its target |
 | `bedrock haxe test` | Run each test hxml file that runs its tests |
+| `bedrock dotnet restore` | Restore the NuGet packages of each solution or project |
+| `bedrock dotnet format [--check]` | Format C#, F#, and MSBuild files with CSharpier and Fantomas, or fail if one is not formatted |
+| `bedrock dotnet typecheck` | Build each solution or project without analyzers, warnings as errors |
+| `bedrock dotnet lint [--fix]` | Rebuild with the analyzers and code style as errors, then run FSharpLint; `--fix` applies `dotnet format` fixes |
+| `bedrock dotnet test` | Run the tests of each solution, or of each test project |
 
 `bedrock <command> --help` lists each command's options.
 
@@ -112,11 +118,13 @@ Each language's linters bound what they can: oxlint, golangci-lint, SwiftLint, C
 | cpp | clang-tidy: function size, cognitive complexity | file code lines |
 | jvm | none | file code lines; function code lines, cyclomatic complexity, parameters |
 | haxe | checkstyle: file and method length, cyclomatic complexity, parameters | none, since lizard reads no Haxe |
+| dotnet | none | file code lines; function code lines, cyclomatic complexity, parameters, for C# and F# |
 
 The bounds are [EditorConfig](https://spec.editorconfig.org/) properties in each language's block of `.editorconfig`, so they apply by glob like any other setting, and editors ignore them. A value over `bedrock_<metric>_error` fails the guard; a value over `bedrock_<metric>_warning` only prints. The metrics are `file_code_lines`, `test_file_code_lines`, `function_code_lines`, `function_complexity`, and `function_parameters`. A test file takes `test_file_code_lines` in place of `file_code_lines`. A test file is one the language's compiler, build, or test runner treats as test-only, not one a naming habit marks:
 
 - Rust: a file a `#[cfg(test)] mod` declares and the files below it, a file `#![cfg(test)]` gates, and a crate's `tests/` directory. A `#[test]` function alone does not count, since rustc still builds the rest of its file;
 - Java and Kotlin: a Gradle test source set, such as `src/test`, `src/testFixtures`, `src/androidTest`, or `src/commonTest`;
+- C# and F#: the files under a test project's directory, where a test project references a test framework's runner or adapter (xUnit v2 or v3, NUnit, MSTest, TUnit, or Expecto), builds on `MSTest.Sdk`, or sets `IsTestProject`;
 - C and C++: a SwiftPM package's `Tests/` directory, and a source only test targets compile: a CMake target a CTest test runs, a Meson target a `meson test` test runs, an xmake target `xmake test` runs, and a library only those link. A source a product target also compiles stays product code, as does one a product target compiles only under an option that is off by default.
 
 The other languages' linters set their own test bounds the same way: oxlint by the names `bun test` runs, golangci-lint by `_test.go`, and SwiftLint by the `.swiftlint.yml` in `Tests/`. Haxe has no test-only file, since the compiler, haxelib, and utest treat a test class like any other, so checkstyle bounds tests as sources. The defaults come from studies of defect and maintenance cost: 56 code lines and complexity 15 per function, 7 parameters, and a warning at 603 code lines per file, since no study finds a file-length optimum.

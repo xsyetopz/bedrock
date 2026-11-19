@@ -1,0 +1,161 @@
+# CSharpier formats C# and the MSBuild XML, and Fantomas formats F#; both read
+# indent_style, indent_size, and max_line_length here, and no other config.
+[*.{cs,csx,fs,fsi,fsx}]
+indent_style = space
+indent_size = 4
+
+[*.{cs,csx}]
+max_line_length = 100
+
+[*.{fs,fsi,fsx}]
+max_line_length = 120
+
+[*.{csproj,fsproj,props,targets,slnx,xml,config,resx,xaml,axaml,runsettings}]
+indent_style = space
+indent_size = 2
+
+# The SDK's code-style analyzers read the rules below. `just dotnet::lint`
+# builds with EnforceCodeStyleInBuild and warnings as errors, so each warning
+# here fails the build. IDE0055 is the SDK's own formatting rule, which
+# CSharpier's layout replaces, so it stays off.
+[*.{cs,csx}]
+dotnet_diagnostic.IDE0055.severity = none
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_style_var_for_built_in_types = false:warning
+csharp_style_var_when_type_is_apparent = true:warning
+csharp_style_var_elsewhere = false:warning
+csharp_style_expression_bodied_methods = when_on_single_line:warning
+csharp_style_expression_bodied_constructors = false:warning
+csharp_style_expression_bodied_operators = when_on_single_line:warning
+csharp_style_expression_bodied_properties = true:warning
+csharp_style_expression_bodied_indexers = true:warning
+csharp_style_expression_bodied_accessors = true:warning
+csharp_style_expression_bodied_lambdas = true:warning
+csharp_style_expression_bodied_local_functions = when_on_single_line:warning
+csharp_style_prefer_pattern_matching = true:warning
+csharp_style_prefer_switch_expression = true:warning
+csharp_style_prefer_not_pattern = true:warning
+csharp_style_prefer_extended_property_pattern = true:warning
+csharp_style_prefer_null_check_over_type_check = true:warning
+csharp_style_prefer_primary_constructors = true:warning
+csharp_style_prefer_top_level_statements = true:warning
+csharp_style_implicit_object_creation_when_type_is_apparent = true:warning
+csharp_style_prefer_local_over_anonymous_function = true:warning
+csharp_style_prefer_tuple_swap = true:warning
+csharp_style_prefer_utf8_string_literals = true:warning
+csharp_style_prefer_readonly_struct = true:warning
+csharp_style_prefer_readonly_struct_member = true:warning
+csharp_style_throw_expression = true:warning
+csharp_style_conditional_delegate_call = true:warning
+csharp_prefer_simple_using_statement = true:warning
+csharp_prefer_system_threading_lock = true:warning
+csharp_style_prefer_index_operator = true:warning
+csharp_style_prefer_range_operator = true:warning
+csharp_style_deconstructed_variable_declaration = true:warning
+csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:warning
+csharp_prefer_static_local_function = true:warning
+csharp_style_prefer_method_group_conversion = true:warning
+csharp_prefer_braces = true:warning
+dotnet_style_prefer_collection_expression = when_types_loosely_match:warning
+dotnet_style_null_propagation = true:warning
+dotnet_style_coalesce_expression = true:warning
+dotnet_style_prefer_is_null_check_for_reference_equality_checks = true:warning
+dotnet_style_prefer_conditional_expression_over_assignment = true:warning
+dotnet_style_prefer_conditional_expression_over_return = true:warning
+dotnet_style_prefer_compound_assignment = true:warning
+dotnet_style_prefer_simplified_interpolation = true:warning
+dotnet_style_prefer_simplified_boolean_expressions = true:warning
+dotnet_style_prefer_inferred_tuple_names = true:warning
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:warning
+dotnet_style_collection_initializer = true:warning
+dotnet_style_object_initializer = true:warning
+dotnet_style_explicit_tuple_names = true:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:warning
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+dotnet_naming_rule.private_fields_should_be_underscore_camel.severity = warning
+dotnet_naming_rule.private_fields_should_be_underscore_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_underscore_camel.style = camel_case_underscore
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private,protected,internal,protected_internal,private_protected
+dotnet_naming_style.camel_case_underscore.required_prefix = _
+dotnet_naming_style.camel_case_underscore.capitalization = camel_case
+dotnet_naming_rule.static_fields_should_be_underscore_s_camel.severity = warning
+dotnet_naming_rule.static_fields_should_be_underscore_s_camel.symbols = static_fields
+dotnet_naming_rule.static_fields_should_be_underscore_s_camel.style = s_camel_case
+dotnet_naming_symbols.static_fields.applicable_kinds = field
+dotnet_naming_symbols.static_fields.applicable_accessibilities = private,protected,internal
+dotnet_naming_symbols.static_fields.required_modifiers = static
+dotnet_naming_style.s_camel_case.required_prefix = s_
+dotnet_naming_style.s_camel_case.capitalization = camel_case
+dotnet_naming_rule.constants_should_be_pascal_case.severity = warning
+dotnet_naming_rule.constants_should_be_pascal_case.symbols = constants
+dotnet_naming_rule.constants_should_be_pascal_case.style = pascal_case
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = i_prefix_pascal
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.i_prefix_pascal.required_prefix = I
+dotnet_naming_style.i_prefix_pascal.capitalization = pascal_case
+dotnet_naming_rule.type_params_start_with_t.severity = warning
+dotnet_naming_rule.type_params_start_with_t.symbols = type_parameters
+dotnet_naming_rule.type_params_start_with_t.style = t_prefix_pascal
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+dotnet_naming_style.t_prefix_pascal.required_prefix = T
+dotnet_naming_style.t_prefix_pascal.capitalization = pascal_case
+# IDE rules that need a severity of their own to run in the build: unused
+# usings, unused parameters, switch completeness, and namespaces that match
+# folders. IDE0005 needs GenerateDocumentationFile, which Directory.Build.props sets.
+dotnet_diagnostic.IDE0005.severity = warning
+dotnet_diagnostic.IDE0010.severity = warning
+dotnet_diagnostic.IDE0060.severity = warning
+dotnet_diagnostic.IDE0072.severity = warning
+dotnet_diagnostic.IDE0090.severity = warning
+dotnet_diagnostic.IDE0130.severity = warning
+# CA rules past AnalysisLevel latest-recommended: culture and comparison
+# correctness, throw helpers, and allocation-free string and collection calls.
+dotnet_diagnostic.CA1050.severity = warning
+dotnet_diagnostic.CA1304.severity = warning
+dotnet_diagnostic.CA1305.severity = warning
+dotnet_diagnostic.CA1310.severity = warning
+dotnet_diagnostic.CA1311.severity = warning
+dotnet_diagnostic.CA1510.severity = warning
+dotnet_diagnostic.CA1511.severity = warning
+dotnet_diagnostic.CA1512.severity = warning
+dotnet_diagnostic.CA1513.severity = warning
+dotnet_diagnostic.CA1716.severity = warning
+dotnet_diagnostic.CA1805.severity = warning
+dotnet_diagnostic.CA1822.severity = warning
+dotnet_diagnostic.CA1830.severity = warning
+dotnet_diagnostic.CA1834.severity = warning
+dotnet_diagnostic.CA1854.severity = warning
+dotnet_diagnostic.CA1859.severity = warning
+dotnet_diagnostic.CA1862.severity = warning
+dotnet_diagnostic.CA1866.severity = warning
+dotnet_diagnostic.CA2201.severity = warning
+dotnet_diagnostic.CA2208.severity = warning
+
+# xUnit, NUnit, MSTest, and TUnit find test methods on instances, so CA1822
+# does not ask a test to be static.
+[**/*{Tests,Test}/**/*.cs]
+dotnet_diagnostic.CA1822.severity = none
+
+# The SDK's analyzers and FSharpLint bound no sizes, so bedrock guard measures
+# C# and F# with lizard. A file of a test project, one that references a
+# test framework's runner or adapter, takes the test file bound. A
+# section after this block overrides a bound, and unset turns one off.
+[*.{cs,csx,fs,fsi,fsx}]
+bedrock_file_code_lines_warning = 603
+bedrock_test_file_code_lines_warning = 603
+bedrock_function_code_lines_error = 56
+bedrock_function_complexity_error = 15
+bedrock_function_parameters_error = 7
