@@ -7,6 +7,7 @@ package catalog
 import (
 	"github.com/xsyetopz/bedrock/internal/language"
 	"github.com/xsyetopz/bedrock/internal/languages/cpp"
+	"github.com/xsyetopz/bedrock/internal/languages/dotnet"
 	"github.com/xsyetopz/bedrock/internal/languages/golang"
 	"github.com/xsyetopz/bedrock/internal/languages/haxe"
 	"github.com/xsyetopz/bedrock/internal/languages/typescript"
@@ -19,6 +20,7 @@ func Languages() []language.Language {
 		cpp.New(),
 		golang.New(),
 		haxe.New(),
+		dotnet.New(),
 	}
 }
 
