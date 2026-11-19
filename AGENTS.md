@@ -1,7 +1,7 @@
 # AGENTS.md
 
-- Bedrock is one CLI, `cli/src/main.ts`, and the Claude Code plugin in `plugins/bedrock`. `bun cli/src/main.ts <command>` or `just bedrock <command>` runs it from source.
-- Put what every repo gets in `templates/base` and what one language adds in `templates/<language>`; the code that plans and guards it goes in `cli/src/languages/<language>`. Shared logic belongs in `cli/src/core`.
+- Bedrock is one Go CLI, `cmd/bedrock`, and the Claude Code plugin in `plugins/bedrock`. `just bedrock <command>` builds it into `bin/` and runs it from source.
+- Put what every repo gets in `templates/base` and what one language adds in `templates/<language>`; the code that plans and guards it goes in `internal/languages/<language>`, registered in `internal/catalog`. Shared logic belongs in the core packages under `internal/`, and the capabilities a language can implement are in `internal/language`.
 - Write each managed file through a template, and keep the plan idempotent: a second `bedrock adopt` on the same repo plans no steps.
 - Give each language kind an e2e test that inits it and runs its real toolchain, skipped when that toolchain is absent.
 - Keep `bedrock_version` in `.editorconfig` on `source`, so this repo checks itself with the code in its own tree.

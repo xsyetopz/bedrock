@@ -47,7 +47,7 @@ From a Claude Code session with the plugin installed:
 
 `/adopt`, and `/bedrock adopt`, `init`, or `update`, print the plan and change nothing until you add `--yes`.
 
-From a shell, with a `bedrock` binary from the [releases](https://github.com/xsyetopz/bedrock/releases) or from a checkout of this repo (`bun cli/src/main.ts` in place of `bedrock`):
+From a shell, with a `bedrock` binary from the [releases](https://github.com/xsyetopz/bedrock/releases) or built from a checkout of this repo with `go build -o bin/bedrock ./cmd/bedrock` (`bin/bedrock` in place of `bedrock`):
 
 ```bash
 bedrock adopt <dir> --dry-run        # print the plan
@@ -161,10 +161,13 @@ The plugin runs the CLI from a checkout of this repo, then a `bedrock` on `PATH`
 
 | Path | Content |
 | --- | --- |
-| `cli/src/main.ts` | The `bedrock` CLI |
-| `cli/src/core` | The plan, the managed blocks, the guard, and the logic every language shares |
-| `cli/src/languages/<language>` | What each language plans, migrates, and guards |
-| `cli/build.ts` | Compiles the CLI, with the templates embedded, into one binary per platform |
+| `cmd/bedrock` | The `bedrock` CLI |
+| `assets.go` | Embeds the templates and the version in every build |
+| `internal/language` | What a language plugs in: a spec plus the capabilities it needs |
+| `internal/catalog` | The languages this build knows, in block order |
+| `internal/languages/<language>` | What each language plans, migrates, and guards |
+| `internal/` | The plan, the managed blocks, the guard, and the logic every language shares |
+| `project.just` | `just dist`, which builds one release binary per platform, with the templates embedded |
 | `templates/base` | The files every repo gets |
 | `templates/<language>` | The files, blocks, and starters one language adds |
 | `plugins/bedrock` | The Claude Code plugin |
@@ -189,4 +192,4 @@ The repo adopts itself from source (`.editorconfig` pins `bedrock_version = sour
 
 MIT. See [LICENSE](LICENSE).
 
-`cli/src/commands/commit-msg.ts` is ported from [compilerla/conventional-pre-commit](https://github.com/compilerla/conventional-pre-commit) v4.5.0, licensed under [Apache-2.0](https://github.com/compilerla/conventional-pre-commit/blob/v4.5.0/LICENSE). The file header lists the changes.
+`internal/commitmsg` is ported from [compilerla/conventional-pre-commit](https://github.com/compilerla/conventional-pre-commit) v4.5.0, licensed under [Apache-2.0](https://github.com/compilerla/conventional-pre-commit/blob/v4.5.0/LICENSE). Its package comment lists the changes.

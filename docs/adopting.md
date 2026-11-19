@@ -9,7 +9,7 @@ bedrock adopt <target> --dry-run
 bedrock adopt <target> ts rust
 ```
 
-`bedrock` is a binary from the [releases](https://github.com/xsyetopz/bedrock/releases); from a checkout of this repo, `bun cli/src/main.ts` runs the same CLI. `--dry-run` prints the plan and stops. Without it, adopt prints the plan and asks `Apply these changes? [y/N]`. An agent or CI job, which has no terminal to answer in, passes `--yes`.
+`bedrock` is a binary from the [releases](https://github.com/xsyetopz/bedrock/releases); from a checkout of this repo, `go build -o bin/bedrock ./cmd/bedrock` builds the same CLI. `--dry-run` prints the plan and stops. Without it, adopt prints the plan and asks `Apply these changes? [y/N]`. An agent or CI job, which has no terminal to answer in, passes `--yes`.
 
 The target must be a git repository, and git is the backup: adopt refuses to change a file with uncommitted work unless you pass `--allow-dirty`, and it leaves no `.bak` files. Review the change with `git diff`, and move what a removed Makefile or hook manager did into `project.just`. When it finishes, run `just setup`, then `just verify`, in the target. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes those whose content git holds, and lists the rest for `bedrock clean --force`.
 

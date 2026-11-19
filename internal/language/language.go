@@ -34,7 +34,9 @@ type Spec struct {
 	Tools []Tool
 	// Flags are the adopt options this language adds, such as --group.
 	Flags []Flag
-	// ID names templates/<id>, internal/languages/<id>, and .just/<id>.just.
+	// ID names templates/<id> and .just/<id>.just, and usually the package
+	// under internal/languages; go's is golang, since go is not a package name
+	// a reader can tell from the language.
 	ID string
 	// Block is the block name in shared files, such as rust-bedrock. Blocks
 	// keep the names releases before the Go CLI wrote.

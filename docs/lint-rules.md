@@ -93,4 +93,4 @@ TypeScript covers some Biome rules itself: `erasableSyntaxOnly` rejects enums, m
 
 ## `bun lint`
 
-Bun's own `bun lint` reads `.oxlintrc.json`, but only canary builds have it. On Bun 1.4.4, `bun lint` runs the `lint` script, so the template keeps calling oxlint directly until `bun lint` reaches a stable release.
+Bun's own `bun lint` reads `.oxlintrc.json`, but only canary builds have it. On Bun 1.4.5, `bun lint` runs the `lint` script, so the template keeps calling oxlint directly until `bun lint` reaches a stable release.
