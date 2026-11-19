@@ -9,7 +9,7 @@ import { select } from "./select.ts";
 
 const USAGE = `Usage: bedrock languages [--staged | --unpushed]
 
-Prints the id of each language .bedrock.json lists, one per line. With
+Prints the id of each language .editorconfig lists, one per line. With
 --staged, only those whose files the commit changes, so the pre-commit hook
 skips the toolchains a commit does not touch. With --unpushed, only those whose
 files HEAD's commits change that no remote has yet, for the pre-push hook.`;

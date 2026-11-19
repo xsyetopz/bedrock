@@ -8,7 +8,7 @@ import { adopt } from "./adopt.ts";
 
 const SOURCE_CONFIG = '{\n\t"version": "source",\n\t"languages": {}\n}\n';
 
-test("adopt keeps a repo that runs bedrock from source on its source tree", async () => {
+test("adopt moves a source pin from .bedrock.json into .editorconfig", async () => {
 	// Arrange
 	const root = await tempRepo({ ".bedrock.json": SOURCE_CONFIG });
 
@@ -21,6 +21,7 @@ test("adopt keeps a repo that runs bedrock from source on its source tree", asyn
 		version: "source",
 		languages: { typescript: {} },
 	});
+	expect(await Bun.file(join(root, ".bedrock.json")).exists()).toBe(false);
 });
 
 test("adopt pins this release in a repo without a source pin", async () => {
@@ -31,7 +32,7 @@ test("adopt pins this release in a repo without a source pin", async () => {
 	await adopt("adopt", [root, "typescript", "--yes", "--no-run"]);
 
 	// Assert
-	expect(await Bun.file(join(root, ".bedrock.json")).json()).toEqual({
+	expect(await readConfig(root)).toEqual({
 		version: VERSION,
 		languages: { typescript: {} },
 	});

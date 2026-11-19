@@ -24,6 +24,23 @@ describe("buildPlan", () => {
 		expect(second.steps).toEqual([]);
 	});
 
+	test("keeps the repo's own .editorconfig sections, then plans nothing", async () => {
+		// Arrange
+		const own = "\n[gen/**]\nbedrock_file_code_lines_warning = unset\n";
+		const root = await tempRepo({ ".editorconfig": `root = true\n${own}` });
+
+		// Act
+		const first = await buildPlan(root, selected, { init: false });
+		await applySteps(root, first.steps);
+		const second = await buildPlan(root, selected, { init: false });
+
+		// Assert
+		const text = await Bun.file(`${root}/.editorconfig`).text();
+		expect(text).toContain(own);
+		expect(text).toContain("bedrock_languages = rust\n");
+		expect(second.steps).toEqual([]);
+	});
+
 	test("keeps the project's own lines in a shared file", async () => {
 		const root = await tempRepo({ ".gitignore": "secrets/\n" });
 		const plan = await buildPlan(root, selected, { init: false });

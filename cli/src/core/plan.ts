@@ -3,9 +3,9 @@ import { basename } from "node:path";
 import { VERSION } from "../version.ts";
 import {
 	type Config,
-	CONFIG_PATH,
-	formatConfig,
+	configPairs,
 	type LanguageOptions,
+	LEGACY_CONFIG_PATH,
 } from "./config.ts";
 import { leftoverNotes, leftovers } from "./dropped.ts";
 import { existing } from "./fs.ts";
@@ -101,6 +101,7 @@ const languageSteps = async (
 	};
 };
 
+/** The config to record: the selection and version. */
 const configOf = (selected: readonly Selected[], version: string): Config => ({
 	version,
 	languages: Object.fromEntries(
@@ -108,22 +109,32 @@ const configOf = (selected: readonly Selected[], version: string): Config => ({
 	),
 });
 
-const removalNotes = (removed: readonly string[]): string[] =>
-	removed.length > 0
+/**
+ * Asks the user to move the hook and task-runner files the base replaced into
+ * project.just. A `.bedrock.json` needs no move: the bedrock block of
+ * `.editorconfig` now records what it held.
+ */
+const removalNotes = (removed: readonly string[]): string[] => {
+	const moved = removed.filter((path) => path !== LEGACY_CONFIG_PATH);
+	return moved.length > 0
 		? [
-				`Move what ${removed.join(", ")} did into project.just; git still has the removed files.`,
+				`Move what ${moved.join(", ")} did into project.just; git still has the removed files.`,
 			]
 		: [];
+};
 
 /** How {@link buildPlan} plans. */
 export interface PlanOptions {
 	/** Whether the run starts a project, which adds the starter code. */
 	readonly init: boolean;
-	/** The bedrock release `.bedrock.json` records. */
+	/** The bedrock release `.editorconfig` records. */
 	readonly version?: string | undefined;
 	/** Languages whose shared-file blocks and managed files the plan removes. */
 	readonly dropped?: readonly Language[];
 }
+
+/** Files an adopt removes: those the base replaces, and an older release's `.bedrock.json`. */
+const RETIRED = [...REPLACED_BY_BASE, LEGACY_CONFIG_PATH];
 
 /** Plans an adopt of `selected` into `root`, which must already exist. */
 export const buildPlan = async (
@@ -131,7 +142,12 @@ export const buildPlan = async (
 	selected: readonly Selected[],
 	{ init, version = VERSION, dropped = [] }: PlanOptions,
 ): Promise<Plan> => {
-	const base: Variables = { name: basename(root), bedrockVersion: version };
+	const config = configOf(selected, version);
+	const base: Variables = {
+		name: basename(root),
+		bedrockVersion: version,
+		bedrockConfig: configPairs(config),
+	};
 	const parts = await Promise.all(
 		selected.map(({ language, options }) =>
 			languageSteps(
@@ -141,8 +157,7 @@ export const buildPlan = async (
 			),
 		),
 	);
-	const config = configOf(selected, version);
-	const removed = await existing(root, REPLACED_BY_BASE);
+	const removed = await existing(root, RETIRED);
 	const leftover = await leftovers(root, dropped, base);
 	const starters = parts.flatMap((part) => part.starters);
 	const steps = dedupe([
@@ -156,7 +171,6 @@ export const buildPlan = async (
 			leftover.blocks,
 		)),
 		...removed.map((path): Step => ({ kind: "remove", path })),
-		{ kind: "write", path: CONFIG_PATH, content: formatConfig(config) },
 		...starters,
 	]);
 	return {

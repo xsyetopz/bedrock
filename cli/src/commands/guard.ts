@@ -20,7 +20,7 @@ const USAGE = `Usage: bedrock guard [base|<language>...] [--fix]
 Reports what the linters cannot see: suppressions without a reason, files of
 replaced tools, managed files that differ from the templates, and each
 language's own rules. Without a scope, it checks base and every language
-.bedrock.json lists. --fix repairs what it can first.`;
+.editorconfig lists. --fix repairs what it can first.`;
 
 const AGENT_LINKS = ["CLAUDE.md", "GEMINI.md"];
 
@@ -72,7 +72,7 @@ const guardBase = async (
 		),
 		...(config.version !== SOURCE_VERSION && config.version !== VERSION
 			? [
-					`.bedrock.json: pins bedrock ${config.version}, but ${VERSION} runs; run just setup`,
+					`.editorconfig: \`bedrock_version\` pins ${config.version}, but ${VERSION} runs; run \`just setup\``,
 				]
 			: []),
 		...drifted,
@@ -116,7 +116,9 @@ export const guard = async (args: readonly string[]): Promise<number> => {
 	const root = process.cwd();
 	const config = await readConfig(root);
 	if (config === undefined) {
-		throw new Error(`${root} has no .bedrock.json. Run bedrock adopt first.`);
+		throw new Error(
+			`${root} records no \`bedrock_version\` in \`.editorconfig\`. Run \`bedrock adopt\` first.`,
+		);
 	}
 	const selected = select(config, []);
 	const scopes = scopesOf(positionals, selected);

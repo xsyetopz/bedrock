@@ -1,6 +1,6 @@
 # Adopting an Existing Repo
 
-`bedrock adopt` moves a repo onto its strict setup, and works the same way for a fresh folder, an active project, or a legacy codebase. It removes the tools it replaces instead of running beside them. One run adopts every language you name, or, without one, the languages `.bedrock.json` lists or the repo has; the blocks in shared files land in the same order whatever the languages. `/adopt` in the [Claude Code plugin](../README.md#claude-code-plugin) runs it for you.
+`bedrock adopt` moves a repo onto its strict setup, and works the same way for a fresh folder, an active project, or a legacy codebase. It removes the tools it replaces instead of running beside them. One run adopts every language you name, or, without one, the languages `.editorconfig` lists or the repo has; the blocks in shared files land in the same order whatever the languages. `/adopt` in the [Claude Code plugin](../README.md#claude-code-plugin) runs it for you.
 
 ## Run It
 
@@ -19,8 +19,8 @@ Project checks that `just verify` should run, such as a build or a repo-specific
 
 - It writes the shared `justfile`, `lefthook.yml`, `.markdownlint.jsonc`, and `.github/workflows/base.yml`, plus its own `.just/<language>.just` and `.github/workflows/<language>.yml`.
 - It adds its block to `AGENTS.md`, `.gitignore`, `.gitattributes`, `.editorconfig`, and `.github/dependabot.yml`, and keeps the rest of each file. An existing `CLAUDE.md` becomes `AGENTS.md`, and `CLAUDE.md` and `GEMINI.md` link to it.
-- It records the bedrock release and the languages in `.bedrock.json`, which `just setup` reads to install that release.
-- It removes what a language the repo dropped left behind: the language's blocks in the shared files and its managed files, such as `.just/rust.just` and `.github/workflows/rust.yml`. A language counts as dropped when the run does not cover it and none of its marker files sits at the root, such as `Cargo.toml` for Rust or `go.mod` for Go. Markers bedrock writes itself, such as `gradlew` or `.swift-version`, don't count, since they stay behind when the code goes. To drop one, take it out of `.bedrock.json` and run `bedrock update`. `bedrock guard` reports the leftovers as drift.
+- It records the bedrock release, the languages, and their options as `bedrock_*` properties in the bedrock block of `.editorconfig`; `just setup` reads `bedrock_version` to install that release. A `.bedrock.json` from an older release moves there.
+- It removes what a language the repo dropped left behind: the language's blocks in the shared files and its managed files, such as `.just/rust.just` and `.github/workflows/rust.yml`. A language counts as dropped when the run does not cover it and none of its marker files sits at the root, such as `Cargo.toml` for Rust or `go.mod` for Go. Markers bedrock writes itself, such as `gradlew` or `.swift-version`, don't count, since they stay behind when the code goes. To drop one, take it out of `bedrock_languages` in `.editorconfig` and run `bedrock update`. `bedrock guard` reports the leftovers as drift.
 - It removes other hook setups (husky, pre-commit, simple-git-hooks, the `.githooks` of bedrock releases before 0.5, and lefthook configs under names other than `lefthook.yml`) and the `Makefile`, whose jobs `lefthook.yml` and `just` take over. An existing `lefthook.yml` is replaced; machine-local hooks belong in `lefthook-local.yml`.
 
 ## Bun
@@ -140,7 +140,7 @@ To fix the errors, run `just lint-fix`, which also converts XCTest files to Swif
 
 ## Java and Kotlin
 
-`bedrock adopt` writes the Gradle wrapper, `gradle/bedrock/` with the convention plugins, `gradle/bedrock.versions.toml`, and the ProGuard rules, and adds its blocks to `settings.gradle.kts` and `gradle.properties`. When `gradle.properties` names no `group`, adopt takes it from `--group`, then from the migrated build, or uses `com.example.<directory name>` for a new project, and otherwise prints a note asking you to set it; NullAway checks that package. A `--group`, kept in `.bedrock.json`, also replaces a different `group` that `gradle.properties` already names, with a note; the code stays where it is. Scala or Groovy sources get a note to port them first, since bedrock compiles Java and Kotlin only.
+`bedrock adopt` writes the Gradle wrapper, `gradle/bedrock/` with the convention plugins, `gradle/bedrock.versions.toml`, and the ProGuard rules, and adds its blocks to `settings.gradle.kts` and `gradle.properties`. When `gradle.properties` names no `group`, adopt takes it from `--group`, then from the migrated build, or uses `com.example.<directory name>` for a new project, and otherwise prints a note asking you to set it; NullAway checks that package. A `--group`, kept as `bedrock_jvm_group` in `.editorconfig`, also replaces a different `group` that `gradle.properties` already names, with a note; the code stays where it is. Scala or Groovy sources get a note to port them first, since bedrock compiles Java and Kotlin only.
 
 It then migrates the build it finds, in this order, to one `build.gradle.kts` per module that applies a `bedrock.*` plugin, with the dependencies in `gradle/libs.versions.toml`:
 

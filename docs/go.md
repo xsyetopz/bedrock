@@ -15,7 +15,7 @@ Go modules build and test the code with `go build` and `go test`. golangci-lint 
 | `.golangci.yml` | the project | The strict config, with `goimports` grouping your module path. Adopt writes it once and then keeps your copy |
 | `go.mod` | the project | Written by adopt only when the repo has none |
 
-`bedrock init <dir> go:command` starts a module with `cmd/<dir>/main.go` and an `internal/greeting` package. `go:library` starts a root package with a test. Both write tests that pass `just verify`. A new `go.mod` names `example.com/<dir>` unless `.bedrock.json` sets `"module"` under `go`, and adopt notes the placeholder so you replace it, and the `goimports` prefix in `.golangci.yml`, with the real path.
+`bedrock init <dir> go:command` starts a module with `cmd/<dir>/main.go` and an `internal/greeting` package. `go:library` starts a root package with a test. Both write tests that pass `just verify`. A new `go.mod` names `example.com/<dir>` unless `.editorconfig` sets `bedrock_go_module`, and adopt notes the placeholder so you replace it, and the `goimports` prefix in `.golangci.yml`, with the real path.
 
 ## Recipes
 

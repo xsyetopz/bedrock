@@ -19,7 +19,7 @@ Every language writes the same base, so a repo with several languages has one of
 - `lefthook.yml`, whose hooks each run one `just` recipe: `pre-commit` checks the languages a commit touches, `pre-push` runs `verify` without the tests for the languages the unpushed commits touch, and `commit-msg` checks Conventional Commits;
 - `AGENTS.md`, linked as `CLAUDE.md` and `GEMINI.md`, with a block of rules from each language;
 - `.gitignore`, `.gitattributes`, `.editorconfig`, and `.github/dependabot.yml`, with a block from each language;
-- `.bedrock.json`, which pins the bedrock release and lists the languages;
+- a bedrock block in `.editorconfig`, which pins the bedrock release, lists the languages with their options, and sets the size bounds `bedrock guard` checks;
 - markdownlint, and a CI workflow per language.
 
 Bedrock rewrites only the blocks it owns, between `# >>> name` and `# <<< name` comments (`<!-- name -->` and `<!-- /name -->` in Markdown), keeps the rest of each file, and lists the blocks in the same order whatever the languages. Git is the backup: bedrock leaves no `.bak` files, and refuses to change a file with uncommitted work unless you pass `--allow-dirty`. A second run on the same repo plans no steps.
@@ -31,7 +31,7 @@ just verify     # every check CI runs
 just rust::test # one language's recipe
 ```
 
-`just setup` downloads the bedrock release `.bedrock.json` pins and the lefthook release the justfile pins, checks each against its release checksums, and keeps one copy per release in the user cache, shared by every checkout and worktree. It then installs the hooks `lefthook.yml` lists and unsets `core.hooksPath`, which releases before 0.5 pointed at `.githooks`, so rerun `just setup` in each clone after updating to 0.5. CI skips the hook install.
+`just setup` downloads the bedrock release `bedrock_version` in `.editorconfig` pins and the lefthook release the justfile pins, checks each against its release checksums, and keeps one copy per release in the user cache, shared by every checkout and worktree. It then installs the hooks `lefthook.yml` lists and unsets `core.hooksPath`, which releases before 0.5 pointed at `.githooks`, so rerun `just setup` in each clone after updating to 0.5. CI skips the hook install.
 
 ## Adopt a Repo
 
@@ -53,7 +53,7 @@ bedrock adopt <dir> ts rust          # print it, then ask before applying
 bedrock adopt <dir> swift cpp --yes  # apply without asking
 ```
 
-Without a language, adopt takes the ones `.bedrock.json` lists or the repo has. Language names are case-insensitive, and `ts` or `bun`, `cxx` or `c++`, `java` or `kotlin`, and `golang` work too. Then run `just setup` and `just verify` in the target and fix what they report. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes the ones git already holds, and lists the rest.
+Without a language, adopt takes the ones `.editorconfig` lists or the repo has. Language names are case-insensitive, and `ts` or `bun`, `cxx` or `c++`, `java` or `kotlin`, and `golang` work too. Then run `just setup` and `just verify` in the target and fix what they report. [docs/adopting.md](docs/adopting.md) lists what changes and the order to fix errors in. A repo adopted by a release before 0.2 has `.bak` files beside the files it replaced; `bedrock clean` deletes the ones git already holds, and lists the rest.
 
 ## Start a Repo
 
@@ -118,7 +118,7 @@ The plugin runs the CLI from a checkout of this repo, then a `bedrock` on `PATH`
 | `templates/<language>` | The files, blocks, and starters one language adds |
 | `plugins/bedrock` | The Claude Code plugin |
 
-The repo adopts itself from source (`.bedrock.json` pins `"source"`), so `just verify` checks it with the CLI in its own tree.
+The repo adopts itself from source (`.editorconfig` pins `bedrock_version = source`), so `just verify` checks it with the CLI in its own tree.
 
 ## Docs
 

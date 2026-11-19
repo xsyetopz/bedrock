@@ -4,7 +4,7 @@
 - Put what every repo gets in `templates/base` and what one language adds in `templates/<language>`; the code that plans and guards it goes in `cli/src/languages/<language>`. Shared logic belongs in `cli/src/core`.
 - Write each managed file through a template, and keep the plan idempotent: a second `bedrock adopt` on the same repo plans no steps.
 - Give each language kind an e2e test that inits it and runs its real toolchain, skipped when that toolchain is absent.
-- Keep `.bedrock.json` on `"source"`, so this repo checks itself with the code in its own tree.
+- Keep `bedrock_version` in `.editorconfig` on `source`, so this repo checks itself with the code in its own tree.
 
 <!-- bedrock -->
 - Run each task through `just`. `just` lists the recipes. Check each change with the narrowest one, such as `just rust::test` or `just lint`, and run `just verify` once before you finish a change that alters behavior.

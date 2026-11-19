@@ -31,7 +31,7 @@ export const leftovers = async (
 /** The notes that tell what removing `found` changes. */
 export const leftoverNotes = (found: Leftovers): string[] => {
 	const reason =
-		"neither .bedrock.json nor a marker file at the root names the language";
+		"neither .editorconfig nor a marker file at the root names the language";
 	return [
 		...(found.blocks.length > 0
 			? [

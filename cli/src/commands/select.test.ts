@@ -24,7 +24,7 @@ describe("select", () => {
 		expect(ids(select(undefined, [], { cxx: true }))).toContain("cpp");
 	});
 
-	test("--group joins the jvm options, which .bedrock.json keeps", () => {
+	test("--group joins the jvm options, which .editorconfig keeps", () => {
 		// Arrange
 		const named = [parseNamed("jvm:kotlin-library")];
 

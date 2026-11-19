@@ -73,7 +73,7 @@ describe("init", () => {
 		expect(paths).toContain(starter);
 	});
 
-	test("takes the module path from .bedrock.json options", async () => {
+	test("takes the module path from the recorded go options", async () => {
 		// Arrange
 		const root = await tempRepo();
 

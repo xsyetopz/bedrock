@@ -9,7 +9,7 @@ bun install
 just setup
 ```
 
-`just setup` installs the pinned tools and the hooks in `lefthook.yml`. This repo pins `"source"` in `.bedrock.json`, so it runs the CLI from its own tree and downloads no release.
+`just setup` installs the pinned tools and the hooks in `lefthook.yml`. This repo pins `bedrock_version = source` in `.editorconfig`, so it runs the CLI from its own tree and downloads no release.
 
 ## Before You Open a Pull Request
 
@@ -42,7 +42,7 @@ Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`
 
 ## Releases
 
-Bump `version` in `package.json` and in `plugins/bedrock/.claude-plugin/plugin.json`; a test fails when they differ. Once every check passes on `main`, the Release workflow compiles the CLI with `bun cli/build.ts`, one binary per platform with the templates embedded, and creates the `v<version>` GitHub release with those binaries and their `SHA256SUMS`. Adopted repos pin that version in `.bedrock.json`, and `just setup` downloads it. `gh workflow run Release` releases the head of `main` by hand, once its checks have passed.
+Bump `version` in `package.json` and in `plugins/bedrock/.claude-plugin/plugin.json`; a test fails when they differ. Once every check passes on `main`, the Release workflow compiles the CLI with `bun cli/build.ts`, one binary per platform with the templates embedded, and creates the `v<version>` GitHub release with those binaries and their `SHA256SUMS`. Adopted repos pin that version as `bedrock_version` in `.editorconfig`, and `just setup` downloads it. `gh workflow run Release` releases the head of `main` by hand, once its checks have passed.
 
 ## Agents
 

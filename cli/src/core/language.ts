@@ -6,7 +6,7 @@ import type { TemplateDir, Variables } from "./templates.ts";
 export interface Context {
 	/** Absolute path of the repository. */
 	readonly root: string;
-	/** This language's settings from `.bedrock.json`, merged with the command line. */
+	/** This language's settings from `.editorconfig`, merged with the command line. */
 	readonly options: LanguageOptions;
 	/** Every adopted language's id, so a language can tell whether, say, Bun is present. */
 	readonly languages: readonly string[];

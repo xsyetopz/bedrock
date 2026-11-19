@@ -60,7 +60,9 @@ const selection = async (
 ): Promise<Selected[]> => {
 	const config = await readConfig(root);
 	if (mode === "update" && config === undefined) {
-		throw new Error(`${root} has no .bedrock.json. Run bedrock adopt first.`);
+		throw new Error(
+			`${root} records no \`bedrock_version\` in \`.editorconfig\`. Run \`bedrock adopt\` first.`,
+		);
 	}
 	const named = names.map((name) => parseNamed(name));
 	const found =

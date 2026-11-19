@@ -100,10 +100,10 @@ const propertiesStep = async (
 			text += `group=${chosen}\n`;
 		}
 	} else if (option !== undefined && declared[1] !== option) {
-		// The group option, kept in .bedrock.json, is what the user chose last.
+		// The group option, kept in .editorconfig as bedrock_jvm_group, is what the user chose last.
 		text = text.replace(declared[0], `group=${option}`);
 		notes.push(
-			`gradle.properties: group ${declared[1] ?? ""} becomes ${option}, the jvm group in .bedrock.json; NullAway and the Android namespaces follow it.`,
+			`gradle.properties: group ${declared[1] ?? ""} becomes ${option}, bedrock_jvm_group in .editorconfig; NullAway and the Android namespaces follow it.`,
 		);
 	}
 	return {

@@ -81,7 +81,7 @@ export const detect = async (root: string): Promise<Language[]> => {
 /**
  * The languages a run leaves out that no marker file at `root` points to. A
  * repo that dropped one keeps no block or file of it; one whose markers
- * remain, such as a repo adopted before it had a .bedrock.json, keeps it.
+ * remain, such as a repo adopted before bedrock recorded its languages, keeps it.
  * Markers bedrock writes itself, such as gradlew, don't count: they outlive
  * the code they were written for.
  */
@@ -125,7 +125,7 @@ const jvmOptions = (
 };
 
 /**
- * The languages a run covers: those `.bedrock.json` lists, plus those named,
+ * The languages a run covers: those `.editorconfig` lists, plus those named,
  * plus the ones they require, in block order.
  */
 export const select = (

@@ -26,7 +26,7 @@ const declaredModule = async (
 	return text === undefined ? undefined : moduleOf(text);
 };
 
-/** The module path: the repo's `go.mod`, else `module` in `.bedrock.json`, else a placeholder under `example.com`. */
+/** The module path: the repo's `go.mod`, else `bedrock_go_module` in `.editorconfig`, else a placeholder under `example.com`. */
 export const moduleFor = async (
 	context: Context,
 	name: string,

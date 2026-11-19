@@ -16,8 +16,8 @@ import? "project.just"
 
 languages := "typescript rust swift cpp jvm go"
 
-# The bedrock release .bedrock.json pins; "source" runs the CLI from this checkout.
-bedrock_version := `sed -n 's/^[[:space:]]*"version": "\(.*\)",$/\1/p' .bedrock.json 2>/dev/null || true`
+# The bedrock release bedrock_version in .editorconfig pins; "source" runs the CLI from this checkout.
+bedrock_version := `sed -n 's/^bedrock_version = //p' .editorconfig 2>/dev/null | tail -n 1 || true`
 bedrock_asset := "bedrock-" + replace(os(), "macos", "darwin") + "-" + replace(replace(arch(), "aarch64", "arm64"), "x86_64", "x64")
 # One copy per release, shared by every checkout and worktree.
 bedrock_bin := cache_directory() / "bedrock" / bedrock_version / bedrock_asset
@@ -113,7 +113,7 @@ install-bedrock:
     set -euo pipefail
     version="{{ bedrock_version }}"
     if [[ -z "$version" ]]; then
-        echo ".bedrock.json has no version. Run bedrock adopt." >&2
+        echo ".editorconfig has no bedrock_version. Run bedrock adopt." >&2
         exit 1
     fi
     if [[ "$version" == source || -x "{{ bedrock_bin }}" ]]; then exit 0; fi

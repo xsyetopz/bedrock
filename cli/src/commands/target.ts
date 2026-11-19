@@ -46,7 +46,7 @@ const OPTIONS = `
 Options:
   --cxx          Add C++20 to a Swift repo (same as naming cpp).
   --dry-run      Print the plan. Change nothing.
-  --group <pkg>  The JVM group and package, such as com.example.app; kept in .bedrock.json.
+  --group <pkg>  The JVM group and package, such as com.example.app; kept in .editorconfig.
   --yes          Apply without asking (agents, CI).
   --no-run       Skip the installs that follow, such as bun install.
   --allow-dirty  Apply even where a changed file holds uncommitted work.
@@ -58,13 +58,13 @@ export const USAGE: Readonly<Record<Mode, string>> = {
 
 Moves an existing repo onto bedrock: writes the shared justfile, hooks, and
 configs, migrates each language's tooling, and removes the tools it replaces.
-Without a language, it adopts the ones .bedrock.json lists or the repo has.${OPTIONS}`,
+Without a language, it adopts the ones .editorconfig lists or the repo has.${OPTIONS}`,
 	init: `Usage: bedrock init <dir> <language>[:<kind>]... [options]
 
 Starts a repo in <dir>, which must be empty or missing, then adopts it.${OPTIONS}`,
 	update: `Usage: bedrock update [<dir>] [options]
 
-Rewrites every managed file for the languages .bedrock.json lists, with the
+Rewrites every managed file for the languages .editorconfig lists, with the
 templates of this bedrock release.${OPTIONS}`,
 };
 
