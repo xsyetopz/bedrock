@@ -90,7 +90,7 @@ bedrock init <dir> go:command               # or library
 
 - suppression comments and file-wide disables, where each tool has a narrower, reasoned form;
 - files from replaced tools, such as another package manager's lockfile, a Podfile, `.swiftformat`, or `pom.xml`;
-- Rust unit tests inside the file they test, which `just lint-fix` moves to a `tests.rs` beside it;
+- Rust unit tests inside the file they test, which `just lint-fix` moves to a file of the module's name beside it, such as `tests.rs`;
 - XCTest outside UI tests, which `just lint-fix` converts to Swift Testing, and JUnit 4 outside Android tests;
 - ProGuard rules that turn shrinking off;
 - public API without docs;

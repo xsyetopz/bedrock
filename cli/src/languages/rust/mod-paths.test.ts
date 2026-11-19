@@ -16,6 +16,20 @@ test("a path attribute on an out-of-line module and an include gain the prefix",
 	);
 });
 
+test("includes and path attributes can gain different prefixes", () => {
+	// Arrange
+	const source =
+		'#[path = "a.rs"]\nmod a;\nconst D: &str = include_str!("d.txt");\n';
+
+	// Act
+	const result = prefixPaths(source, { include: "../", path: "tests/" });
+
+	// Assert
+	expect(result).toBe(
+		'#[path = "tests/a.rs"]\nmod a;\nconst D: &str = include_str!("../d.txt");\n',
+	);
+});
+
 test("a source with no relative paths comes back unchanged", () => {
 	// Arrange
 	const source = 'mod a;\ninclude!("/abs/x.rs");\n// include!("c.rs");\n';

@@ -10,7 +10,7 @@ export const isIntegrationTest = (path: string): boolean =>
 	/(?:^|\/)tests\/[^/]+\.rs$/u.test(path);
 
 /** Whether the file starts with `#![cfg(test)]` as code, not inside a comment or string. */
-const hasGate = (source: string): boolean =>
+export const hasGate = (source: string): boolean =>
 	tokens(source)
 		.map((token) => (token.kind === "literal" ? "0" : token.text))
 		.join("")

@@ -1,14 +1,17 @@
 import { join, relative } from "node:path";
 
-import { exists } from "../../core/fs.ts";
 import type { Context, Finding } from "../../core/language.ts";
-import { inOrder } from "../../core/order.ts";
 import { pending } from "../../core/steps.ts";
-import { gated, isIntegrationTest } from "./gating.ts";
 import { planRust } from "./plan.ts";
 import { rustFiles } from "./project.ts";
+import { repairRust } from "./repair.ts";
 import { suppressionProblems } from "./suppressions.ts";
-import { inlineTests, moveOut, pathTests, testsFile } from "./test-modules.ts";
+import {
+	inlineTests,
+	pathTests,
+	testOnlyFiles,
+	testsFile,
+} from "./test-modules.ts";
 
 /** One finding per test module that keeps its body in the file or sets its file with `#[path]`. */
 const misplaced = async (
@@ -16,45 +19,32 @@ const misplaced = async (
 	file: string,
 	source: string,
 ): Promise<Finding[]> => {
-	const destination = relative(root, await testsFile(join(root, file)));
-	return [
-		...inlineTests(source).map(
-			(found) =>
-				`${file}:${found.line}: mod ${found.name} keeps its tests in this file; move them to ${destination} and declare \`#[cfg(test)] mod tests;\` (just lint-fix does it)`,
+	const destination = async (name: string): Promise<string> =>
+		relative(root, await testsFile(join(root, file), name));
+	const inline = await Promise.all(
+		inlineTests(source).map(
+			async ({ line, name }) =>
+				`${file}:${line}: mod ${name} keeps its tests in this file; move them to ${await destination(name)} and declare \`#[cfg(test)] mod ${name};\` (just lint-fix does it)`,
 		),
-		...pathTests(source).map(
-			(found) =>
-				`${file}:${found.line}: mod ${found.name} sets its file with #[path]; drop the attribute and keep the tests in ${destination} (just lint-fix does it)`,
+	);
+	const pathed = await Promise.all(
+		pathTests(source).map(
+			async ({ line, name }) =>
+				`${file}:${line}: mod ${name} sets its file with #[path]; drop the attribute and keep the tests in ${await destination(name)} (just lint-fix does it)`,
 		),
-	];
+	);
+	return [...inline, ...pathed];
 };
 
-/** With `fix`: moves test modules to `tests.rs` and gates integration tests; returns what it could not move. */
-const repair = async (root: string, file: string): Promise<Finding[]> => {
-	const path = join(root, file);
-	// Moving an earlier file's tests can remove a later one in the list.
-	if (!(await exists(path))) {
-		return [];
-	}
-	const problems = await moveOut(path);
-	try {
-		if (isIntegrationTest(file)) {
-			const content = gated(await Bun.file(path).text());
-			if (content !== undefined) {
-				await Bun.write(path, content);
-			}
-		}
-	} catch (error) {
-		problems.push(`${path}: cannot gate: ${String(error)}`);
-	}
-	return problems.map((problem) => problem.replaceAll(`${root}/`, ""));
-};
-
-/** The findings for one source file. */
-const checkFile = async (root: string, file: string): Promise<Finding[]> => {
+/** The findings for one source file; a test-only file may hold test modules. */
+const checkFile = async (
+	root: string,
+	file: string,
+	testOnly: boolean,
+): Promise<Finding[]> => {
 	const source = await Bun.file(join(root, file)).text();
 	return [
-		...(await misplaced(root, file, source)),
+		...(testOnly ? [] : await misplaced(root, file, source)),
 		...suppressionProblems(source).map(
 			({ line, message }) => `${file}:${line}: ${message}`,
 		),
@@ -101,7 +91,7 @@ const layout = async (context: Context): Promise<Finding[]> => {
  * `#[path]`, lint suppressions that skip `#[expect(…, reason)]`, and files
  * that differ from what adopt writes, such as a member that skips the
  * workspace lints, `foo/mod.rs`, or an integration test without
- * `#![cfg(test)]`. With `fix`, moves test modules to `tests.rs` and gates
+ * `#![cfg(test)]`. With `fix`, moves test modules to their own files and gates
  * integration tests first.
  */
 export const guardRust = async (
@@ -109,16 +99,11 @@ export const guardRust = async (
 	fix: boolean,
 ): Promise<Finding[]> => {
 	const { root } = context;
-	const files = await rustFiles(root);
-	const unrepaired: Finding[] = [];
-	if (fix) {
-		await inOrder(files.toSorted(), async (file) => {
-			unrepaired.push(...(await repair(root, file)));
-		});
-	}
+	const unrepaired = fix ? await repairRust(root, await rustFiles(root)) : [];
 	const current = await rustFiles(root);
+	const testOnly = await testOnlyFiles(root, current);
 	const checked = await Promise.all(
-		current.map((file) => checkFile(root, file)),
+		current.map((file) => checkFile(root, file, testOnly.has(file))),
 	);
 	const explained = new Set(unrepaired.map((finding) => site(finding)));
 	return [

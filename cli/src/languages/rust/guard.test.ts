@@ -105,7 +105,8 @@ test("--fix moves the test module to tests.rs and leaves nothing to report", asy
 test("--fix reports a module it cannot move once and keeps fixing the other files", async () => {
 	// Arrange
 	const root = await adopted({
-		"crates/a/src/a.rs": "#[cfg(test)]\nmod checks { }\n",
+		"crates/a/src/a.rs":
+			"mod inner {\n    #[cfg(test)]\n    mod tests { }\n}\n",
 		"crates/a/src/b.rs": "#[cfg(test)]\nmod tests {\n    fn t() {}\n}\n",
 	});
 
@@ -114,8 +115,50 @@ test("--fix reports a module it cannot move once and keeps fixing the other file
 
 	// Assert
 	expect(findings).toHaveLength(1);
-	expect(locations(findings)).toEqual(["crates/a/src/a.rs:2"]);
+	expect(locations(findings)).toEqual(["crates/a/src/a.rs:3"]);
 	expect(await exists(join(root, "crates/a/src/b/tests.rs"))).toBe(true);
+});
+
+test.each([false, true])(
+	"leaves the test modules inside a test-only file where they are (fix: %p)",
+	async (fix) => {
+		// Arrange
+		const nested = "#[cfg(test)]\nmod deep {\n    fn t() {}\n}\n";
+		const root = await adopted({
+			"crates/a/src/lib.rs": "//! A.\n#[cfg(test)]\nmod tests;\n",
+			"crates/a/src/tests.rs": `mod more;\n${nested}`,
+			"crates/a/src/tests/more.rs": nested,
+		});
+
+		// Act
+		const findings = await guardRust(contextIn(root), fix);
+
+		// Assert
+		expect(findings).toEqual([]);
+		expect(await readText(join(root, "crates/a/src/tests/more.rs"))).toBe(
+			nested,
+		);
+	},
+);
+
+test("--fix moves a test module with another name to a file of that name", async () => {
+	// Arrange
+	const root = await adopted({
+		"crates/a/src/lib.rs":
+			"//! A.\n#[cfg(test)]\nmod support {\npub fn f() {}\n}\n",
+	});
+
+	// Act
+	const findings = await guardRust(contextIn(root), true);
+
+	// Assert
+	expect(findings).toEqual([]);
+	expect(await readText(join(root, "crates/a/src/lib.rs"))).toBe(
+		"//! A.\n#[cfg(test)]\nmod support;\n",
+	);
+	expect(await readText(join(root, "crates/a/src/support.rs"))).toBe(
+		"pub fn f() {}\n",
+	);
 });
 
 test("does not take a test module in a comment or string for a declaration", async () => {

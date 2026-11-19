@@ -66,7 +66,9 @@ const literalAt = (
 	all: readonly Token[],
 	index: number,
 	depth: number,
-): { literal?: Token | undefined; next: number } | undefined => {
+):
+	| { literal?: Token | undefined; next: number; include?: boolean }
+	| undefined => {
 	const token = all[index];
 	if (
 		token?.kind === "ident" &&
@@ -74,7 +76,9 @@ const literalAt = (
 		all[index + 1]?.text === "!"
 	) {
 		const literal = includeLiteral(all, index);
-		return literal === undefined ? undefined : { literal, next: index };
+		return literal === undefined
+			? undefined
+			: { literal, next: index, include: true };
 	}
 	if (token?.text === "#") {
 		const attribute = pathLiteral(all, index, depth);
@@ -85,10 +89,18 @@ const literalAt = (
 	return { next: index };
 };
 
+/** The prefix each kind of relative path gains. */
+export interface Prefixes {
+	/** For `include!`, `include_str!`, and `include_bytes!`, which resolve from the file. */
+	readonly include: string;
+	/** For `#[path = "…"]` on a `mod x;`, which resolves from the module directory. */
+	readonly path: string;
+}
+
 /**
- * Rewrites the relative paths in `source`, the text of a `mod.rs`, for a file
- * one directory up: each `#[path = "…"]` on a `mod x;` and each
- * `include!`-style literal gains `prefix`. A path inside an inline `mod x { }`
+ * Rewrites the relative paths in `source` for a file in another place: each
+ * `#[path = "…"]` on a `mod x;` and each `include!`-style literal gains
+ * `prefix`, one string for both or one per kind. A path inside an inline `mod x { }`
  * keeps its text, since rustc resolves it through the module's own directory,
  * which does not move. Returns `undefined` when a path cannot be rewritten
  * safely: one that is computed, escaped, set through `cfg_attr`, or given to
@@ -96,8 +108,10 @@ const literalAt = (
  */
 export const prefixPaths = (
 	source: string,
-	prefix: string,
+	prefix: string | Prefixes,
 ): string | undefined => {
+	const { include, path } =
+		typeof prefix === "string" ? { include: prefix, path: prefix } : prefix;
 	const all = tokens(source);
 	const edits: { literal: Token; value: string }[] = [];
 	let depth = 0;
@@ -114,12 +128,13 @@ export const prefixPaths = (
 			return undefined;
 		}
 		if (found.literal !== undefined && value !== null) {
-			edits.push({ literal: found.literal, value });
+			const added = found.include === true ? include : path;
+			edits.push({ literal: found.literal, value: `${added}${value}` });
 		}
 	}
 	let text = source;
 	for (const { literal, value } of edits.toReversed()) {
-		text = `${text.slice(0, literal.start)}"${prefix}${value}"${text.slice(literal.end)}`;
+		text = `${text.slice(0, literal.start)}"${value}"${text.slice(literal.end)}`;
 	}
 	return text;
 };
