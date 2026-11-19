@@ -19,7 +19,7 @@ The table tracks how close the repo is to banning `node:` imports outright. "Run
 | `child_process` | ⚠️ | IPC can't send `http` server sockets; `advanced` serialization only between Bun processes; no `subprocess.channel.ref()` or `unref()` | `Bun.spawn`, `Bun.$` | ✅ |
 | `cluster` | ⚠️ | Load balancing only on Linux, through `SO_REUSEPORT` | `Bun.serve({ reusePort })` with `Bun.spawn` | ⚠️ no primary/worker API |
 | `console` | ✅ | Writes to file descriptors, so replacing `process.stdout.write` doesn't capture it; layout differs from `util.inspect` | The global `console` | ✅ |
-| `crypto` | ⚠️ | No `encapsulate` or `decapsulate`; `setEngine()` throws; `setFips()` does nothing; BoringSSL lacks some key types, curves, and ciphers | `crypto.subtle`, `crypto.randomUUID`, `Bun.CryptoHasher`, `Bun.hash`, `Bun.password` | ⚠️ `KeyObject`, `createCipheriv`, and streaming ciphers |
+| `crypto` | ⚠️ | No `encapsulate` or `decapsulate`; `setEngine()` throws; `setFips()` does nothing; `secureHeapUsed()` returns `undefined`; BoringSSL lacks some key types, curves, and ciphers | `crypto.subtle`, `crypto.randomUUID`, `Bun.CryptoHasher`, `Bun.hash`, `Bun.password` | ⚠️ `KeyObject`, `createCipheriv`, and streaming ciphers |
 | `dgram` | ✅ | `addMembership()` needs `bind()` first | `Bun.udpSocket` | ✅ |
 | `diagnostics_channel` | ⚠️ | No `boundedChannel()` and several built-in channels | None | ❌ |
 | `dns` | ✅ | No `resolveTlsa`; `maxTimeout` is ignored | `Bun.dns`: `lookup`, every `resolve*`, `reverse`, `lookupService`, `prefetch` | ✅ |
