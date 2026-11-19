@@ -1,10 +1,10 @@
-import manifest from "../.claude-plugin/plugin.json" with { type: "json" };
 import type { Engine } from "./engine.ts";
 
 const REPOSITORY = "https://github.com/xsyetopz/bedrock";
 
-/** The bedrock release this plugin runs; a test keeps it equal to the CLI's version. */
-export const VERSION: string = manifest.version;
+// A literal, not an import of plugin.json: Claude Code loads a hooks module only with imports of code files, and refuses the whole module otherwise.
+/** The bedrock release this plugin runs; a test keeps it equal to the CLI's and the plugin manifest's version. */
+export const VERSION = "0.5.0";
 
 /** Downloads one release asset beside the plugin and checks it against the release's SHA256SUMS, as `just setup` does. */
 const INSTALL = String.raw`set -eu
@@ -20,10 +20,11 @@ actual="$(shasum -a 256 "$tmp" | cut -d ' ' -f 1)"
 chmod +x "$tmp"
 mv -f "$tmp" "$dest"`;
 
-const output = async ($: Engine, argv: readonly string[]): Promise<string> => {
+// Helpers that take $ are function declarations: Claude Code follows $ past an import only into a function declaration.
+async function output($: Engine, argv: readonly string[]): Promise<string> {
 	const { exitCode, stdout } = await $.process.run(argv, { timeoutMs: 10_000 });
 	return exitCode === 0 ? stdout.trim() : "";
-};
+}
 
 /** The release asset name for this machine, such as `bedrock-darwin-arm64`. */
 export const assetName = (system: string, machine: string): string => {
@@ -37,7 +38,7 @@ export const assetName = (system: string, machine: string): string => {
  * bedrock checkout, else `bedrock` on PATH at this plugin's version, else the
  * pinned release, downloaded once beside the plugin.
  */
-export const findBedrock = async ($: Engine): Promise<string[]> => {
+export async function findBedrock($: Engine): Promise<string[]> {
 	const checkout = $.plugin.root.replace(/\/plugins\/[^/]+\/?$/u, "");
 	if (await $.fs.exists(`${checkout}/cli/src/main.ts`)) {
 		return ["bun", `${checkout}/cli/src/main.ts`];
@@ -64,4 +65,4 @@ export const findBedrock = async ($: Engine): Promise<string[]> => {
 		}
 	}
 	return [binary];
-};
+}

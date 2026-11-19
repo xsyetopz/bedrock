@@ -97,10 +97,11 @@ bedrock init <dir> go:command               # or library
 
 ## Claude Code Plugin
 
-[`plugins/bedrock`](plugins/bedrock) adds `/bedrock` and `/adopt`, and in a repo with `bun.lock` it blocks Bash commands that run npm, npx, pnpm, pnpx, or yarn. This repo is a plugin marketplace:
+[`plugins/bedrock`](plugins/bedrock) adds `/bedrock` and `/adopt`, and in a repo with `bun.lock` it blocks Bash commands that run npm, npx, pnpm, pnpx, or yarn. This repo is a plugin marketplace named `bedrock`:
 
 ```text
-/plugin install bedrock --marketplace xsyetopz/bedrock
+/plugin marketplace add xsyetopz/bedrock
+/plugin install bedrock@bedrock
 ```
 
 The plugin runs the CLI from a checkout of this repo, then a `bedrock` on `PATH` of the plugin's version, then a release binary it downloads and checks against `SHA256SUMS`. To try local changes, run `claude --plugin-dir plugins/bedrock`; `bun run plugin:validate` checks the plugin against Claude Code's plugin API.

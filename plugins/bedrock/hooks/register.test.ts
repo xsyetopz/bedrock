@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import cli from "../../../package.json" with { type: "json" };
+import manifest from "../.claude-plugin/plugin.json" with { type: "json" };
 import type { Engine, Next, On, ProcessResult } from "./engine.ts";
 import {
 	announce,
@@ -73,6 +74,10 @@ const offline =
 describe("version", () => {
 	test("the plugin runs the release the CLI builds", () => {
 		expect(VERSION).toBe(cli.version);
+	});
+
+	test("the plugin manifest names the release the plugin runs", () => {
+		expect(manifest.version).toBe(VERSION);
 	});
 });
 
