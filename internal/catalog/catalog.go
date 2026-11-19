@@ -6,6 +6,7 @@ package catalog
 
 import (
 	"github.com/xsyetopz/bedrock/internal/language"
+	"github.com/xsyetopz/bedrock/internal/languages/dotnet"
 	"github.com/xsyetopz/bedrock/internal/languages/golang"
 )
 
@@ -13,6 +14,7 @@ import (
 func Languages() []language.Language {
 	return []language.Language{
 		golang.New(),
+		dotnet.New(),
 	}
 }
 
