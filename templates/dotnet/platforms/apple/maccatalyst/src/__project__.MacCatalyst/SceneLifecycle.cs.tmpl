@@ -1,0 +1,45 @@
+using @@project@@.Core;
+
+namespace @@project@@.MacCatalyst;
+
+/// <summary>Shows the greeting in the scene's window.</summary>
+[Register("SceneDelegate")]
+public sealed class SceneLifecycle : UIResponder, IUIWindowSceneDelegate
+{
+    /// <summary>The window of the connected scene.</summary>
+    [Export("window")]
+    public UIWindow? Window { get; set; }
+
+    /// <summary>Builds the window and its content once the scene connects.</summary>
+    /// <param name="scene">The connecting scene.</param>
+    /// <param name="session">The scene's session.</param>
+    /// <param name="connectionOptions">How the scene was requested.</param>
+    [Export("scene:willConnectToSession:options:")]
+    public void WillConnect(
+        UIScene scene,
+        UISceneSession session,
+        UISceneConnectionOptions connectionOptions
+    )
+    {
+        if (scene is not UIWindowScene windowScene)
+        {
+            return;
+        }
+
+        Window ??= new UIWindow(windowScene);
+
+        UIViewController controller = new()
+        {
+            View = new UILabel(Window.Frame)
+            {
+                BackgroundColor = UIColor.SystemBackground,
+                TextAlignment = UITextAlignment.Center,
+                Text = Greeting.Of("Mac Catalyst"),
+                AutoresizingMask = UIViewAutoresizing.All,
+            },
+        };
+
+        Window.RootViewController = controller;
+        Window.MakeKeyAndVisible();
+    }
+}

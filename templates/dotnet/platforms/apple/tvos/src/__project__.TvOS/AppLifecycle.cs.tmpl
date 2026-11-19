@@ -1,0 +1,19 @@
+namespace @@project@@.TvOS;
+
+/// <summary>Hands each new scene the configuration declared in Info.plist.</summary>
+[Register("AppDelegate")]
+public sealed class AppLifecycle : UIApplicationDelegate
+{
+    /// <inheritdoc />
+    public override bool FinishedLaunching(
+        UIApplication application,
+        NSDictionary? launchOptions
+    ) => true;
+
+    /// <inheritdoc />
+    public override UISceneConfiguration GetConfiguration(
+        UIApplication application,
+        UISceneSession connectingSceneSession,
+        UISceneConnectionOptions options
+    ) => new("Default Configuration", connectingSceneSession.Role);
+}

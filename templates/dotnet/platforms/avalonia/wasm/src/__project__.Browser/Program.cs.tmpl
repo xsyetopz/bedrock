@@ -1,0 +1,14 @@
+using Avalonia;
+using Avalonia.Browser;
+
+[assembly: System.Runtime.Versioning.SupportedOSPlatform("browser")]
+
+namespace @@project@@.Browser;
+
+internal static class Program
+{
+    private static Task Main() => BuildAvaloniaApp().StartBrowserAppAsync("out");
+
+    // Also used by the visual designer.
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>();
+}

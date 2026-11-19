@@ -1,0 +1,9 @@
+using Xunit;
+
+namespace @@project@@.Tests;
+
+public class GreetingTests
+{
+    [Fact]
+    public void GreetsByName() => Assert.Equal("Hello, you", Greeting.Of("you"));
+}

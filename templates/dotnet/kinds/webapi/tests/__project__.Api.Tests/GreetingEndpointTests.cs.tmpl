@@ -1,0 +1,18 @@
+using Microsoft.AspNetCore.Mvc.Testing;
+using Xunit;
+
+namespace @@project@@.Api.Tests;
+
+public class GreetingEndpointTests(WebApplicationFactory<Program> factory)
+    : IClassFixture<WebApplicationFactory<Program>>
+{
+    [Fact]
+    public async Task GreetsByName()
+    {
+        using HttpClient client = factory.CreateClient();
+
+        string body = await client.GetStringAsync(new Uri("/greeting/you", UriKind.Relative));
+
+        Assert.Equal("Hello, you", body);
+    }
+}
