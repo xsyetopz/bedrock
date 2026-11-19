@@ -351,7 +351,9 @@
 	},
 	"overrides": [
 		{
-			"files": ["**/*.{test,spec}.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
+			"files": [
+				"**/*{.test,_test,.spec,_spec}.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"
+			],
 			"rules": {
 				"eslint/max-lines-per-function": "off",
 				"eslint/max-nested-callbacks": "off"
