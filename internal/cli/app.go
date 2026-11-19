@@ -19,6 +19,7 @@ import (
 	"github.com/xsyetopz/bedrock/internal/language"
 	"github.com/xsyetopz/bedrock/internal/plan"
 	"github.com/xsyetopz/bedrock/internal/selection"
+	"github.com/xsyetopz/bedrock/internal/sizeguard"
 )
 
 // Exit codes a command returns.
@@ -40,11 +41,9 @@ const (
 func isHelp(arg string) bool { return arg == helpFlag || arg == shortHelpFlag }
 
 // SizeReport is what the size guard found: errors fail the guard, and
-// warnings only print.
-type SizeReport struct {
-	Errors   []string
-	Warnings []string
-}
+// warnings only print. It is defined where the guard is, so the guard need
+// not import cli.
+type SizeReport = sizeguard.Report
 
 // SizeGuard bounds the size of the selected languages' sources by the
 // limits .editorconfig sets.
