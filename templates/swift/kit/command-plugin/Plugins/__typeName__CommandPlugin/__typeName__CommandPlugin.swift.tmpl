@@ -1,0 +1,20 @@
+import PackagePlugin
+
+@main
+struct @@typeName@@CommandPlugin: CommandPlugin {
+  /// Runs for `swift package @@lowerName@@` in a Swift package.
+  func performCommand(context: PluginContext, arguments _: [String]) {
+    print("Hello, \(context.package.displayName)!")
+  }
+}
+
+#if canImport(XcodeProjectPlugin)
+  import XcodeProjectPlugin
+
+  extension @@typeName@@CommandPlugin: XcodeCommandPlugin {
+    /// Runs for the same command in an Xcode project.
+    func performCommand(context: XcodePluginContext, arguments _: [String]) {
+      print("Hello, \(context.xcodeProject.displayName)!")
+    }
+  }
+#endif

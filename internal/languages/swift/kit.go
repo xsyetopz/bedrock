@@ -1,7 +1,9 @@
 package swift
 
 import (
+	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 
@@ -15,7 +17,13 @@ import (
 
 // kinds are the starters `bedrock init` writes; each one includes the
 // library.
-func kinds() []string { return []string{"library", "executable", "app"} }
+//
+// The names are the presets of the Swift ecosystem: `swift package init
+// --type` offers library, executable, tool, build-tool-plugin, command-plugin,
+// and macro, and Xcode offers the app.
+func kinds() []string {
+	return []string{"library", "executable", "tool", "macro", "build-tool-plugin", "command-plugin", "app"}
+}
 
 // kindsOf returns the kinds chosen on the command line, the library alone by
 // default.
@@ -82,7 +90,22 @@ func kitSteps(c *language.Context, cxx bool, managed []blocks.Block, hasManifest
 		return nil, err
 	}
 
+	if chosen["executable"] && chosen["tool"] {
+		return nil, errors.New("the executable and tool kinds both write the `" + name +
+			"CLI` target; choose one, since a tool is an executable that parses arguments")
+	}
+
 	vars := template.Variables{"typeName": name, "lowerName": strings.ToLower(name)}
+
+	if chosen["app"] {
+		platforms, platformErr := chosenPlatforms(c)
+		if platformErr != nil {
+			return nil, platformErr
+		}
+
+		maps.Copy(vars, appVariables(platforms))
+	}
+
 	trees := []template.Dir{c.Dir(languageID, "kit/library")}
 
 	for _, kind := range kinds() {

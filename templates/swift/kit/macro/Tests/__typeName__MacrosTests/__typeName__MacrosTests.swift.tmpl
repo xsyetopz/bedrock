@@ -1,0 +1,26 @@
+import SwiftSyntaxMacroExpansion
+import SwiftSyntaxMacrosGenericTestSupport
+import Testing
+
+@testable import @@typeName@@Macros
+
+// Macro implementations build for the host, so a cross-compiled test run has no
+// `@@typeName@@Macros` module to import.
+@Test
+func stringifyExpandsToTheValueAndItsSource() {
+  assertMacroExpansion(
+    "#stringify(first + second)",
+    expandedSource: #"(first + second, "first + second")"#,
+    macroSpecs: ["stringify": MacroSpec(type: StringifyMacro.self)]
+  ) { failure in
+    Issue.record(
+      Comment(rawValue: failure.message),
+      sourceLocation: SourceLocation(
+        fileID: failure.location.fileID,
+        filePath: failure.location.filePath,
+        line: failure.location.line,
+        column: failure.location.column
+      )
+    )
+  }
+}
