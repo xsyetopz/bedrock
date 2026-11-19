@@ -1,6 +1,7 @@
 package swift_test
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -190,6 +191,35 @@ func TestInitPackageKindsStayCrossPlatform(t *testing.T) {
 				if strings.Contains(manifest, apple) {
 					t.Errorf("%s manifest restricts the package to Apple platforms with %s", kind, apple)
 				}
+			}
+		})
+	}
+}
+
+func TestInitManifestsKeepTheLastElementWithoutAComma(t *testing.T) {
+	t.Parallel()
+
+	// The shipped .swift-format sets multilineTrailingCommaBehavior to
+	// neverUsed, so `swift format lint --strict` fails on a closing comma.
+	closing := regexp.MustCompile(`,\n\s*[\])]`)
+
+	for _, kinds := range []string{
+		"library", "executable", "tool", "macro", "build-tool-plugin", "command-plugin",
+		"library,tool,macro,command-plugin,build-tool-plugin",
+	} {
+		t.Run(kinds, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			root := namedRepo(t, "Starter")
+
+			// Act
+			bedrocktest.Adopt(t, root, true, bedrocktest.Select(t, "swift", swiftOptions(kinds)))
+
+			// Assert
+			manifest := bedrocktest.Read(t, root, "Package.swift")
+			if found := closing.FindString(manifest); found != "" {
+				t.Errorf("manifest closes a list after a comma, %q:\n%s", found, manifest)
 			}
 		})
 	}

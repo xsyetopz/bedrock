@@ -123,8 +123,15 @@ func (n node) render(indent, col, tail int) string {
 	default:
 		out.WriteString("[\n")
 
-		for _, item := range n.items {
-			out.WriteString(pad + item.render(indent+indentStep, indent+indentStep, 1) + ",\n")
+		// The last item takes no comma: the shipped .swift-format sets
+		// multilineTrailingCommaBehavior to neverUsed.
+		for i, item := range n.items {
+			comma := ","
+			if i == len(n.items)-1 {
+				comma = ""
+			}
+
+			out.WriteString(pad + item.render(indent+indentStep, indent+indentStep, len(comma)) + comma + "\n")
 		}
 
 		out.WriteString(strings.Repeat(" ", indent) + "]")

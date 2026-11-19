@@ -94,7 +94,7 @@ func (m *manifestParts) render(name string) string {
 
 		text := list.render(indentStep, len(prefix), 1)
 		if len(field.items) > 1 && !strings.Contains(text, "\n") {
-			text = "[\n    " + strings.Join(splitFlat(field.items), ",\n    ") + ",\n  ]"
+			text = "[\n    " + strings.Join(splitFlat(field.items), ",\n    ") + "\n  ]"
 		}
 
 		written = append(written, prefix+text)
