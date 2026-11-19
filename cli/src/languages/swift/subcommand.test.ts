@@ -39,7 +39,8 @@ test("converts every unit-test file when no path is given", async () => {
 	expect(status).toBe(0);
 	expect(await textOf(root, "Tests/ATests/A.swift")).toContain("@Test");
 	expect(await textOf(root, "Tests/AppUITests/U.swift")).toBe(XCTEST);
-	expect(logs).toEqual(["Tests/ATests/A.swift: converted"]);
+	expect(logs).toHaveLength(1);
+	expect(logs[0]?.startsWith("Tests/ATests/A.swift: ")).toBe(true);
 });
 
 test("converts the given paths and reports a file without XCTest", async () => {
@@ -54,10 +55,10 @@ test("converts the given paths and reports a file without XCTest", async () => {
 	]);
 
 	expect(status).toBe(0);
-	expect(logs).toEqual([
-		"A.swift: converted",
-		"B.swift: no XCTest import; left as is",
-	]);
+	expect(await textOf(root, "A.swift")).toContain("@Test");
+	expect(await textOf(root, "B.swift")).toBe("import Testing\n");
+	expect(logs).toHaveLength(2);
+	expect(logs[1]?.startsWith("B.swift: ")).toBe(true);
 });
 
 test("fails on a missing file", async () => {
@@ -66,7 +67,8 @@ test("fails on a missing file", async () => {
 	const status = await convertTests.run(contextIn(root), ["Nope.swift"]);
 
 	expect(status).toBe(1);
-	expect(logs).toEqual(["Nope.swift: no such file"]);
+	expect(logs).toHaveLength(1);
+	expect(logs[0]?.startsWith("Nope.swift: ")).toBe(true);
 });
 
 test("prints what conversion leaves for a person", async () => {

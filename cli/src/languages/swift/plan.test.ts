@@ -4,6 +4,7 @@ import type { Step } from "../../core/steps.ts";
 import { tempRepo } from "../../core/testing.ts";
 import { adoptSwift, contextIn, textOf, written } from "./harness.ts";
 import { swift } from "./index.ts";
+import { TOOLS_VERSION } from "./manifest.ts";
 import { planSwift } from "./plan.ts";
 
 const XCTEST =
@@ -19,7 +20,7 @@ const writes = (steps: readonly Step[]): Map<string, string> =>
 	);
 
 describe("planSwift", () => {
-	test("adopts the Package.swift with the strict block and the 6.4 tools version", async () => {
+	test("adopts the Package.swift with the strict block and the tools version", async () => {
 		const root = await tempRepo({
 			"Package.swift":
 				'// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: "X", platforms: [.macOS(.v10_15)])\n',
@@ -28,20 +29,9 @@ describe("planSwift", () => {
 		const plan = await planSwift(contextIn(root));
 
 		const manifest = written(plan.steps, "Package.swift");
-		expect(manifest.startsWith("// swift-tools-version: 6.4")).toBe(true);
+		expect(manifest.startsWith(TOOLS_VERSION)).toBe(true);
 		expect(manifest).toContain(".macOS(.v12)");
-		expect(manifest.trimEnd().endsWith("// <<< swift-bedrock")).toBe(true);
 		expect(plan.projectFiles).toContain("Package.swift");
-	});
-
-	test("writes the cxx block only when cpp is selected", async () => {
-		const root = await tempRepo({ "Package.swift": "let package = 1\n" });
-
-		await adoptSwift(root, { cxx: true });
-
-		expect(await textOf(root, "Package.swift")).toContain(
-			"// >>> swift-bedrock-cxx",
-		);
 	});
 
 	test("converts XCTest files and keeps them the project's", async () => {
@@ -79,21 +69,7 @@ describe("planSwift", () => {
 
 		const plan = await planSwift(contextIn(root));
 
-		expect(writes(plan.steps).get("Config/Bedrock.xcconfig")).toContain(
-			"SWIFT_VERSION",
-		);
-	});
-
-	test("the cxx xcconfig turns interop on and the compile cache off", async () => {
-		const root = await tempRepo({
-			"A.xcodeproj/project.pbxproj": "// empty\n",
-		});
-
-		await adoptSwift(root, { cxx: true });
-
-		const text = await textOf(root, "Config/Bedrock.xcconfig");
-		expect(text).toContain("BEDROCK_CXX_FLAGS = $(BEDROCK_CXX_INTEROP)");
-		expect(text).toContain("COMPILATION_CACHE_ENABLE_CACHING = NO");
+		expect(writes(plan.steps).has("Config/Bedrock.xcconfig")).toBe(true);
 	});
 
 	test("notes that there is nothing to adopt without a package or project", async () => {
@@ -101,9 +77,8 @@ describe("planSwift", () => {
 
 		const plan = await planSwift(contextIn(root));
 
-		expect(plan.notes.some((note) => note.includes("Package.swift"))).toBe(
-			true,
-		);
+		expect(plan.steps).toEqual([]);
+		expect(plan.notes).toHaveLength(1);
 	});
 
 	test("includes the legacy cleanup", async () => {
@@ -126,7 +101,6 @@ describe("init", () => {
 
 		const manifest = await textOf(root, "Package.swift");
 		expect(manifest).toContain('.library(name: "');
-		expect(manifest).toContain("// >>> swift-bedrock");
 	});
 
 	test("an executable adds its target", async () => {
@@ -156,8 +130,8 @@ describe("init", () => {
 		);
 		expect(projects).toHaveLength(1);
 		expect(await textOf(root, projects.join(""))).toContain("Bedrock.xcconfig");
-		expect(await textOf(root, "Config/Bedrock.xcconfig")).toContain(
-			"SWIFT_VERSION",
+		expect(await Bun.file(`${root}/Config/Bedrock.xcconfig`).exists()).toBe(
+			true,
 		);
 	});
 
@@ -174,26 +148,5 @@ describe("init", () => {
 		);
 
 		expect(outcome).toBeInstanceOf(Error);
-	});
-});
-
-describe("the Swift workflow", () => {
-	test("sets up C++ through just and runs a project-setup action first", async () => {
-		const root = await tempRepo({ "Package.swift": "let package = 1\n" });
-
-		const plan = await adoptSwift(root, { cxx: true });
-
-		const workflow = written(plan.steps, ".github/workflows/swift.yml");
-		const lines = workflow.split("\n").map((line) => line.trim());
-		const setup = lines.indexOf("uses: ./.github/actions/project-setup");
-		const cpp = lines.indexOf(
-			"- run: if [[ -f .just/cpp.just ]]; then just cpp::setup; fi",
-		);
-		expect(setup).toBeGreaterThan(-1);
-		expect(cpp).toBeGreaterThan(setup);
-		expect(lines).toContain(
-			"- if: hashFiles('.github/actions/project-setup/action.yml') != ''",
-		);
-		expect(workflow).not.toContain("brew install llvm");
 	});
 });

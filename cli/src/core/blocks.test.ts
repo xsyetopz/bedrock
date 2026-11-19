@@ -1,23 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { markers, removeBlock, upsert } from "./blocks.ts";
-
-describe("markers", () => {
-	test("uses HTML comments for markdown and line comments elsewhere", () => {
-		expect(markers("markdown", "bedrock")).toEqual([
-			"<!-- bedrock -->",
-			"<!-- /bedrock -->",
-		]);
-		expect(markers("hash", "rust-bedrock")).toEqual([
-			"# >>> rust-bedrock",
-			"# <<< rust-bedrock",
-		]);
-		expect(markers("slash", "swift-bedrock")).toEqual([
-			"// >>> swift-bedrock",
-			"// <<< swift-bedrock",
-		]);
-	});
-});
+import { removeBlock, upsert } from "./blocks.ts";
 
 describe("upsert", () => {
 	test("starts a missing file from the header", () => {

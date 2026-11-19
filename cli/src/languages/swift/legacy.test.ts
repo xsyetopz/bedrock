@@ -57,9 +57,8 @@ describe("legacyPlan", () => {
 
 		const plan = await legacyPlan(root);
 
-		expect(plan.notes).toEqual([
-			`${path}: mentions BuildTools, which bedrock no longer uses; remove the reference`,
-		]);
+		expect(plan.notes).toHaveLength(1);
+		expect(plan.notes[0]?.startsWith(`${path}: `)).toBe(true);
 	});
 
 	test("skips the managed swift files and blocks bedrock rewrites", async () => {

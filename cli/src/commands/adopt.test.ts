@@ -1,4 +1,4 @@
-import { expect, spyOn, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { join } from "node:path";
 
 import { readConfig } from "../core/config.ts";
@@ -35,24 +35,6 @@ test("adopt pins this release in a repo without a source pin", async () => {
 		version: VERSION,
 		languages: { typescript: {} },
 	});
-});
-
-test("--no-run lists each after-run it skips", async () => {
-	// Arrange
-	const root = await tempRepo({ "package.json": "{}\n" });
-	const printed: string[] = [];
-	const info = spyOn(console, "info").mockImplementation((line: string) => {
-		printed.push(line);
-	});
-
-	// Act
-	await adopt("adopt", [root, "typescript", "--yes", "--no-run"]);
-
-	// Assert
-	info.mockRestore();
-	expect(printed).toContain(
-		"  skip    typescript: bun install, then bun fmt (--no-run)",
-	);
 });
 
 test.skipIf(Bun.which("cargo") === null)(

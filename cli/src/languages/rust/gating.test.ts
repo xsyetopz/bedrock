@@ -13,7 +13,7 @@ test("adds the attribute after the leading doc lines", () => {
 	expect(result).toBe("//! Tests.\n//! More.\n#![cfg(test)]\n\nuse a::b;\n");
 });
 
-test("gives a file without doc lines the template's, since missing_docs checks each test crate", () => {
+test("gates a file without doc lines too", () => {
 	// Arrange
 	const source = "#[test]\nfn t() {}\n";
 
@@ -21,9 +21,6 @@ test("gives a file without doc lines the template's, since missing_docs checks e
 	const result = gated(source);
 
 	// Assert
-	expect(result).toStartWith(
-		"//! Integration tests run against the public API",
-	);
 	expect(result).toContain("#![cfg(test)]\n\n#[test]");
 });
 

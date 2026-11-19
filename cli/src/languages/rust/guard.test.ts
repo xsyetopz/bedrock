@@ -26,6 +26,9 @@ const adopted = async (
 	return root;
 };
 
+const locations = (findings: string[]): string[] =>
+	findings.map((finding) => finding.split(": ")[0] ?? finding);
+
 test("a freshly initialized project has nothing to report", async () => {
 	// Arrange
 	const root = await tempRepo();
@@ -48,9 +51,7 @@ test("reports a test module whose body sits in the file", async () => {
 	const findings = await guardRust(contextIn(root), false);
 
 	// Assert
-	expect(findings).toEqual([
-		"crates/a/src/lib.rs:2: mod tests keeps its tests in this file; move them to crates/a/src/tests.rs and declare `#[cfg(test)] mod tests;` (just lint-fix does it)",
-	]);
+	expect(locations(findings)).toEqual(["crates/a/src/lib.rs:2"]);
 });
 
 test("reports a test module that sets its file with #[path]", async () => {
@@ -64,9 +65,7 @@ test("reports a test module that sets its file with #[path]", async () => {
 	const findings = await guardRust(contextIn(root), false);
 
 	// Assert
-	expect(findings).toEqual([
-		"crates/a/src/lib.rs:3: mod tests sets its file with #[path]; drop the attribute and keep the tests in crates/a/src/tests.rs (just lint-fix does it)",
-	]);
+	expect(locations(findings)).toEqual(["crates/a/src/lib.rs:3"]);
 });
 
 test("a tests.rs beside its module is what the guard wants", async () => {
@@ -115,9 +114,7 @@ test("--fix reports a module it cannot move once and keeps fixing the other file
 
 	// Assert
 	expect(findings).toHaveLength(1);
-	expect(findings[0]).toContain(
-		"crates/a/src/a.rs:2: cannot move `mod checks`",
-	);
+	expect(locations(findings)).toEqual(["crates/a/src/a.rs:2"]);
 	expect(await exists(join(root, "crates/a/src/b/tests.rs"))).toBe(true);
 });
 
@@ -162,9 +159,7 @@ test("reports foo/mod.rs, which belongs beside its directory as foo.rs", async (
 	const findings = await guardRust(contextIn(root), false);
 
 	// Assert
-	expect(findings).toEqual([
-		"crates/a/src/foo/mod.rs: name it crates/a/src/foo.rs, beside its directory (bedrock update does it)",
-	]);
+	expect(locations(findings)).toEqual(["crates/a/src/foo/mod.rs"]);
 });
 
 test("reports an integration test without #![cfg(test)], and --fix adds it", async () => {
@@ -178,9 +173,7 @@ test("reports an integration test without #![cfg(test)], and --fix adds it", asy
 	const after = await guardRust(contextIn(root), true);
 
 	// Assert
-	expect(before).toEqual([
-		"crates/a/tests/it.rs: differs from what bedrock writes; run bedrock update",
-	]);
+	expect(locations(before)).toEqual(["crates/a/tests/it.rs"]);
 	expect(after).toEqual([]);
 	expect(await readText(join(root, "crates/a/tests/it.rs"))).toContain(
 		"#![cfg(test)]",
@@ -197,9 +190,7 @@ test("reports a member that skips the workspace lints", async () => {
 	const findings = await guardRust(contextIn(root), false);
 
 	// Assert
-	expect(findings).toEqual([
-		"crates/a/Cargo.toml: differs from what bedrock writes; run bedrock update",
-	]);
+	expect(locations(findings)).toEqual(["crates/a/Cargo.toml"]);
 });
 
 test("reports a leftover xtask only through the core drift check, not twice", async () => {

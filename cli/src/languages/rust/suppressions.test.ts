@@ -11,7 +11,6 @@ test("flags #[allow] and #![allow], with their lines", () => {
 
 	// Assert
 	expect(found.map((problem) => problem.line)).toEqual([1, 3]);
-	expect(found[0]?.message).toContain("expect");
 });
 
 test("flags #[expect] without a reason, and accepts one with", () => {

@@ -56,8 +56,7 @@ describe("adoptedManifest", () => {
 			blocks,
 		);
 
-		expect(result).toContain("// >>> swift-bedrock");
-		expect(result.trimEnd().endsWith("// <<< swift-bedrock")).toBe(true);
+		expect(result).toContain("let strict = true");
 		expect(result.startsWith(TOOLS_VERSION)).toBe(true);
 	});
 

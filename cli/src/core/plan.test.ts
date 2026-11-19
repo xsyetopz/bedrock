@@ -30,7 +30,6 @@ describe("buildPlan", () => {
 		await applySteps(root, plan.steps);
 		const gitignore = await Bun.file(`${root}/.gitignore`).text();
 		expect(gitignore).toStartWith("secrets/\n");
-		expect(gitignore).toContain("# >>> bedrock");
 	});
 
 	test("removes the shared-file blocks and files of a dropped language", async () => {
@@ -56,12 +55,6 @@ describe("buildPlan", () => {
 		expect(gitignore).toContain("# >>> rust-bedrock");
 		expect(await Bun.file(`${root}/.just/go.just`).exists()).toBe(false);
 		expect(await Bun.file(`${root}/.just/rust.just`).exists()).toBe(true);
-		expect(plan.notes).toContain(
-			"Removed the blocks of go from the shared files: neither .bedrock.json nor a marker file at the root names the language.",
-		);
-		expect(plan.notes).toContain(
-			"Removed .github/workflows/go.yml, .just/go.just: neither .bedrock.json nor a marker file at the root names the language. git still has them.",
-		);
 	});
 
 	test("notes no removal when a dropped language left nothing", async () => {

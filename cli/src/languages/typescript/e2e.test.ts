@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
 
 import { $ } from "bun";
 
 import { tempRepo } from "../../core/testing.ts";
 import { guardTypescript } from "./guard/index.ts";
-import { adoptTypescript, commitAll, contextIn, textOf } from "./harness.ts";
+import { adoptTypescript, commitAll, contextIn } from "./harness.ts";
+import { asRecord, readJsonc } from "./json.ts";
 
 const HAS_BUN = Bun.which("bun") !== null;
 
@@ -38,7 +40,13 @@ describe("bedrock init typescript:<kind>", () => {
 		const cli = await tempRepo();
 		await adoptTypescript(library, "library", true);
 		await adoptTypescript(cli, "cli", true);
-		expect(await textOf(library, "package.json")).toContain('"exports"');
-		expect(await textOf(cli, "package.json")).toContain('"./src/cli.ts"');
+		const libraryManifest = asRecord(
+			await readJsonc(join(library, "package.json")),
+		);
+		const cliManifest = asRecord(await readJsonc(join(cli, "package.json")));
+		expect(libraryManifest["exports"]).toBeDefined();
+		expect(Object.values(asRecord(cliManifest["bin"]))).toContain(
+			"./src/cli.ts",
+		);
 	});
 });

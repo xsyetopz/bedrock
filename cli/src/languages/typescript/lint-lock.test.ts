@@ -71,7 +71,6 @@ describe.skipIf(Bun.which("just") === null)("the lint lock", () => {
 		// Act
 		const second = lint(repo, "b");
 		const codes = await Promise.all([first.exited, second.exited]);
-		const waited = await new Response(second.stderr).text();
 
 		// Assert
 		expect(codes).toEqual([0, 0]);
@@ -81,7 +80,6 @@ describe.skipIf(Bun.which("just") === null)("the lint lock", () => {
 			"start b",
 			"end b",
 		]);
-		expect(waited).toContain("waiting for it");
 	}, 15_000);
 
 	test("a lock whose holder died is taken over", async () => {

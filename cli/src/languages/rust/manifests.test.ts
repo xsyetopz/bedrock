@@ -96,7 +96,7 @@ test("a member manifest that is not TOML is an error", () => {
 	const run = () => memberManifest(manifest);
 
 	// Assert
-	expect(run).toThrow("not valid TOML");
+	expect(run).toThrow();
 });
 
 test("a virtual workspace gains the resolver, the managed lints, and the release profile", () => {

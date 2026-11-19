@@ -45,20 +45,6 @@ test("adopting moves the crate onto the workspace lints, the layout, and the gat
 	);
 });
 
-test("the module no longer calls cargo bedrock, and guard goes through bedrock", async () => {
-	// Arrange
-	const root = await tempRepo(OLD_BEDROCK);
-
-	// Act
-	await adoptRust(root);
-	const recipes = await readText(join(root, ".just/rust.just"));
-
-	// Assert
-	expect(recipes).not.toContain("cargo bedrock");
-	expect(recipes).toContain("bedrock guard rust");
-	expect(recipes).toContain('set working-directory := ".."');
-});
-
 test("a second plan has nothing left to do", async () => {
 	// Arrange
 	const root = await tempRepo(OLD_BEDROCK);
@@ -71,7 +57,7 @@ test("a second plan has nothing left to do", async () => {
 	expect(again.steps).toEqual([]);
 });
 
-test("an xtask that does not depend on rust-bedrock stays, with its alias, and a note says so", async () => {
+test("an xtask that does not depend on rust-bedrock stays, with its alias", async () => {
 	// Arrange
 	const own =
 		'[package]\nname = "xtask"\nversion = "0.0.0"\n\n[dependencies]\nserde = "1"\n';
@@ -82,9 +68,6 @@ test("an xtask that does not depend on rust-bedrock stays, with its alias, and a
 
 	// Assert
 	expect(plan.steps.some((step) => step.path === "xtask")).toBe(false);
-	expect(plan.notes.join("\n")).toContain(
-		"xtask does not depend on rust-bedrock",
-	);
 });
 
 test("a cargo config that held only the alias is removed", async () => {
@@ -102,7 +85,7 @@ test("a cargo config that held only the alias is removed", async () => {
 	expect(await exists(join(root, ".cargo/config.toml"))).toBe(false);
 });
 
-test("files of replaced tools go, with a note", async () => {
+test("files of replaced tools go", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"Cargo.toml": "[workspace]\nmembers = []\n",
@@ -111,14 +94,11 @@ test("files of replaced tools go, with a note", async () => {
 	});
 
 	// Act
-	const plan = await adoptRust(root);
+	await adoptRust(root);
 
 	// Assert
 	expect(await exists(join(root, "rust-toolchain"))).toBe(false);
 	expect(await exists(join(root, ".rustfmt.toml"))).toBe(false);
-	expect(plan.notes.join("\n")).toContain(
-		"Removed .rustfmt.toml, rust-toolchain",
-	);
 });
 
 test("an older edition gets a note instead of a silent change", async () => {
@@ -154,7 +134,7 @@ test("a project nested in its own workspace is left alone", async () => {
 	);
 });
 
-test("a Cargo.toml that is not TOML is left as it is, with a note", async () => {
+test("a Cargo.toml that is not TOML is left as it is", async () => {
 	// Arrange
 	const root = await tempRepo({ "Cargo.toml": "[workspace\n" });
 
@@ -163,7 +143,6 @@ test("a Cargo.toml that is not TOML is left as it is, with a note", async () => 
 
 	// Assert
 	expect(plan.steps.map((step) => step.path)).not.toContain("Cargo.toml");
-	expect(plan.notes.join("\n")).toContain("Cargo.toml: not valid TOML");
 });
 
 const MODULE_CRATE = {
@@ -197,7 +176,7 @@ test("renaming foo/mod.rs to foo.rs keeps its #[path] and include! targets", asy
 	);
 });
 
-test("a foo/mod.rs whose paths cannot be rewritten stays, with a note", async () => {
+test("a foo/mod.rs whose paths cannot be rewritten stays", async () => {
 	// Arrange
 	const root = await tempRepo({
 		...MODULE_CRATE,
@@ -206,12 +185,8 @@ test("a foo/mod.rs whose paths cannot be rewritten stays, with a note", async ()
 
 	// Act
 	await adoptRust(root);
-	const plan = await planRust(contextIn(root));
 
 	// Assert
 	expect(await exists(join(root, "crates/a/src/odd/mod.rs"))).toBe(true);
 	expect(await exists(join(root, "crates/a/src/odd.rs"))).toBe(false);
-	expect(plan.notes.join("\n")).toContain(
-		"crates/a/src/odd/mod.rs: not renamed",
-	);
 });

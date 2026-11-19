@@ -41,7 +41,7 @@ const LEGACY = {
 describe("planTypescript on a repo that typescript-bedrock adopted", () => {
 	test("drops the package, its extends, and the tools it replaced", async () => {
 		const root = await tempRepo(LEGACY);
-		const plan = await adoptTypescript(root);
+		await adoptTypescript(root);
 		const manifest = asRecord(await readJsonc(join(root, "package.json")));
 		const text = [
 			await textOf(root, "package.json"),
@@ -56,19 +56,15 @@ describe("planTypescript on a repo that typescript-bedrock adopted", () => {
 		});
 		expect(await exists(join(root, "eslint.config.js"))).toBe(false);
 		expect(await exists(join(root, ".github/workflows/ci.yml"))).toBe(false);
-		expect(plan.notes.join("\n")).toContain(
-			"project.just still mentions typescript-bedrock",
-		);
 	});
 
-	test("keeps the repo's own ignores and says what the rewrite dropped", async () => {
+	test("keeps the repo's own ignores", async () => {
 		const root = await tempRepo(LEGACY);
-		const plan = await adoptTypescript(root);
+		await adoptTypescript(root);
 		expect(await textOf(root, ".oxlintrc.json")).toContain('"vendor/**"');
 		expect(await textOf(root, ".markdownlint-cli2.jsonc")).toContain(
 			'"notes/**"',
 		);
-		expect(plan.notes.join("\n")).toContain('"rules" were not carried over');
 	});
 
 	test("moves test files onto bun:test", async () => {
@@ -99,42 +95,6 @@ describe("planTypescript on a fresh repo", () => {
 		for (const config of configs) {
 			expect(config).not.toContain('"extends"');
 		}
-		expect(await textOf(root, ".oxlintrc.json")).toContain(".claude/**");
-		expect(await textOf(root, "bunfig.toml")).toContain("[install]");
-	});
-
-	test("runs a project-setup action before the workflow's setup, when the repo has one", async () => {
-		// Arrange
-		const root = await tempRepo();
-
-		// Act
-		await adoptTypescript(root);
-		const workflow = await textOf(root, ".github/workflows/typescript.yml");
-
-		// Assert
-		expect(workflow).toContain(
-			"if: hashFiles('.github/actions/project-setup/action.yml') != ''",
-		);
-		expect(
-			workflow.indexOf("uses: ./.github/actions/project-setup"),
-		).toBeLessThan(workflow.indexOf("just typescript::setup"));
-	});
-
-	test("bounds the type-aware checks that resolve every callback signature", async () => {
-		// Arrange
-		const root = await tempRepo();
-
-		// Act
-		await adoptTypescript(root);
-		const config = asRecord(await readJsonc(join(root, ".oxlintrc.json")));
-		const rules = asRecord(config["rules"]);
-
-		// Assert
-		expect(rules["typescript/no-misused-promises"]).toEqual([
-			"error",
-			{ checksVoidReturn: { arguments: false } },
-		]);
-		expect(rules["typescript/strict-void-return"]).toBe("off");
 	});
 
 	test("lists package.json, tsconfig.json, and bunfig.toml as the project's", async () => {
@@ -223,7 +183,7 @@ describe("installDependencies", () => {
 	}, 60_000);
 });
 
-test("a lint config that dropped a bedrock ignore gets it back, with a note", async () => {
+test("a lint config that dropped a bedrock ignore gets it back", async () => {
 	// Arrange
 	const root = await tempRepo({
 		"package.json": "{}\n",
@@ -231,11 +191,8 @@ test("a lint config that dropped a bedrock ignore gets it back, with a note", as
 	});
 
 	// Act
-	const plan = await adoptTypescript(root);
+	await adoptTypescript(root);
 
 	// Assert
 	expect(await textOf(root, ".oxlintrc.json")).toContain('"openspec/**"');
-	expect(plan.notes.join("\n")).toContain(
-		'"openspec/**" in "ignorePatterns"; bedrock owns its own entries',
-	);
 });

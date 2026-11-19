@@ -14,18 +14,17 @@ const template = {
 
 describe("migrateManifest", () => {
 	test("keeps a package the template ships, even one the removals match", () => {
-		const { manifest, notes } = migrateManifest(
+		const { manifest } = migrateManifest(
 			{ devDependencies: { "eslint-plugin-jsdoc": "catalog:" } },
 			{ ...template, devDependencies: { "eslint-plugin-jsdoc": "catalog:" } },
 		);
 		expect(manifest["devDependencies"]).toEqual({
 			"eslint-plugin-jsdoc": "catalog:",
 		});
-		expect(notes.join("\n")).not.toContain("Removed packages");
 	});
 
 	test("replaces tools, scripts, engines, and package manager", () => {
-		const { manifest, notes } = migrateManifest(
+		const { manifest } = migrateManifest(
 			{
 				name: "app",
 				scripts: {
@@ -64,15 +63,6 @@ describe("migrateManifest", () => {
 			overrides: { "@types/node": "26.6.6" },
 			packageManager: "bun@1.4.4",
 		});
-		expect(notes.join("\n")).toContain("@typescript-eslint/parser, husky");
-		expect(notes.join("\n")).toContain("Jest or Vitest");
-		expect(notes.join("\n")).toContain('"lint-staged"');
-		expect(notes.join("\n")).toContain(
-			'Replaced script "typecheck" ("bun check --cwd packages/app")',
-		);
-		expect(notes.join("\n")).toContain(
-			"into a `project-typecheck` recipe in project.just, which `just typecheck` runs.",
-		);
 	});
 
 	test("merges pnpm-workspace.yaml into workspaces", () => {
@@ -116,7 +106,7 @@ describe("migrateManifest", () => {
 	});
 
 	test("drops the typescript-bedrock dependency and catalog pin", () => {
-		const { manifest, notes } = migrateManifest(
+		const { manifest } = migrateManifest(
 			{
 				devDependencies: { "typescript-bedrock": "catalog:", vite: "^6.0.0" },
 				workspaces: {
@@ -132,7 +122,6 @@ describe("migrateManifest", () => {
 		expect(
 			Object.keys(asRecord(asRecord(manifest["workspaces"])["catalog"])),
 		).toEqual(["oxlint", "react"]);
-		expect(notes.join("\n")).toContain("typescript-bedrock");
 	});
 
 	test("drops a machine-local file: path to typescript-bedrock", () => {

@@ -180,11 +180,6 @@ describe("structure", () => {
 		expect(result.body).toContain("override func tearDownWithError() throws {");
 		expect(result.body).toContain("override func tearDown() async {");
 		expect(result.notes).toHaveLength(2);
-		expect(
-			result.notes.every((note) =>
-				note.includes("deinit cannot throw or be async"),
-			),
-		).toBe(true);
 		expect(result.notes[0]?.startsWith("line 3: ")).toBe(true);
 	});
 

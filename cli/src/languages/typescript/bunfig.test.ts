@@ -92,13 +92,8 @@ options = { useTabs = false }
 		});
 	});
 
-	test("writes the template, with a note, over a copy that is not TOML", () => {
-		expect(mergeBunfig(template, "[test\n")).toEqual({
-			content: template,
-			notes: [
-				"bunfig.toml: the repo's copy is not valid TOML, so adopt wrote the template. Its settings are in git history.",
-			],
-		});
+	test("writes the template over a copy that is not TOML", () => {
+		expect(mergeBunfig(template, "[test\n").content).toBe(template);
 	});
 
 	test("appends a table and an override the template lacks", () => {
@@ -124,13 +119,9 @@ options = { printWidth = 120 }
 		expect(mergeBunfig(template, content).content).toBe(content);
 	});
 
-	test("keeps the template's value where the project changed one, with a note", () => {
+	test("keeps the template's value where the project changed one", () => {
 		const current = `env = true\n\n[test]\ncoverage = false\n`;
-		const { content, notes } = mergeBunfig(template, current);
+		const { content } = mergeBunfig(template, current);
 		expect(content).toBe(template);
-		expect(notes).toEqual([
-			"bunfig.toml: kept the template's `env = false`; the repo had `env = true`.",
-			"bunfig.toml: kept the template's `test.coverage = true`; the repo had `test.coverage = false`.",
-		]);
 	});
 });

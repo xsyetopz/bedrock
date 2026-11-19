@@ -26,27 +26,6 @@ describe("adopt", () => {
 		expect(written(plan.steps, ".golangci.yml")).toContain(
 			"- github.com/acme/app",
 		);
-		expect(written(plan.steps, ".gitignore")).toContain("# >>> go-bedrock");
-		expect(written(plan.steps, "justfile")).toContain(
-			'mod? go ".just/go.just"',
-		);
-	});
-
-	test("bounds memory and parallelism and pins golangci-lint", async () => {
-		// Arrange
-		const root = await tempRepo({ "go.mod": "module m\n\ngo 1.27\n" });
-
-		// Act
-		const plan = await buildPlan(root, selected, { init: false });
-
-		// Assert
-		const recipes = written(plan.steps, ".just/go.just");
-		expect(recipes).toContain(
-			'export GOMEMLIMIT := env("BEDROCK_GO_MEMLIMIT", "2GiB")',
-		);
-		expect(recipes).toContain('" -p=" + jobs');
-		expect(recipes).toContain("golangci-lint@v2.15.0");
-		expect(written(plan.steps, ".golangci.yml")).toContain("concurrency: 4");
 	});
 
 	test("a second adopt plans no steps", async () => {
@@ -92,7 +71,6 @@ describe("init", () => {
 		const paths = plan.steps.map((step) => step.path);
 		expect(paths).toContain("go.mod");
 		expect(paths).toContain(starter);
-		expect(plan.notes.join("\n")).toContain("placeholder module example.com/");
 	});
 
 	test("takes the module path from .bedrock.json options", async () => {

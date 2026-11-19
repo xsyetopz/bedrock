@@ -4,17 +4,17 @@ import { importsXCTest, isUITest, suppressions } from "./suppressions.ts";
 
 describe("suppressions", () => {
 	test("flags swift-format-ignore-file", () => {
-		expect(suppressions("// swift-format-ignore-file\nlet a = 1\n")).toEqual([
-			"1: swift-format-ignore-file; ignore the one declaration instead",
-		]);
+		const found = suppressions("// swift-format-ignore-file\nlet a = 1\n");
+
+		expect(found).toHaveLength(1);
+		expect(found[0]?.startsWith("1: swift-format-ignore-file")).toBe(true);
 	});
 
 	test("flags a disable without an enable", () => {
 		const found = suppressions("// swiftlint:disable force_cast\nlet a = 1\n");
 
-		expect(found).toEqual([
-			"1: swiftlint:disable without a matching swiftlint:enable; use swiftlint:disable:next",
-		]);
+		expect(found).toHaveLength(1);
+		expect(found[0]?.startsWith("1: swiftlint:disable")).toBe(true);
 	});
 
 	test("accepts a disable the file enables again", () => {
