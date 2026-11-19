@@ -3,7 +3,6 @@ package typescript
 import (
 	"regexp"
 	"slices"
-	"strings"
 )
 
 // legacyPackage is the npm package older bedrock releases made every repo
@@ -112,7 +111,7 @@ func migrateManifest(manifest, template, pnpm *object) (*object, []string) {
 	var notes []string
 
 	if removed := slices.Concat(devRemoved, prodRemoved); len(removed) > 0 {
-		notes = append(notes, "Removed packages Bun replaces: "+strings.Join(removed, ", ")+".")
+		notes = append(notes, "Removed packages Bun replaces: "+joinCode(removed)+".")
 	}
 
 	scripts, scriptNotes := migrateScripts(asObject(manifest.get("scripts")), asObject(template.get("scripts")))

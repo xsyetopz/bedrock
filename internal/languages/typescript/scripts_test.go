@@ -107,7 +107,7 @@ func TestAdoptDropsPackagesBunReplacesAndNamesThem(t *testing.T) {
 		}
 	}
 
-	if !slices.Contains(notes, "Removed packages Bun replaces: eslint, jest, rimraf.") {
+	if !slices.Contains(notes, "Removed packages Bun replaces: `eslint`, `jest`, `rimraf`.") {
 		t.Errorf("notes: %q", notes)
 	}
 }

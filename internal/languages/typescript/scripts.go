@@ -30,8 +30,8 @@ func migrateScripts(scripts, template *object) (*object, []string) {
 		text, isText := value.(string)
 
 		if isText && hookInstaller().MatchString(text) {
-			notes = append(notes, "Removed script "+quote(name)+": "+quote(text)+
-				" installs git hooks, which `just setup` does now.")
+			notes = append(notes, "Removed script `"+quote(name)+"`: `"+quote(text)+
+				"` installs git hooks, which `just setup` does now.")
 
 			continue
 		}
@@ -44,16 +44,16 @@ func migrateScripts(scripts, template *object) (*object, []string) {
 		key := name
 		if slices.Contains(shadowing(), name) {
 			key = name + ":project"
-			notes = append(notes, "Renamed script "+quote(name)+" to "+quote(key)+
-				": the name shadows `bun "+name+"`.")
+			notes = append(notes, "Renamed script `"+quote(name)+"` to `"+quote(key)+
+				"`: the name shadows `bun "+name+"`.")
 		}
 
 		if !deepEqual(command, value) {
-			notes = append(notes, "Script "+quote(name)+": "+compact(value)+" → "+compact(command))
+			notes = append(notes, "Script `"+quote(name)+"`: `"+compact(value)+"` → `"+compact(command)+"`")
 		}
 
 		if isText && jestOrVitest().MatchString(text) {
-			notes = append(notes, "Script "+quote(name)+" ran Jest or Vitest. "+
+			notes = append(notes, "Script `"+quote(name)+"` ran Jest or Vitest. "+
 				"Move its setup files and other config into `bunfig.toml` `[test]`, such as `preload`.")
 		}
 
@@ -65,8 +65,8 @@ func migrateScripts(scripts, template *object) (*object, []string) {
 	for _, name := range tools.keys {
 		command := tools.get(name)
 		if kept.has(name) && !deepEqual(kept.get(name), command) {
-			notes = append(notes, "Replaced script "+quote(name)+" ("+compact(kept.get(name))+") with "+
-				compact(command)+". Move any step it still needs, such as a build, into a `project-"+name+
+			notes = append(notes, "Replaced script `"+quote(name)+"` (`"+compact(kept.get(name))+"`) with `"+
+				compact(command)+"`. Move any step it still needs, such as a build, into a `project-"+name+
 				"` recipe in `project.just`, which `just "+name+"` runs.")
 		}
 	}
