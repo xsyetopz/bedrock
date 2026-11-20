@@ -136,7 +136,14 @@ func checkJar(t *testing.T, root string) {
 		t.Fatalf("bin jars: %v", jars)
 	}
 
-	if ok, output := run(t, root, "java", "-jar", jars[0]); !ok || output != "Hello, world!\n" {
+	if ok, output := run(
+		t,
+		root,
+		"java",
+		"-jar",
+		jars[0],
+	); !ok ||
+		strings.ReplaceAll(output, "\r\n", "\n") != "Hello, world!\n" {
 		t.Errorf("jar prints %q", output)
 	}
 }
@@ -157,7 +164,7 @@ func checkNative(t *testing.T, root string) {
 		t.Fatalf("dist/%s: %v", host, binaries)
 	}
 
-	if ok, output := run(t, root, binaries[0]); !ok || output != "Hello, world!\n" {
+	if ok, output := run(t, root, binaries[0]); !ok || strings.ReplaceAll(output, "\r\n", "\n") != "Hello, world!\n" {
 		t.Errorf("binary prints %q", output)
 	}
 
