@@ -110,6 +110,24 @@ func requireDotnet(t *testing.T) {
 	}
 }
 
+// toolLock serializes `dotnet tool restore`: on a cold NuGet cache, concurrent
+// restores of one tool collide on its package file in ~/.nuget/packages.
+var toolLock sync.Mutex //nolint:gochecknoglobals // one lock for every test that shares ~/.nuget
+
+// restoreTools restores the pinned .NET tools of ctx's repo, one restore at a time.
+func restoreTools(t *testing.T, ctx *language.Context) {
+	t.Helper()
+
+	toolLock.Lock()
+	defer toolLock.Unlock()
+
+	restored, err := execx.Output(t.Context(), ctx.Runner,
+		execx.Command{Dir: ctx.Root, Name: "dotnet", Args: []string{"tool", "restore"}})
+	if err != nil {
+		t.Fatalf("dotnet tool restore: %v\n%s", err, restored)
+	}
+}
+
 // adopted is a repo with sources() and overrides, adopted, with the pinned
 // tools and the packages restored.
 func adopted(t *testing.T, overrides map[string]string) *language.Context {
@@ -123,11 +141,7 @@ func adopted(t *testing.T, overrides map[string]string) *language.Context {
 
 	ctx := bedrocktest.Context(t, root, selectDotnet(t))
 
-	restored, err := execx.Output(t.Context(), ctx.Runner,
-		execx.Command{Dir: root, Name: "dotnet", Args: []string{"tool", "restore"}})
-	if err != nil {
-		t.Fatalf("dotnet tool restore: %v\n%s", err, restored)
-	}
+	restoreTools(t, ctx)
 
 	if exit := runSub(t, ctx, "restore"); exit != 0 {
 		t.Fatalf("restore exits %d", exit)
@@ -341,11 +355,7 @@ func started(t *testing.T, kind, platform string) *language.Context {
 
 	ctx := bedrocktest.Context(t, root, selected)
 
-	restored, err := execx.Output(t.Context(), ctx.Runner,
-		execx.Command{Dir: root, Name: "dotnet", Args: []string{"tool", "restore"}})
-	if err != nil {
-		t.Fatalf("dotnet tool restore: %v\n%s", err, restored)
-	}
+	restoreTools(t, ctx)
 
 	if exit := runSub(t, ctx, "restore"); exit != 0 {
 		t.Fatalf("restore exits %d", exit)
