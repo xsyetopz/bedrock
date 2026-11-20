@@ -93,7 +93,7 @@ func TestNoCommandPrintsUsage(t *testing.T) {
 	// Assert
 	expectCode(t, got, cli.ExitOK)
 	expectContains(t, got.stdout, "Usage: bedrock <command>")
-	expectContains(t, got.stdout, "go (kinds: command, library)")
+	expectContains(t, got.stdout, "go (kinds: command@freebsd|linux|macos|windows|wasi|wasm, library@")
 }
 
 func TestUnknownCommandIsAUsageError(t *testing.T) {

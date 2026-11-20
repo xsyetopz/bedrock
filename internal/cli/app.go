@@ -79,7 +79,7 @@ func (a *App) commands() map[string]command {
 	return map[string]command{
 		"init": {
 			run:     a.adoptCommand(modeInit),
-			usage:   "init <dir> <lang>[:<kind>]...",
+			usage:   "init <dir> <lang>[:<kind>[@<platform>,...]]...",
 			summary: "Start a repo.",
 		},
 		"adopt": {
