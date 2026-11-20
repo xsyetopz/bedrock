@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/xsyetopz/bedrock/internal/bedrocktest"
 	"github.com/xsyetopz/bedrock/internal/config"
@@ -416,6 +417,31 @@ func shutdownBuildServers(t *testing.T, dir string) {
 
 	if output, err := shutdown.CombinedOutput(); err != nil {
 		t.Logf("dotnet build-server shutdown: %v\n%s", err, output)
+	}
+
+	if runtime.GOOS == "windows" {
+		removeWhenReleased(t, dir)
+	}
+}
+
+// releaseTimeout bounds how long a server may take to exit after shutdown and
+// release the directory it worked in; t.TempDir retries for only 2 seconds.
+const releaseTimeout = time.Minute
+
+// removeWhenReleased removes dir, retrying while an exiting process still
+// holds it, and leaves the last error for t.TempDir's cleanup to report.
+func removeWhenReleased(t *testing.T, dir string) {
+	t.Helper()
+
+	deadline := time.Now().Add(releaseTimeout)
+
+	for {
+		err := os.RemoveAll(dir)
+		if err == nil || time.Now().After(deadline) {
+			return
+		}
+
+		time.Sleep(time.Second)
 	}
 }
 
