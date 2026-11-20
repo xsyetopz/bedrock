@@ -30,8 +30,22 @@ jobs:
           # cross-compiles the cli and server kinds for linux, macos, and windows.
           - language: typescript
             os: ubuntu-latest
+          # rustup installs the pinned toolchain and each platform's targets from rust-toolchain.toml.
+          # A kind builds for every platform it lists; a cross build without its linker skips, and
+          # each host links its own: @linux and @android here, @ios and @macos on Xcode, @windows
+          # with MSVC.
           - language: rust
             os: ubuntu-latest
+            timeout: 100
+            test-timeout: 90m
+          - language: rust
+            os: xcode-27
+            timeout: 100
+            test-timeout: 90m
+          - language: rust
+            os: windows-latest
+            timeout: 100
+            test-timeout: 90m
           # The Android SDK the runner ships builds the android, cmp, and kmp kinds. The runner's
           # JDK 17 starts Gradle, which fetches the JDK 25 daemon and GraalVM toolchains itself.
           - language: jvm
@@ -144,6 +158,13 @@ jobs:
           brew install llvm
           uv tool install meson==1.12.1
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      # Cargo links the @android targets with the NDK's clang for API 24, the
+      # level the cpp @android preset builds for.
+      - if: matrix.language == 'rust' && runner.os == 'Linux'
+        run: |
+          bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$bin/aarch64-linux-android24-clang" >> "$GITHUB_ENV"
+          echo "CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER=$bin/x86_64-linux-android24-clang" >> "$GITHUB_ENV"
       - if: matrix.language == 'haxe'
         uses: krdlab/setup-haxe@18e4b483cfffca2fb8881530bf8a6cec39dac8fb # v2.1.1
         with:
