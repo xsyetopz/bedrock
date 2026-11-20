@@ -1,4 +1,11 @@
-import type { BashCall, Engine, Hook, On, ProcessResult } from "./engine.ts";
+import type {
+	BashCall,
+	CommandRun,
+	Engine,
+	Hook,
+	On,
+	ProcessResult
+} from "./engine.ts";
 import { findBedrock } from "./runner.ts";
 
 // A package manager in command position: at a line start or after ; & | ( $( or `, past env assignments and sudo, exec, or command.
@@ -30,13 +37,35 @@ const applyHint = (args: readonly string[]): string =>
 		? `\n\nTo apply this plan, run /bedrock ${args.filter((arg) => arg !== "--dry-run").join(" ")} --yes`
 		: "";
 
+// Built by a call, not written inline: unicorn/no-array-fill-with-reference-type reads
+// `.fill({ text })` as Array#fill, and Claude Code needs the call spelled `$.prompt.fill(...)`.
+const draft = (text: string): { readonly text: string } => ({ text });
+
+/**
+ * Puts a command the user typed back in an empty prompt box, so a run that
+ * never started costs no retyping. A box the user has typed in since stays theirs.
+ */
+async function restorePrompt($: Engine, typed: string): Promise<boolean> {
+	try {
+		const box = await $.prompt.read();
+		if (box.text.trim() !== "") {
+			return false;
+		}
+		const { isFilled } = await $.prompt.fill(draft(typed));
+		return isFilled;
+	} catch {
+		return false;
+	}
+}
+
 /**
  * Runs bedrock with the arguments of `/bedrock` or `/adopt`, in the session's folder.
- * A run that can't start reports the typed command, since the prompt it came from is gone.
+ * When bedrock can't be found or started, the command typed at the prompt goes back in the prompt box.
  */
 export const runBedrock = async (
 	$: Engine,
-	input: string
+	input: string,
+	typedBy?: CommandRun
 ): Promise<{ text: string; context: string[] }> => {
 	const args = bedrockArgs(input);
 	let result: ProcessResult;
@@ -57,11 +86,15 @@ export const runBedrock = async (
 		);
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
-		const typed = `/bedrock ${input.trim()}`.trim();
-		return {
-			text: `${reason}\n\nNothing ran. To try again, run: ${typed}`,
-			context: []
-		};
+		const typed = typedBy
+			? `/${typedBy.command} ${typedBy.args.trim()}`.trim()
+			: `/bedrock ${input.trim()}`.trim();
+		const restored =
+			typedBy?.origin.kind === "composer" && (await restorePrompt($, typed));
+		const retry = restored
+			? `Nothing ran. ${typed} is back in the prompt box to run again.`
+			: `Nothing ran. To try again, run: ${typed}`;
+		return { text: `${reason}\n\n${retry}`, context: [] };
 	}
 	const { exitCode, stdout, stderr } = result;
 	const status = exitCode === 0 ? "" : `\n(bedrock exited ${exitCode})`;
@@ -91,12 +124,12 @@ export const announce: Hook<unknown> = async ($, e, next) => {
 };
 
 /** `/bedrock <command> [args]`. */
-export const answerBedrock: Hook<{ readonly args: string }> = ($, e) =>
-	runBedrock($, e.args);
+export const answerBedrock: Hook<CommandRun> = ($, e) =>
+	runBedrock($, e.args, e);
 
 /** `/adopt [args]`, short for `/bedrock adopt [args]`. */
-export const answerAdopt: Hook<{ readonly args: string }> = ($, e) =>
-	runBedrock($, `adopt ${e.args}`);
+export const answerAdopt: Hook<CommandRun> = ($, e) =>
+	runBedrock($, `adopt ${e.args}`, e);
 
 /** In a repo with `bun.lock`, Bun is the package manager. */
 export const blockForeign: Hook<BashCall> = async ($, e, next) => {

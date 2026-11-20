@@ -8,7 +8,9 @@ import {
 	INSTALLED,
 	next,
 	offline,
-	OK
+	OK,
+	shellMissing,
+	typed
 } from "./fake-engine.ts";
 import {
 	announce,
@@ -89,14 +91,7 @@ describe("runBedrock", () => {
 	});
 
 	test("reports a run that cannot start with the command to retype", async () => {
-		const $ = engine({
-			answer: (argv) => {
-				if (argv[0] === "sh") {
-					throw new Error("$.process.run(sh) failed to start: ENOENT");
-				}
-				return OK;
-			}
-		});
+		const $ = engine({ answer: shellMissing });
 
 		const result = await runBedrock($, "adopt rust --yes");
 
@@ -114,6 +109,55 @@ describe("runBedrock", () => {
 		const { text } = await runBedrock($, "init go --yes");
 
 		expect(text).toContain("/bedrock init go --yes");
+	});
+
+	test("puts a typed command back in the prompt box when nothing ran", async () => {
+		const fills: string[] = [];
+		const $ = engine({ answer: shellMissing, fills });
+
+		const { text } = await runBedrock(
+			$,
+			"adopt rust --yes",
+			typed("adopt", "rust --yes")
+		);
+
+		expect(fills).toEqual(["/adopt rust --yes"]);
+		expect(text).toContain("back in the prompt box");
+	});
+
+	test("keeps a draft the user typed since", async () => {
+		const fills: string[] = [];
+		const $ = engine({ answer: shellMissing, draft: "next idea", fills });
+
+		const { text } = await runBedrock($, "guard", typed("bedrock", "guard"));
+
+		expect(fills).toEqual([]);
+		expect(text).toContain("To try again, run: /bedrock guard");
+	});
+
+	test("restores no command it did not get from the prompt", async () => {
+		const fills: string[] = [];
+		const $ = engine({ answer: shellMissing, fills });
+
+		await runBedrock($, "guard", {
+			...typed("bedrock", "guard"),
+			origin: { kind: "plugin" }
+		});
+
+		expect(fills).toEqual([]);
+	});
+
+	test("leaves the prompt box alone after bedrock ran", async () => {
+		const fills: string[] = [];
+		const $ = engine({
+			answer: (argv) =>
+				argv[0] === "go" ? OK : { exitCode: 1, stdout: "", stderr: "no\n" },
+			fills
+		});
+
+		await runBedrock($, "guard", typed("bedrock", "guard"));
+
+		expect(fills).toEqual([]);
 	});
 });
 
@@ -161,13 +205,13 @@ describe("hooks", () => {
 
 	test("answerBedrock passes the typed command through", async () => {
 		const calls: string[][] = [];
-		await answerBedrock(engine({ calls }), { args: "clean" }, next());
+		await answerBedrock(engine({ calls }), typed("bedrock", "clean"), next());
 		expect(calls.at(-1)?.slice(5)).toEqual([BUILT, "clean"]);
 	});
 
 	test("answerAdopt previews adopt with the typed arguments", async () => {
 		const calls: string[][] = [];
-		await answerAdopt(engine({ calls }), { args: "rust" }, next());
+		await answerAdopt(engine({ calls }), typed("adopt", "rust"), next());
 		expect(calls.at(-1)?.slice(6)).toEqual(["adopt", "rust", "--dry-run"]);
 	});
 

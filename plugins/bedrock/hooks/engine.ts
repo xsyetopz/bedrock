@@ -20,7 +20,19 @@ export interface Engine {
 			init: { readonly timeoutMs: number }
 		) => Promise<ProcessResult>;
 	};
+	readonly prompt: {
+		readonly read: () => Promise<{ readonly text: string }>;
+		readonly fill: (input: {
+			readonly text: string;
+		}) => Promise<{ readonly isFilled: boolean }>;
+	};
 	readonly session: { readonly cwd: () => Promise<string> };
+}
+
+export interface CommandRun {
+	readonly command: string;
+	readonly args: string;
+	readonly origin: { readonly kind: string };
 }
 
 export type Next<E> = (e: E) => Promise<unknown>;
@@ -34,7 +46,7 @@ export interface On {
 	(
 		event: "command.run",
 		matcher: { readonly command: "adopt" | "bedrock" },
-		hook: Hook<{ readonly args: string }>
+		hook: Hook<CommandRun>
 	): unknown;
 	(
 		event: "tool.call",
