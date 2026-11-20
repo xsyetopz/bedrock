@@ -50,12 +50,13 @@ Three bounds keep a check from taking the machine, even with several agents or w
 From a Claude Code session with the plugin installed:
 
 ```text
+/bedrock                # adopt or update this repo, then fix what the checks report
 /adopt                  # detect the languages, print the plan
 /adopt ts rust --yes    # adopt these languages and apply
 /bedrock guard          # any bedrock command
 ```
 
-`/adopt`, and `/bedrock adopt`, `init`, or `update`, print the plan and change nothing until you add `--yes`.
+`/bedrock` and `/adopt` hand the work to Claude, which runs bedrock through the plugin's `run` tool. Claude summarizes the plan that `adopt`, `init`, or `update` prints, and applies it only when you passed `--yes` or agree to it. After applying it, Claude runs `just setup`, `just verify`, and `bedrock guard`, and fixes what they report.
 
 From a shell, with a `bedrock` binary from the [releases](https://github.com/xsyetopz/bedrock/releases) or built from a checkout of this repo with `go build -o bin/bedrock ./cmd/bedrock` (`bin/bedrock` in place of `bedrock`):
 
@@ -181,7 +182,7 @@ bedrock_function_code_lines_error = unset
 
 ## Claude Code Plugin
 
-[`plugins/bedrock`](plugins/bedrock) adds `/bedrock` and `/adopt`, and in a repo with `bun.lock` it blocks Bash commands that run npm, npx, pnpm, pnpx, or yarn. This repo is a plugin marketplace named `bedrock`:
+[`plugins/bedrock`](plugins/bedrock) adds the `/bedrock` and `/adopt` skills and the `run` tool they call, and in a repo with `bun.lock` it blocks Bash commands that run npm, npx, pnpm, pnpx, or yarn. This repo is a plugin marketplace named `bedrock`:
 
 ```text
 /plugin marketplace add xsyetopz/bedrock

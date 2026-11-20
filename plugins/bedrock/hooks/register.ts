@@ -1,6 +1,6 @@
 import type {
 	BashCall,
-	CommandRun,
+	BedrockCall,
 	Engine,
 	Hook,
 	On,
@@ -12,12 +12,15 @@ import { findBedrock } from "./runner.ts";
 const FOREIGN =
 	/(?:^|[;&|(`]|\$\()\s*(?:\w+=\S*\s+)*(?:(?:sudo|exec|command)\s+)?(npm|npx|pnpm|pnpx|yarn)(?=\s|$)/mu;
 
-/** Commands that change files: the plugin previews them unless the user passes --yes. */
+/** Commands that change files: the plugin previews them unless the call passes --yes. */
 const PLANNED = new Set(["adopt", "init", "update"]);
 
+/** The tool the `/bedrock` and `/adopt` skills call; Claude Code prefixes the name with `mcp__bedrock__`. */
+export const TOOL = "run";
+
 /**
- * The bedrock arguments for one slash command. A planned command without
- * --yes gets --dry-run, so typing it never changes files by surprise.
+ * The bedrock arguments for one call. A planned command without --yes gets
+ * --dry-run, so a call never changes files without asking for it.
  */
 export const bedrockArgs = (input: string): string[] => {
 	const args = input.split(/\s+/u).filter((word) => word !== "");
@@ -32,41 +35,17 @@ export const bedrockArgs = (input: string): string[] => {
 	return args.length === 0 ? ["help"] : args;
 };
 
-const applyHint = (args: readonly string[]): string =>
-	args.includes("--dry-run") && PLANNED.has(args[0] ?? "")
-		? `\n\nTo apply this plan, run /bedrock ${args.filter((arg) => arg !== "--dry-run").join(" ")} --yes`
-		: "";
-
-// Built by a call, not written inline: unicorn/no-array-fill-with-reference-type reads
-// `.fill({ text })` as Array#fill, and Claude Code needs the call spelled `$.prompt.fill(...)`.
-const draft = (text: string): { readonly text: string } => ({ text });
-
-/**
- * Puts a command the user typed back in an empty prompt box, so a run that
- * never started costs no retyping. A box the user has typed in since stays theirs.
- */
-async function restorePrompt($: Engine, typed: string): Promise<boolean> {
-	try {
-		const box = await $.prompt.read();
-		if (box.text.trim() !== "") {
-			return false;
-		}
-		const { isFilled } = await $.prompt.fill(draft(typed));
-		return isFilled;
-	} catch {
-		return false;
-	}
+/** What one bedrock run gives the model: its output, and whether it failed. */
+export interface Outcome {
+	readonly text: string;
+	readonly isError: boolean;
 }
 
-/**
- * Runs bedrock with the arguments of `/bedrock` or `/adopt`, in the session's folder.
- * When bedrock can't be found or started, the command typed at the prompt goes back in the prompt box.
- */
+/** Runs bedrock with a command line in the session's folder. */
 export const runBedrock = async (
 	$: Engine,
-	input: string,
-	typedBy?: CommandRun
-): Promise<{ text: string; context: string[] }> => {
+	input: string
+): Promise<Outcome> => {
 	const args = bedrockArgs(input);
 	let result: ProcessResult;
 	try {
@@ -86,50 +65,45 @@ export const runBedrock = async (
 		);
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
-		const typed = typedBy
-			? `/${typedBy.command} ${typedBy.args.trim()}`.trim()
-			: `/bedrock ${input.trim()}`.trim();
-		const restored =
-			typedBy?.origin.kind === "composer" && (await restorePrompt($, typed));
-		const retry = restored
-			? `Nothing ran. ${typed} is back in the prompt box to run again.`
-			: `Nothing ran. To try again, run: ${typed}`;
-		return { text: `${reason}\n\n${retry}`, context: [] };
+		return { text: `bedrock did not run: ${reason}`, isError: true };
 	}
 	const { exitCode, stdout, stderr } = result;
-	const status = exitCode === 0 ? "" : `\n(bedrock exited ${exitCode})`;
-	const text = `${`${stdout}${stderr}`.trim()}${status}${exitCode === 0 ? applyHint(args) : ""}`;
-	return { text, context: [`/bedrock ${args.join(" ")}:\n${text}`] };
+	const ran = `$ bedrock ${args.join(" ")}\n${`${stdout}${stderr}`.trim()}`;
+	return exitCode === 0
+		? { text: ran, isError: false }
+		: { text: `${ran}\n(bedrock exited ${exitCode})`, isError: true };
 };
 
 /** The package manager a Bash command runs, if it is one Bun replaces. */
 export const foreignPackageManager = (command: string): string | undefined =>
 	FOREIGN.exec(command)?.[1];
 
-/** Registers the slash commands, then continues. */
+/** Registers the tool the skills call, then continues. */
 export const announce: Hook<unknown> = async ($, e, next) => {
-	await Promise.all([
-		$.command.register({
-			name: "bedrock",
-			description:
-				"Run bedrock: init, adopt, update, guard, clean. Plans print first; --yes applies them."
-		}),
-		$.command.register({
-			name: "adopt",
-			description:
-				"Set this repo up with bedrock for its languages. Prints the plan; --yes applies it."
-		})
-	]);
+	await $.tool.register({
+		name: TOOL,
+		description:
+			"Runs the bedrock CLI in the session's folder with one command line, such as `adopt`, `update`, `guard rust`, or `adopt ts --yes`, and returns its output. `adopt`, `init`, and `update` print their plan and change nothing unless the line has `--yes`.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				args: {
+					type: "string",
+					description: "The bedrock command line, without `bedrock`."
+				}
+			},
+			required: ["args"]
+		},
+		isDeferred: false
+	});
 	return next(e);
 };
 
-/** `/bedrock <command> [args]`. */
-export const answerBedrock: Hook<CommandRun> = ($, e) =>
-	runBedrock($, e.args, e);
-
-/** `/adopt [args]`, short for `/bedrock adopt [args]`. */
-export const answerAdopt: Hook<CommandRun> = ($, e) =>
-	runBedrock($, `adopt ${e.args}`, e);
+/** Answers an allowed call of the tool with bedrock's output. */
+export const answerRun: Hook<BedrockCall> = async ($, e) => {
+	const { text, isError } = await runBedrock($, e.args);
+	return isError ? { result: text, isError } : { result: text };
+};
 
 /** In a repo with `bun.lock`, Bun is the package manager. */
 export const blockForeign: Hook<BashCall> = async ($, e, next) => {
@@ -141,14 +115,13 @@ export const blockForeign: Hook<BashCall> = async ($, e, next) => {
 		return next(e);
 	}
 	return {
-		deny: `${$.plugin.name}: this repo uses Bun. Run bun in place of ${manager}, or bunx for a one-off package.`
+		deny: `${$.plugin.name}: this repo uses Bun. Run \`bun\` in place of ${manager}, or \`bunx\` for a one-off package.`
 	};
 };
 
 /** Wires each hook to its event. */
 export const register = (on: On): void => {
 	on("session.start", announce);
-	on("command.run", { command: "bedrock" }, answerBedrock);
-	on("command.run", { command: "adopt" }, answerAdopt);
+	on("tool.run", { tool: "mcp__bedrock__run" }, answerRun);
 	on("tool.call", { tool: "Bash" }, blockForeign);
 };

@@ -1,5 +1,5 @@
 /** A fake `Engine` and the machines the plugin hook tests run against. */
-import type { CommandRun, Engine, Next, ProcessResult } from "./engine.ts";
+import type { Engine, Next, ProcessResult } from "./engine.ts";
 
 export const CHECKOUT = "/src/bedrock";
 export const ROOT = `${CHECKOUT}/plugins/bedrock`;
@@ -24,10 +24,8 @@ interface Fake {
 	readonly calls?: string[][];
 	/** Answers one process call; the default succeeds with no output, and a throw rejects the call as a program that can't start does. */
 	readonly answer?: (argv: readonly string[]) => ProcessResult;
-	/** The prompt box's draft when the plugin reads it. */
-	readonly draft?: string;
-	/** Records each text the plugin fills into the prompt box. */
-	readonly fills?: string[];
+	/** Records each tool the plugin registers. */
+	readonly tools?: unknown[];
 }
 
 export const engine = ({
@@ -35,11 +33,15 @@ export const engine = ({
 	files = [MAIN],
 	calls = [],
 	answer = () => OK,
-	draft = "",
-	fills = []
+	tools = []
 }: Fake = {}): Engine => ({
 	plugin: { name: "bedrock", root },
-	command: { register: () => Promise.resolve({}) },
+	tool: {
+		register: (tool) => {
+			tools.push(tool);
+			return Promise.resolve({});
+		}
+	},
 	fs: { exists: (path) => Promise.resolve(files.includes(path)) },
 	process: {
 		run: (argv) => {
@@ -49,21 +51,7 @@ export const engine = ({
 			});
 		}
 	},
-	prompt: {
-		read: () => Promise.resolve({ text: draft }),
-		fill: ({ text }) => {
-			fills.push(text);
-			return Promise.resolve({ isFilled: true });
-		}
-	},
 	session: { cwd: () => Promise.resolve("/work") }
-});
-
-/** A `command.run` event for `/<command> <args>` typed at the prompt. */
-export const typed = (command: string, args: string): CommandRun => ({
-	command,
-	args,
-	origin: { kind: "composer" }
 });
 
 /** A process call that can't start the shell bedrock runs under. */

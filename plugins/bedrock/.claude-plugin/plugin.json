@@ -1,6 +1,6 @@
 {
 	"name": "bedrock",
 	"version": "0.6.3",
-	"description": "Adds /bedrock and /adopt, which run the bedrock CLI to set a repo up for TypeScript (Bun), Rust, Swift, C++, JVM, Go, Haxe, and .NET (C# and F#), and keeps Claude on bun in Bun repos.",
+	"description": "Adds the /bedrock and /adopt skills, which have Claude run the bedrock CLI to set a repo up for TypeScript (Bun), Rust, Swift, C++, JVM, Go, Haxe, and .NET (C# and F#), and keeps Claude on bun in Bun repos.",
 	"author": { "name": "xsyetopz" }
 }

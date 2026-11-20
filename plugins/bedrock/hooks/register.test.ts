@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { Engine, On } from "./engine.ts";
+import type { On } from "./engine.ts";
 import {
 	BUILD,
 	BUILT,
@@ -9,18 +9,17 @@ import {
 	next,
 	offline,
 	OK,
-	shellMissing,
-	typed
+	shellMissing
 } from "./fake-engine.ts";
 import {
 	announce,
-	answerAdopt,
-	answerBedrock,
+	answerRun,
 	bedrockArgs,
 	blockForeign,
 	foreignPackageManager,
 	register,
-	runBedrock
+	runBedrock,
+	TOOL
 } from "./register.ts";
 
 describe("bedrockArgs", () => {
@@ -46,7 +45,7 @@ describe("runBedrock", () => {
 		const calls: string[][] = [];
 		const $ = engine({ calls, answer: () => ({ ...OK, stdout: "plan\n" }) });
 
-		const result = await runBedrock($, "adopt rust");
+		const outcome = await runBedrock($, "adopt rust");
 
 		expect(calls).toEqual([
 			BUILD,
@@ -62,102 +61,47 @@ describe("runBedrock", () => {
 				"--dry-run"
 			]
 		]);
-		expect(result.text).toContain("plan\n");
+		expect(outcome).toEqual({
+			text: "$ bedrock adopt rust --dry-run\nplan",
+			isError: false
+		});
 	});
 
-	test("reports the exit code of a failed run", async () => {
+	test("reports the exit code of a failed run as an error", async () => {
 		const $ = engine({
 			answer: (argv) =>
 				argv[0] === "go" ? OK : { exitCode: 2, stdout: "", stderr: "no\n" }
 		});
 
-		const { text } = await runBedrock($, "guard");
+		const outcome = await runBedrock($, "guard");
 
-		expect(text).toContain("no\n");
-		expect(text).toContain("2");
+		expect(outcome).toEqual({
+			text: "$ bedrock guard\nno\n(bedrock exited 2)",
+			isError: true
+		});
 	});
 
-	test("reports a runner it cannot find", async () => {
+	test("reports a runner it cannot find as an error", async () => {
 		const $ = engine({
 			root: INSTALLED,
 			files: [],
 			answer: offline("offline")
 		});
 
-		const result = await runBedrock($, "guard");
+		const outcome = await runBedrock($, "guard");
 
-		expect(result.text).toContain("offline");
-		expect(result.context).toEqual([]);
+		expect(outcome.isError).toBe(true);
+		expect(outcome.text).toContain("offline");
 	});
 
-	test("reports a run that cannot start with the command to retype", async () => {
+	test("reports a run that cannot start as an error", async () => {
 		const $ = engine({ answer: shellMissing });
 
-		const result = await runBedrock($, "adopt rust --yes");
+		const outcome = await runBedrock($, "adopt rust --yes");
 
-		expect(result.text).toContain("ENOENT");
-		expect(result.text).toContain("/bedrock adopt rust --yes");
-	});
-
-	test("names the typed command when bedrock cannot be found", async () => {
-		const $ = engine({
-			root: INSTALLED,
-			files: [],
-			answer: offline("offline")
-		});
-
-		const { text } = await runBedrock($, "init go --yes");
-
-		expect(text).toContain("/bedrock init go --yes");
-	});
-
-	test("puts a typed command back in the prompt box when nothing ran", async () => {
-		const fills: string[] = [];
-		const $ = engine({ answer: shellMissing, fills });
-
-		const { text } = await runBedrock(
-			$,
-			"adopt rust --yes",
-			typed("adopt", "rust --yes")
-		);
-
-		expect(fills).toEqual(["/adopt rust --yes"]);
-		expect(text).toContain("back in the prompt box");
-	});
-
-	test("keeps a draft the user typed since", async () => {
-		const fills: string[] = [];
-		const $ = engine({ answer: shellMissing, draft: "next idea", fills });
-
-		const { text } = await runBedrock($, "guard", typed("bedrock", "guard"));
-
-		expect(fills).toEqual([]);
-		expect(text).toContain("To try again, run: /bedrock guard");
-	});
-
-	test("restores no command it did not get from the prompt", async () => {
-		const fills: string[] = [];
-		const $ = engine({ answer: shellMissing, fills });
-
-		await runBedrock($, "guard", {
-			...typed("bedrock", "guard"),
-			origin: { kind: "plugin" }
-		});
-
-		expect(fills).toEqual([]);
-	});
-
-	test("leaves the prompt box alone after bedrock ran", async () => {
-		const fills: string[] = [];
-		const $ = engine({
-			answer: (argv) =>
-				argv[0] === "go" ? OK : { exitCode: 1, stdout: "", stderr: "no\n" },
-			fills
-		});
-
-		await runBedrock($, "guard", typed("bedrock", "guard"));
-
-		expect(fills).toEqual([]);
+		expect(outcome.isError).toBe(true);
+		expect(outcome.text).toContain("bedrock did not run");
+		expect(outcome.text).toContain("ENOENT");
 	});
 });
 
@@ -184,35 +128,38 @@ describe("foreignPackageManager", () => {
 });
 
 describe("hooks", () => {
-	test("announce registers /bedrock and /adopt, then continues", async () => {
-		const registered: unknown[] = [];
-		const $: Engine = {
-			...engine(),
-			command: {
-				register: (command) => {
-					registered.push(command);
-					return Promise.resolve({});
-				}
-			}
-		};
+	test("announce registers the run tool up front, then continues", async () => {
+		const tools: unknown[] = [];
 
-		expect(await announce($, {}, next())).toBe("ran");
-		expect(registered).toEqual([
-			expect.objectContaining({ name: "bedrock" }),
-			expect.objectContaining({ name: "adopt" })
+		const result = await announce(engine({ tools }), {}, next());
+
+		expect(result).toBe("ran");
+		expect(tools).toEqual([
+			expect.objectContaining({ name: TOOL, isDeferred: false })
 		]);
 	});
 
-	test("answerBedrock passes the typed command through", async () => {
+	test("answerRun returns bedrock's output for the call", async () => {
 		const calls: string[][] = [];
-		await answerBedrock(engine({ calls }), typed("bedrock", "clean"), next());
+
+		const answer = await answerRun(
+			engine({ calls }),
+			{ args: "clean" },
+			next()
+		);
+
 		expect(calls.at(-1)?.slice(5)).toEqual([BUILT, "clean"]);
+		expect(answer).toEqual({ result: "$ bedrock clean\n" });
 	});
 
-	test("answerAdopt previews adopt with the typed arguments", async () => {
-		const calls: string[][] = [];
-		await answerAdopt(engine({ calls }), typed("adopt", "rust"), next());
-		expect(calls.at(-1)?.slice(6)).toEqual(["adopt", "rust", "--dry-run"]);
+	test("answerRun marks a failed run as an error", async () => {
+		const answer = await answerRun(
+			engine({ answer: shellMissing }),
+			{ args: "guard" },
+			next()
+		);
+
+		expect(answer).toHaveProperty("isError", true);
 	});
 
 	test("blockForeign denies npm in a Bun repo only", async () => {
@@ -234,8 +181,7 @@ describe("hooks", () => {
 		register(on);
 		expect(wired).toEqual([
 			["session.start", announce],
-			["command.run", { command: "bedrock" }, answerBedrock],
-			["command.run", { command: "adopt" }, answerAdopt],
+			["tool.run", { tool: `mcp__bedrock__${TOOL}` }, answerRun],
 			["tool.call", { tool: "Bash" }, blockForeign]
 		]);
 	});

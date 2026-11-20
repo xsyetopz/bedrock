@@ -7,10 +7,12 @@ export interface ProcessResult {
 
 export interface Engine {
 	readonly plugin: { readonly name: string; readonly root: string };
-	readonly command: {
-		readonly register: (command: {
+	readonly tool: {
+		readonly register: (tool: {
 			readonly name: string;
 			readonly description: string;
+			readonly inputSchema: Readonly<Record<string, unknown>>;
+			readonly isDeferred: boolean;
 		}) => Promise<unknown>;
 	};
 	readonly fs: { readonly exists: (path: string) => Promise<boolean> };
@@ -20,19 +22,7 @@ export interface Engine {
 			init: { readonly timeoutMs: number }
 		) => Promise<ProcessResult>;
 	};
-	readonly prompt: {
-		readonly read: () => Promise<{ readonly text: string }>;
-		readonly fill: (input: {
-			readonly text: string;
-		}) => Promise<{ readonly isFilled: boolean }>;
-	};
 	readonly session: { readonly cwd: () => Promise<string> };
-}
-
-export interface CommandRun {
-	readonly command: string;
-	readonly args: string;
-	readonly origin: { readonly kind: string };
 }
 
 export type Next<E> = (e: E) => Promise<unknown>;
@@ -40,13 +30,17 @@ export type Hook<E> = ($: Engine, e: E, next: Next<E>) => unknown;
 export interface BashCall {
 	readonly command: string;
 }
+/** A call of the plugin's `run` tool: the bedrock command line the model passed. */
+export interface BedrockCall {
+	readonly args: string;
+}
 
 export interface On {
 	(event: "session.start", hook: Hook<unknown>): unknown;
 	(
-		event: "command.run",
-		matcher: { readonly command: "adopt" | "bedrock" },
-		hook: Hook<CommandRun>
+		event: "tool.run",
+		matcher: { readonly tool: "mcp__bedrock__run" },
+		hook: Hook<BedrockCall>
 	): unknown;
 	(
 		event: "tool.call",
