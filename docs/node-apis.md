@@ -2,7 +2,7 @@
 
 Use the Bun API where Bun has one, and a `node:` module where it has none. Import Node.js modules with the `node:` prefix; `unicorn/prefer-node-protocol` checks it. For YAML, TOML, JSONC, and JSON5, use `Bun.YAML`, `Bun.TOML`, `Bun.JSONC`, and `Bun.JSON5`.
 
-The table tracks how close the repo is to banning `node:` imports outright. "Runs" and "Gaps" come from Bun's [compatibility page](https://bun.com/docs/runtime/nodejs-compat), which targets Node.js v26. "Replacement" names the Bun or web API that does the same job, checked against Bun 1.4.4. "Covered" says whether that replacement covers what code uses the module for.
+The table tracks how close the repo is to banning `node:` imports outright. "Runs" and "Gaps" come from Bun's [compatibility page](https://bun.com/docs/runtime/nodejs-compat), which targets Node.js v26. "Replacement" names the Bun or web API that does the same job, checked against Bun 1.4.5. "Covered" says whether that replacement covers what code uses the module for.
 
 - ✅ In "Runs", Bun implements the module. In "Covered", the import can be banned today.
 - ⚠️ Partly. In "Covered", the cell names the uses that still need the module.
@@ -22,7 +22,7 @@ The table tracks how close the repo is to banning `node:` imports outright. "Run
 | `crypto` | ⚠️ | No `encapsulate` or `decapsulate`; `setEngine()` throws; `setFips()` does nothing; `secureHeapUsed()` returns `undefined`; BoringSSL lacks some key types, curves, and ciphers | `crypto.subtle`, `crypto.randomUUID`, `Bun.CryptoHasher`, `Bun.hash`, `Bun.password` | ⚠️ `KeyObject`, `createCipheriv`, and streaming ciphers |
 | `dgram` | ✅ | `addMembership()` needs `bind()` first | `Bun.udpSocket` | ✅ |
 | `diagnostics_channel` | ⚠️ | No `boundedChannel()` and several built-in channels | None | ❌ |
-| `dns` | ✅ | No `resolveTlsa`; `maxTimeout` is ignored | `Bun.dns`: `lookup`, every `resolve*`, `reverse`, `lookupService`, `prefetch` | ✅ |
+| `dns` | ✅ | No `resolveTlsa`; `maxTimeout` is ignored | `Bun.dns`: `lookup`, `resolve` (type `A` or `AAAA` for `resolve4` and `resolve6`), the other `resolve*`, `reverse`, `lookupService`, `prefetch` | ✅ |
 | `domain` | ⚠️ | No `members`; errors from async callbacks skip the domain | None | 🗑️ |
 | `events` | ✅ | `EventEmitterAsyncResource` always has `asyncId` `0` | `EventTarget` | ⚠️ `EventEmitter`, `once()`, and `on()` |
 | `fs` | ✅ | `Stats` has no Temporal getters | `Bun.file` (`text`, `stream`, `stat`, `exists`, `delete`), `Bun.write`, `Bun.Glob` | ⚠️ `mkdir`, `readdir`, `rename`, `rm`, and `watch` |
