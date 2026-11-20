@@ -4,7 +4,7 @@ const REPOSITORY = "https://github.com/xsyetopz/bedrock";
 
 // A literal, not an import of plugin.json: Claude Code loads a hooks module only with imports of code files, and refuses the whole module otherwise.
 /** The bedrock release this plugin runs; a test keeps it equal to the CLI's and the plugin manifest's version. */
-export const VERSION = "0.6.4";
+export const VERSION = "0.7.0";
 
 /** Downloads one release asset beside the plugin and checks it against the release's SHA256SUMS, as `just setup` does. */
 const INSTALL = String.raw`set -eu
