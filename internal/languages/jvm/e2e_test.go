@@ -132,21 +132,10 @@ func javaMajor(t *testing.T) int {
 	return major
 }
 
-// toolchainMajor returns the JDK major version the generated daemon
-// properties require, or 0 when they name none.
-func toolchainMajor(t *testing.T, root string) int {
-	t.Helper()
-
-	match := regexp.MustCompile(`(?m)^toolchainVersion=(\d+)$`).FindStringSubmatch(
-		bedrocktest.Read(t, root, "gradle/gradle-daemon-jvm.properties"))
-	if match == nil {
-		return 0
-	}
-
-	major, _ := strconv.Atoi(match[1])
-
-	return major
-}
+// gradleJDK is the oldest JDK that starts Gradle 9. The daemon itself runs on
+// the JDK `gradle/gradle-daemon-jvm.properties` pins, which Gradle finds or
+// downloads whatever JDK starts `gradlew`.
+const gradleJDK = 17
 
 // TestInitedKindsBuildWithGradle runs the kinds one after another, never in
 // parallel: concurrent builds contend for the shared Gradle cache and daemons.
@@ -162,6 +151,10 @@ func TestInitedKindsBuildWithGradle(t *testing.T) {
 		t.Skip("no JDK on PATH")
 	}
 
+	if have := javaMajor(t); have < gradleJDK {
+		t.Skipf("Gradle needs JDK %d or newer to start, and the `java` on PATH is %d", gradleJDK, have)
+	}
+
 	for _, c := range cases() {
 		t.Run(c.name(), func(t *testing.T) {
 			if needsAndroid(c) && !androidSDK() {
@@ -172,10 +165,6 @@ func TestInitedKindsBuildWithGradle(t *testing.T) {
 			root := bedrocktest.Repo(t, nil)
 			bedrocktest.Adopt(t, root, true, c.selected(t))
 			bedrocktest.CommitAll(t, root)
-
-			if want, have := toolchainMajor(t, root), javaMajor(t); want != have {
-				t.Skipf("the build needs JDK %d and the `java` on PATH is %d", want, have)
-			}
 
 			ctx, cancel := context.WithTimeout(t.Context(), gradleTimeout)
 			defer cancel()
