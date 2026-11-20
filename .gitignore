@@ -41,6 +41,10 @@
 .idea/httpRequests
 *.iws
 .zed/
+
+# Coding agents' worktrees: whole checkouts that a formatter or linter walking the tree
+# would check again.
+.claude/worktrees/
 # <<< bedrock
 
 # >>> typescript-bedrock

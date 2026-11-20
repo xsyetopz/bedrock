@@ -5,6 +5,13 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set working-directory := ".."
 
+# The processes the builds, CTest, Meson's tests, clang-tidy, and clang-format run at once;
+# see BEDROCK_JOBS in the justfile. CMake and CTest read their variables from the environment.
+jobs := env("BEDROCK_CPP_JOBS", env("BEDROCK_JOBS", "4"))
+export CMAKE_BUILD_PARALLEL_LEVEL := env("CMAKE_BUILD_PARALLEL_LEVEL", jobs)
+export CTEST_PARALLEL_LEVEL := env("CTEST_PARALLEL_LEVEL", jobs)
+export BEDROCK_CPP_JOBS := jobs
+
 llvm := `if command -v brew >/dev/null && [[ -d "$(brew --prefix llvm 2>/dev/null)" ]]; then echo "$(brew --prefix llvm)/bin/"; fi`
 
 # Install LLVM, for clang-format and clang-tidy, CMake, Meson, or xmake when a
@@ -19,11 +26,11 @@ setup:
 
 # Format the C and C++ code.
 format:
-    just cpp::files | xargs -0 -r {{ llvm }}clang-format -i
+    just cpp::files | xargs -0 -r -P {{ jobs }} -n 64 {{ llvm }}clang-format -i
 
 # Fail if the C and C++ code is not formatted.
 format-check:
-    just cpp::files | xargs -0 -r {{ llvm }}clang-format --dry-run --Werror
+    just cpp::files | xargs -0 -r -P {{ jobs }} -n 64 {{ llvm }}clang-format --dry-run --Werror
 
 # clang-tidy in lint compiles each translation unit, and the build systems
 # compile them in test, so no separate type check runs.
@@ -32,12 +39,12 @@ typecheck:
 # Run clang-tidy over each translation unit a build system builds, with its flags.
 lint:
     {{ just_executable() }} bedrock cpp compile-commands
-    {{ llvm }}run-clang-tidy -quiet -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements
+    {{ llvm }}run-clang-tidy -quiet -j {{ jobs }} -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements
 
 # Apply the clang-tidy fixes it can, then format; `just lint` reports the rest.
 lint-fix:
     {{ just_executable() }} bedrock cpp compile-commands
-    -{{ llvm }}run-clang-tidy -quiet -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements -fix
+    -{{ llvm }}run-clang-tidy -quiet -j {{ jobs }} -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements -fix
     just cpp::format
 
 # Build each CMake, Meson, and xmake project and run its tests; swift test
@@ -60,4 +67,4 @@ pre-push: format-check lint
 
 [private]
 files:
-    git ls-files -z --cached --others --exclude-standard -- '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.m' '*.mm'
+    {{ just_executable() }} files '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.m' '*.mm'

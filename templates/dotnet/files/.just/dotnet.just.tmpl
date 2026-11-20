@@ -6,7 +6,7 @@ set working-directory := ".."
 
 # Bounds that keep one run from taking the machine: MSBuild runs at most this
 # many build nodes, and none stays alive after the build, holding memory.
-export BEDROCK_DOTNET_JOBS := env("BEDROCK_DOTNET_JOBS", "4")
+export BEDROCK_DOTNET_JOBS := env("BEDROCK_DOTNET_JOBS", env("BEDROCK_JOBS", "4"))
 export MSBUILDDISABLENODEREUSE := "1"
 export DOTNET_CLI_TELEMETRY_OPTOUT := "1"
 export DOTNET_NOLOGO := "1"

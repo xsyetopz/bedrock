@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/xsyetopz/bedrock/internal/execx"
+	"github.com/xsyetopz/bedrock/internal/fsutil"
 	"github.com/xsyetopz/bedrock/internal/language"
 )
 
@@ -57,7 +58,9 @@ func projectsOf(ctx context.Context, c *language.Context, name string) []string 
 	result, err := c.Runner.Run(ctx, execx.Command{
 		Dir:  c.Root,
 		Name: "git",
-		Args: []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", name, "*/" + name},
+		Args: append(
+			[]string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", name, "*/" + name},
+			fsutil.NotGenerated()...),
 		// A hook's git variables would list the hook's repository, not root.
 		Unset: execx.HookGitVars(),
 	})

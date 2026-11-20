@@ -8,7 +8,9 @@ set working-directory := ".."
 # and `--threads` bounds oxlint. Raise them for a large repo, such as
 # `BEDROCK_LINT_MEMORY=8GiB just lint`.
 lint_memory := env("BEDROCK_LINT_MEMORY", "4GiB")
-lint_threads := env("BEDROCK_LINT_THREADS", "4")
+# `jobs` bounds bun fmt's threads; see BEDROCK_JOBS in the justfile.
+jobs := env("BEDROCK_TYPESCRIPT_JOBS", env("BEDROCK_JOBS", "4"))
+lint_threads := env("BEDROCK_LINT_THREADS", jobs)
 # The lock every lint run on the machine shares; a test points it elsewhere.
 lint_lock := env("BEDROCK_LINT_LOCK", "/tmp/bedrock-lint.lock")
 
@@ -16,13 +18,13 @@ lint_lock := env("BEDROCK_LINT_LOCK", "/tmp/bedrock-lint.lock")
 setup:
     bun install {{ if env("CI", "") == "" { "" } else { "--frozen-lockfile" } }}
 
-# Format the code.
+# Format the listed files; bun fmt passes over the ones in a language it does not format.
 format:
-    bun fmt
+    {{ just_executable() }} files . | xargs -0 -r bun fmt --ignore-unknown --threads={{ jobs }}
 
-# Fail if the code is not formatted.
+# Fail if a listed file is not formatted.
 format-check:
-    bun fmt --check
+    {{ just_executable() }} files . | xargs -0 -r bun fmt --check --ignore-unknown --threads={{ jobs }}
 
 # Type-check without emitting anything, after a project-pre-typecheck recipe from project.just when there is one.
 typecheck:
@@ -54,7 +56,7 @@ pre-push: format-check typecheck lint guard
 
 [private]
 format-staged:
-    bun fmt --staged
+    bun fmt --staged --threads={{ jobs }}
 
 # A second run anywhere on the machine waits for the first instead of starting its own tsgolint:
 # each holds a whole program in memory, and repos, worktrees, and sessions lint at once.

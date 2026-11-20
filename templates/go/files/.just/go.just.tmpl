@@ -6,7 +6,7 @@ set working-directory := ".."
 # Bounds that keep one run from taking the machine. GOMEMLIMIT is a soft limit on the Go
 # runtime, golangci-lint included. `-p` caps the build and test programs that run at once;
 # `run.concurrency` in .golangci.yml caps golangci-lint's own threads.
-jobs := env("BEDROCK_GO_JOBS", "4")
+jobs := env("BEDROCK_GO_JOBS", env("BEDROCK_JOBS", "4"))
 export GOMEMLIMIT := env("BEDROCK_GO_MEMLIMIT", "2GiB")
 export GOFLAGS := env("GOFLAGS", "") + " -p=" + jobs
 

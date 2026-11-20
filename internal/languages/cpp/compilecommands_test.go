@@ -2,6 +2,8 @@ package cpp_test
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -42,6 +44,17 @@ func swiftTools(t *testing.T, standard string, sdk string, sources ...string) ma
 	}
 }
 
+// swiftPackage returns a package manifest and the Clang sources a test lists,
+// which compile-commands keeps only when the repository holds them.
+func swiftPackage(sources ...string) map[string]string {
+	files := map[string]string{"Package.swift": "let package = 1\n"}
+	for _, source := range sources {
+		files["Sources/Lib/"+source] = "\n"
+	}
+
+	return files
+}
+
 // compileEntries runs `compile-commands` and returns the entries it wrote.
 func compileEntries(t *testing.T, h *harness) []map[string]any {
 	t.Helper()
@@ -78,8 +91,7 @@ func TestCompileCommandsCompilesEachSwiftPackageSourceByItsLanguage(t *testing.T
 			t.Parallel()
 
 			// Arrange
-			h := newHarness(t, map[string]string{"Package.swift": "let package = 1\n"},
-				swiftTools(t, "c++20", "/sdk", tc.source))
+			h := newHarness(t, swiftPackage(tc.source), swiftTools(t, "c++20", "/sdk", tc.source))
 
 			// Act
 			entries := compileEntries(t, h)
@@ -121,8 +133,7 @@ func TestCompileCommandsPassesTheSdkToolchainIncludeDeploymentTargetAndTargetInc
 	t.Parallel()
 
 	// Arrange
-	h := newHarness(t, map[string]string{"Package.swift": "let package = 1\n"},
-		swiftTools(t, "c++20", "/sdk", "a.cpp"))
+	h := newHarness(t, swiftPackage("a.cpp"), swiftTools(t, "c++20", "/sdk", "a.cpp"))
 
 	// Act
 	entries := compileEntries(t, h)
@@ -141,8 +152,7 @@ func TestCompileCommandsOmitsTheSysrootWhenNoneIsKnownAndUsesThePackagesStandard
 	t.Parallel()
 
 	// Arrange
-	h := newHarness(t, map[string]string{"Package.swift": "let package = 1\n"},
-		swiftTools(t, "gnu++17", "", "a.cpp"))
+	h := newHarness(t, swiftPackage("a.cpp"), swiftTools(t, "gnu++17", "", "a.cpp"))
 
 	// Act
 	arguments := stringsOf(compileEntries(t, h)[0]["arguments"])
@@ -182,6 +192,7 @@ func TestCompileCommandsConfiguresOnlyTheTopCMakeProject(t *testing.T) {
 	// Arrange
 	h := newHarness(t, map[string]string{
 		"port/CMakeLists.txt":     "project(p)\n",
+		"port/main.c":             "\n",
 		"port/lib/CMakeLists.txt": "add_library(l l.c)\n",
 	}, nil)
 	h.runner.tools = map[string]toolFunc{"cmake": cmakeThatWritesCommands(t)}
@@ -194,7 +205,7 @@ func TestCompileCommandsConfiguresOnlyTheTopCMakeProject(t *testing.T) {
 		t.Errorf("cmake calls = %v", calls)
 	}
 
-	if len(entries) != 1 || entries[0]["file"] != "port" {
+	if len(entries) != 1 || entries[0]["file"] != h.root+"/port/main.c" {
 		t.Errorf("entries = %v", entries)
 	}
 }
@@ -218,12 +229,57 @@ func TestCompileCommandsLeavesOutADependencyFetchedIntoABuildDirectory(t *testin
 	}
 }
 
+func TestCompileCommandsKeepsOnlyTheSourcesARepositoryListsAndDoesNotMarkGenerated(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	h := newHarness(t, map[string]string{
+		"CMakeLists.txt": "project(app)\n",
+		".gitattributes": "gen.c linguist-generated\n",
+		".gitignore":     "build/\n",
+		"main.c":         "\n",
+		"gen.c":          "\n",
+		"build/dep.c":    "\n",
+	}, nil)
+	h.runner.tools = map[string]toolFunc{"cmake": func(command execx.Command) execx.Result {
+		build := flagValue(command, "-B")
+		entries := []map[string]string{
+			{"file": "main.c", "directory": h.root},
+			{"file": h.root + "/gen.c", "directory": build},
+			{"file": h.root + "/build/dep.c", "directory": build},
+			{"file": "/usr/include/stdio.h", "directory": build},
+		}
+		if err := os.MkdirAll(build, 0o750); err != nil {
+			return failed(err.Error())
+		}
+
+		if err := os.WriteFile(
+			filepath.Join(build, "compile_commands.json"),
+			[]byte(jsonOf(t, entries)),
+			0o600,
+		); err != nil {
+			return failed(err.Error())
+		}
+
+		return ok("")
+	}}
+
+	// Act
+	entries := compileEntries(t, h)
+
+	// Assert
+	if len(entries) != 1 || entries[0]["file"] != "main.c" {
+		t.Errorf("entries = %v, want only main.c", entries)
+	}
+}
+
 func TestCompileCommandsSkipsASubprojectThatFailsToConfigure(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
 	h := newHarness(t, map[string]string{
 		"port/CMakeLists.txt":         "project(p)\n",
+		"port/main.c":                 "\n",
 		"sdk/template/CMakeLists.txt": "project(t)\n",
 	}, nil)
 	good := cmakeThatWritesCommands(t)
@@ -239,7 +295,7 @@ func TestCompileCommandsSkipsASubprojectThatFailsToConfigure(t *testing.T) {
 	entries := compileEntries(t, h)
 
 	// Assert
-	if len(entries) != 1 || entries[0]["file"] != "port" {
+	if len(entries) != 1 || entries[0]["file"] != h.root+"/port/main.c" {
 		t.Errorf("entries = %v", entries)
 	}
 

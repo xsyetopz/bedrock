@@ -29,7 +29,7 @@ A lint or build run on a shared machine stays within these limits.
 | --- | --- | --- | --- |
 | `run.concurrency` | `.golangci.yml` | 4 | The threads golangci-lint runs at once |
 | `GOMEMLIMIT` | `.just/go.just` | 2GiB | The Go runtime's soft memory limit, which golangci-lint obeys. `BEDROCK_GO_MEMLIMIT` changes it |
-| `GOFLAGS=-p=N` | `.just/go.just` | 4 | The build and test programs that run in parallel. `BEDROCK_GO_JOBS` changes it |
+| `GOFLAGS=-p=N` | `.just/go.just` | 4 | The build and test programs that run in parallel. `BEDROCK_GO_JOBS`, else `BEDROCK_JOBS`, changes it |
 
 ## Silencing a Finding
 

@@ -102,4 +102,5 @@ gradle +tasks:
             exit 1
         fi
     fi
-    exec ./gradlew --console=plain "$@"
+    # Gradle's workers default to one per core; see BEDROCK_JOBS in the justfile.
+    exec ./gradlew --console=plain --max-workers="${BEDROCK_JVM_JOBS:-${BEDROCK_JOBS:-4}}" "$@"

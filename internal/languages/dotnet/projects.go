@@ -2,7 +2,6 @@ package dotnet
 
 import (
 	"context"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,20 +21,14 @@ const (
 	// csharpGlob and fsharpGlob match the sources the formatters read.
 	csharpGlob = "**/*.{cs,csx}"
 	fsharpGlob = "**/*.{fs,fsi,fsx}"
-	// defaultJobs bounds MSBuild when `BEDROCK_DOTNET_JOBS` is unset.
-	defaultJobs = 4
+	// jobsID names BEDROCK_DOTNET_JOBS, which bounds MSBuild and the test runs.
+	jobsID = "dotnet"
 )
 
 // jobs is how many MSBuild nodes, test applications, or project evaluations
-// run at once: `BEDROCK_DOTNET_JOBS` when it is a positive integer, else 4,
-// since each takes much of the machine's memory.
+// run at once, since each takes much of the machine's memory.
 func jobs() int {
-	count, err := strconv.Atoi(strings.TrimSpace(os.Getenv("BEDROCK_DOTNET_JOBS")))
-	if err != nil || count <= 0 {
-		return defaultJobs
-	}
-
-	return count
+	return language.Jobs(jobsID)
 }
 
 // msbuildBounds are the MSBuild switches every build takes: at most `jobs`

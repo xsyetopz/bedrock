@@ -171,14 +171,14 @@ func flagValue(command execx.Command, flag string) string {
 	return command.Args[index+1]
 }
 
-// cmakeThatWritesCommands is a cmake that configures by writing one entry
-// named for its source directory into the build directory.
+// cmakeThatWritesCommands is a cmake that configures by writing one entry, for
+// main.c in its source directory, into the build directory.
 func cmakeThatWritesCommands(t *testing.T) toolFunc {
 	t.Helper()
 
 	return func(command execx.Command) execx.Result {
 		build := flagValue(command, "-B")
-		entry := []map[string]string{{"file": filepath.Base(flagValue(command, "-S")), "directory": build}}
+		entry := []map[string]string{{"file": filepath.Join(flagValue(command, "-S"), "main.c"), "directory": build}}
 
 		if err := os.MkdirAll(build, 0o750); err != nil {
 			return failed(err.Error())

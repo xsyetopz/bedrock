@@ -115,13 +115,15 @@ func readHxml(root, path string, seen []string) (hxml, error) {
 }
 
 // gitFiles lists the paths git tracks or would track that match pattern,
-// outside the local haxelib repo. A directory that is no work tree lists
+// outside the local haxelib repo and not generated. A directory that is no work tree lists
 // none.
 func gitFiles(ctx context.Context, runner execx.Runner, root, pattern string) ([]string, error) {
 	result, err := runner.Run(ctx, execx.Command{
 		Dir:  root,
 		Name: "git",
-		Args: []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", pattern},
+		Args: append(
+			[]string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", pattern},
+			fsutil.NotGenerated()...),
 	})
 	if err != nil {
 		return nil, err

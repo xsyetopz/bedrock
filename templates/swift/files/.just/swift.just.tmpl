@@ -7,6 +7,8 @@ set working-directory := ".."
 # (a coding agent, a git hook) forbids nesting, sandbox-exec fails with sandbox_apply, so
 # the outer one is the only sandbox left.
 spm := "--disable-sandbox"
+# The processes SwiftPM, Xcode, and swift-format run at once; see BEDROCK_JOBS in the justfile.
+jobs := env("BEDROCK_SWIFT_JOBS", env("BEDROCK_JOBS", "4"))
 derived := ".build/xcode"
 
 # SwiftPM 6.4 has no switch for the compiler's cache, so these flags turn it on, in a
@@ -29,28 +31,30 @@ setup:
     if ! command -v swiftlint >/dev/null; then brew install swiftlint; fi
     if [[ -f Package.swift ]]; then swift package {{ spm }} resolve; fi
 
-# Format the Swift code.
+# Format the Swift code. swift-format's --parallel takes every core, so xargs runs
+# `jobs` of them over batches of files instead.
 format:
-    just swift::files | xargs -0 -r swift format format --in-place --parallel
+    just swift::files | xargs -0 -r -P {{ jobs }} -n 64 swift format format --in-place
 
 # Fail if the Swift code is not formatted.
 format-check:
-    just swift::files | xargs -0 -r swift format lint --strict --parallel
+    just swift::files | xargs -0 -r -P {{ jobs }} -n 64 swift format lint --strict
 
 # Build the package, its tests, and each shared Xcode scheme, without running them.
 typecheck:
     just swift::trim-cache
-    if [[ -f Package.swift ]]; then swift build {{ spm }} --build-tests {{ cached }}; fi
+    if [[ -f Package.swift ]]; then swift build {{ spm }} --jobs {{ jobs }} --build-tests {{ cached }}; fi
     just swift::xcode build-for-testing
 
-# Run SwiftLint.
+# Run SwiftLint on the listed files. Without paths it would walk the tree itself, into
+# worktrees and generated code; with an empty list it would too, hence xargs -r.
 lint:
-    swiftlint lint --strict --quiet
+    just swift::files | xargs -0 -r swiftlint lint --strict --quiet --force-exclude
 
 # Convert XCTest unit tests (bedrock swift convert-tests) and apply SwiftLint's and swift-format's fixes.
 lint-fix:
     {{ just_executable() }} bedrock guard swift --fix
-    swiftlint lint --fix --quiet
+    just swift::files | xargs -0 -r swiftlint lint --fix --quiet --force-exclude
     just swift::format
 
 # Run the Swift Testing tests, then each shared Xcode scheme's tests. A package
@@ -58,7 +62,7 @@ lint-fix:
 # because under pipefail the early exit of grep -q fails the pipe and skips the tests.
 test:
     just swift::trim-cache
-    if [[ -f Package.swift ]] && swift package {{ spm }} dump-package | grep '"type" : "test"' >/dev/null; then swift test {{ spm }} --parallel {{ cached }}; fi
+    if [[ -f Package.swift ]] && swift package {{ spm }} dump-package | grep '"type" : "test"' >/dev/null; then swift test {{ spm }} --jobs {{ jobs }} --parallel --num-workers {{ jobs }} {{ cached }}; fi
     just swift::xcode test
 
 # Report XCTest outside UI tests, settings the manifest loses, foreign tools, and drift.
@@ -110,7 +114,7 @@ trim-cache:
 
 [private]
 files:
-    git ls-files -z --cached --others --exclude-standard -- '*.swift'
+    {{ just_executable() }} files '*.swift'
 
 [private]
 xcode action:
@@ -120,6 +124,6 @@ xcode action:
     for project in *.xcodeproj; do
         for scheme in "$project"/xcshareddata/xcschemes/*.xcscheme; do
             xcodebuild {{ action }} -quiet -project "$project" -scheme "$(basename "$scheme" .xcscheme)" \
-                -destination "platform=macOS" -derivedDataPath {{ derived }} {{ xcode_cache }}
+                -destination "platform=macOS" -derivedDataPath {{ derived }} -jobs {{ jobs }} {{ xcode_cache }}
         done
     done

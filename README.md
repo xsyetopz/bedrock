@@ -35,6 +35,16 @@ just rust::test # one language's recipe
 
 `just setup` downloads the bedrock release `bedrock_version` in `.editorconfig` pins and the lefthook release the justfile pins, checks each against its release checksums, and keeps one copy per release in the user cache, shared by every checkout and worktree. It then installs the hooks `lefthook.yml` lists and unsets `core.hooksPath`, which releases before 0.5 pointed at `.githooks`, so rerun `just setup` in each clone after updating to 0.5. CI skips the hook install.
 
+### Bounded Checks
+
+Three bounds keep a check from taking the machine, even with several agents or worktrees checking at once:
+
+| Bound | Default | What it caps |
+| --- | --- | --- |
+| The file list | git's | Each formatter and linter gets the files `just files` lists, the ones git tracks or would track. Ignored build output, a nested repository or worktree such as `.claude/worktrees/`, a symbolic link, and each file `.gitattributes` marks `linguist-generated` stay out. The pre-commit hook lists only the staged files. |
+| `BEDROCK_JOBS` | 4 | The compile, test, lint, and format processes one language runs at once, through each tool's own switch: `--jobs`, `-j`, `--threads`, `--max-workers`, `-maxCpuCount`, `GOFLAGS=-p`, `CARGO_BUILD_JOBS`. `BEDROCK_<LANGUAGE>_JOBS`, such as `BEDROCK_SWIFT_JOBS`, overrides it for one language. |
+| `BEDROCK_SLOTS` | 2 | The `just <task>` runs across every checkout, worktree, and agent session on the machine. The rest wait for a slot, a directory under `/tmp/bedrock-slots`, and each runs at low priority. A direct call such as `just swift::test` takes no slot. |
+
 ## Adopt a Repo
 
 From a Claude Code session with the plugin installed:

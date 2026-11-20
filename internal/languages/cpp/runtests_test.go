@@ -39,7 +39,7 @@ func TestTestBuildsAndTestsEachProjectWithItsOwnTool(t *testing.T) {
 		t.Fatalf("code, err = %d, %v; stderr: %s", code, err, h.stderr)
 	}
 
-	for _, prefix := range []string{"cmake --build", "ctest --test-dir", "meson test -C", "xmake test -y -P"} {
+	for _, prefix := range []string{"cmake --build", "ctest --test-dir", "meson test -C", "xmake test -y -j"} {
 		if len(h.runner.called(prefix)) != 1 {
 			t.Errorf("calls = %v, want one `%s`", h.runner.calls, prefix)
 		}

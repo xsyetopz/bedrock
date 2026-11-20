@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/xsyetopz/bedrock/internal/execx"
@@ -21,6 +22,8 @@ type command []string
 // testRuns returns, for each project, the commands that build and test it,
 // in the order they run; a project's commands stop at the first that fails.
 func testRuns(ctx context.Context, c *language.Context) ([][]command, error) {
+	jobs := buildJobs()
+
 	cmake, err := eachProject(c, cmakeProjects(ctx, c), func(project string) ([][]command, error) {
 		build, configureErr := configureCmake(ctx, c, project)
 		if configureErr != nil {
@@ -42,7 +45,10 @@ func testRuns(ctx context.Context, c *language.Context) ([][]command, error) {
 			return nil, configureErr
 		}
 
-		return [][]command{{{"meson", testName, "-C", build, "--print-errorlogs"}}}, nil
+		return [][]command{{
+			{"meson", "compile", "-C", build, "-j", jobs},
+			{"meson", testName, "-C", build, "--print-errorlogs", "--num-processes", jobs},
+		}}, nil
 	})
 	if err != nil {
 		return nil, err
@@ -51,10 +57,16 @@ func testRuns(ctx context.Context, c *language.Context) ([][]command, error) {
 	runs := slices.Concat(cmake, meson)
 
 	for _, project := range xmakeProjects(ctx, c) {
-		runs = append(runs, []command{{"xmake", "test", "-y", "-P", filepath.Join(c.Root, project)}})
+		runs = append(runs, []command{{"xmake", "test", "-y", "-j", jobs, "-P", filepath.Join(c.Root, project)}})
 	}
 
 	return runs, nil
+}
+
+// buildJobs returns the processes a Meson or xmake build and its tests run at
+// once; CMake and CTest read theirs from the variables cpp.just exports.
+func buildJobs() string {
+	return strconv.Itoa(language.Jobs("cpp"))
 }
 
 // passes runs one command with its output on the terminal, and reports

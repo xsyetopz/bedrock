@@ -5,6 +5,13 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+# Three bounds keep checks from taking the machine. Each tool sees only the files `just files`
+# lists, never a build folder, a worktree, or generated code. BEDROCK_JOBS, 4 unless set,
+# caps the compile, test, lint, and format processes each language runs at once;
+# BEDROCK_<LANGUAGE>_JOBS, such as BEDROCK_SWIFT_JOBS, overrides it for one language. And
+# BEDROCK_SLOTS, 2 unless set, caps the tasks that run at once across every checkout,
+# worktree, and agent session on the machine; see `slot`.
+
 mod? typescript ".just/typescript.just"
 mod? rust ".just/rust.just"
 mod? swift ".just/swift.just"
@@ -82,9 +89,10 @@ pre-commit: (bedrock "guard" "base")
             lint-markdown --no-globs "${markdown[@]/#/:}"
     fi
     if grep -qx 'lefthook\.yml' <<<"$staged"; then {{ just_executable() }} lint-hooks; fi
+    # The file checks see only the staged files; see `files`.
     for language in $({{ just_executable() }} bedrock languages --staged); do
         if [[ -f ".just/$language.just" ]]; then
-            {{ just_executable() }} "$language::pre-commit"
+            BEDROCK_FILES=staged {{ just_executable() }} slot "$language::pre-commit"
         fi
     done
 
@@ -95,7 +103,7 @@ pre-push: (bedrock "guard" "base") lint-markdown lint-hooks
     set -euo pipefail
     for language in $({{ just_executable() }} bedrock languages --unpushed); do
         if [[ -f ".just/$language.just" ]]; then
-            {{ just_executable() }} "$language::pre-push"
+            {{ just_executable() }} slot "$language::pre-push"
         fi
     done
 
@@ -161,19 +169,82 @@ download name url asset sums bin:
     # A rename is atomic, so parallel worktrees never run a half-written binary.
     mv -f "$tmp" "{{ bin }}"
 
+# Lists the files a tool checks, NUL-separated, that match the git pathspecs, such as
+# `just files '*.swift'`. A file is listed when git tracks it or would, so ignored build
+# output and nested repositories and worktrees stay out, and so does each file
+# .gitattributes marks linguist-generated. A deleted file stays out too, and so does a
+# symbolic link, which some tools refuse to follow; its target is listed instead. With
+# BEDROCK_FILES=staged, which the pre-commit hook sets, only the staged files are listed.
+[private]
+[positional-arguments]
+files +pathspecs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    generated=(':(exclude,attr:linguist-generated)' ':(exclude,attr:linguist-generated=true)')
+    if [[ "${BEDROCK_FILES:-}" == staged ]]; then
+        list=(git diff --cached --name-only -z --diff-filter=ACMR)
+    else
+        list=(git ls-files -z --cached --others --exclude-standard)
+    fi
+    "${list[@]}" -- "$@" "${generated[@]}" | while IFS= read -r -d '' path; do
+        if [[ -f "$path" && ! -L "$path" ]]; then printf '%s\0' "$path"; fi
+    done
+
 [private]
 each recipe:
     #!/usr/bin/env bash
     set -euo pipefail
     for language in {{ languages }}; do
         if [[ -f ".just/$language.just" ]]; then
-            {{ just_executable() }} "$language::{{ recipe }}"
+            {{ just_executable() }} slot "$language::{{ recipe }}"
         fi
     done
     # project.just extends a task with a recipe named project-<task>.
     case " $({{ just_executable() }} --summary) " in
-        *" project-{{ recipe }} "*) {{ just_executable() }} "project-{{ recipe }}" ;;
+        *" project-{{ recipe }} "*) {{ just_executable() }} slot "project-{{ recipe }}" ;;
     esac
+
+# Runs `just <args>` at low CPU priority once one of the machine's BEDROCK_SLOTS slots is
+# free. Every checkout, worktree, and agent session shares the slots, so five agents that
+# check at once run two checks and queue the rest, instead of each starting its own
+# compilers. A slot is a directory in /tmp, which every user and sandbox shares, unlike
+# $TMPDIR; mkdir is atomic, and a dead holder's slot is taken over. A run inside a slot
+# takes no second one, so a task that calls another cannot wait on itself.
+[private]
+[positional-arguments]
+slot +args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    run=({{ just_executable() }} "$@")
+    # A sandbox may refuse to lower the priority, which nice reports and then runs anyway;
+    # the run then keeps the normal priority, without the report.
+    if [[ -z "$(nice -n 10 true 2>&1)" ]]; then run=(nice -n 10 "${run[@]}"); fi
+    if [[ -n "${BEDROCK_SLOT:-}" ]]; then exec "${run[@]}"; fi
+    slots="${BEDROCK_SLOTS:-2}"
+    mkdir -p /tmp/bedrock-slots 2>/dev/null || true
+    waited=
+    while :; do
+        for ((i = 0; i < slots; i++)); do
+            slot="/tmp/bedrock-slots/$i"
+            if mkdir "$slot" 2>/dev/null; then
+                trap 'rm -rf "$slot"' EXIT
+                echo $$ >"$slot/pid"
+                BEDROCK_SLOT="$slot" "${run[@]}"
+                exit 0
+            fi
+            holder="$(cat "$slot/pid" 2>/dev/null || true)"
+            # A holder kill cannot signal belongs to another user and still counts as alive.
+            if [[ -n "$holder" && "$(kill -0 "$holder" 2>&1 || true)" == *"No such process"* ]]; then
+                rm -rf "$slot"
+                continue 2
+            fi
+        done
+        if [[ -z "$waited" ]]; then
+            echo "All $slots of the machine's check slots are busy (BEDROCK_SLOTS); waiting for one." >&2
+            waited=1
+        fi
+        sleep 1
+    done
 
 [private]
 [positional-arguments]

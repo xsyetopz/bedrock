@@ -5,7 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"strings"
 
+	"github.com/xsyetopz/bedrock/internal/fsutil"
 	"github.com/xsyetopz/bedrock/internal/language"
 	"github.com/xsyetopz/bedrock/internal/step"
 )
@@ -77,5 +80,60 @@ func allEntries(ctx context.Context, c *language.Context) ([]map[string]any, err
 		entries = append(entries, found...)
 	}
 
-	return entries, nil
+	return listedEntries(ctx, c, entries)
+}
+
+// listedEntries keeps the entries whose source file git lists, so clang-tidy
+// skips the sources a build fetched or generated, such as CMake's `_deps`, and
+// those of a nested worktree.
+func listedEntries(ctx context.Context, c *language.Context, entries []map[string]any) ([]map[string]any, error) {
+	listed, err := fsutil.ListFiles(ctx, c.Runner, c.Root, func(string) bool { return true })
+	if err != nil {
+		return nil, err
+	}
+
+	keep := make(map[string]bool, len(listed))
+	for _, file := range listed {
+		keep[file] = true
+	}
+
+	// Build systems write resolved paths, and a temporary root, such as macOS's
+	// /var, is often a symbolic link.
+	roots := []string{c.Root}
+	if resolved, resolveErr := filepath.EvalSymlinks(c.Root); resolveErr == nil {
+		roots = append(roots, resolved)
+	}
+
+	kept := []map[string]any{}
+
+	for _, entry := range entries {
+		if file, inside := entrySource(entry, roots); inside && keep[file] {
+			kept = append(kept, entry)
+		}
+	}
+
+	return kept, nil
+}
+
+// entrySource returns the slash-separated path of entry's source file relative
+// to the first of roots that holds it, or false when none does.
+func entrySource(entry map[string]any, roots []string) (string, bool) {
+	file, _ := entry["file"].(string)
+	if file == "" {
+		return "", false
+	}
+
+	if !filepath.IsAbs(file) {
+		directory, _ := entry["directory"].(string)
+		file = filepath.Join(directory, file)
+	}
+
+	for _, root := range roots {
+		relative, err := filepath.Rel(root, file)
+		if err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+			return filepath.ToSlash(relative), true
+		}
+	}
+
+	return "", false
 }

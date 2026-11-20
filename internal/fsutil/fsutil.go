@@ -70,7 +70,8 @@ func Existing(root string, paths []string) []string {
 // root that match keeps. Git lists them, so the repository's own ignore
 // rules decide what a check skips: each language's gitignore block covers
 // its toolchain's output, such as target/ or node_modules, and a nested
-// repository, such as an agent's worktree, is not listed at all.
+// repository, such as an agent's worktree, is not listed at all. Neither is
+// a generated file; see NotGenerated.
 func ListFiles(
 	ctx context.Context,
 	runner execx.Runner,
@@ -100,11 +101,21 @@ func ListFiles(
 	return slices.Compact(files), nil
 }
 
+// NotGenerated returns the git pathspecs that leave out each file
+// .gitattributes marks linguist-generated, the attribute GitHub also reads, so
+// no check spends time on code a tool rewrites. Git matches the bare attribute
+// and `=true` separately. The base justfile's `files` recipe lists the same.
+func NotGenerated() []string {
+	return []string{":(exclude,attr:linguist-generated)", ":(exclude,attr:linguist-generated=true)"}
+}
+
 func gitListed(ctx context.Context, runner execx.Runner, root string) ([]string, error) {
 	out, err := execx.Output(ctx, runner, execx.Command{
 		Dir:  root,
 		Name: "git",
-		Args: []string{"ls-files", "--cached", "--others", "--exclude-standard", "-z"},
+		Args: append(
+			[]string{"ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "."},
+			NotGenerated()...),
 	})
 	if err != nil {
 		return nil, err
