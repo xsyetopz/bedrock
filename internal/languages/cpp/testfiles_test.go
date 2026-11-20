@@ -98,6 +98,11 @@ func writeCMakeReply(t *testing.T, root string) {
 			"id": "demo_test", "sources": []object{{"path": "tests/demo_test.c"}},
 			"dependencies": []object{{"id": "demo"}, {"id": "fixture"}}, "artifacts": []object{{"path": "demo_test"}},
 		},
+		// Visual Studio's ALL_BUILD depends on every target, the tests' included.
+		"ALL_BUILD": {
+			"id": "ALL_BUILD", "type": "UTILITY",
+			"dependencies": []object{{"id": "demo"}, {"id": "app"}, {"id": "fixture"}, {"id": "demo_test"}},
+		},
 	}
 
 	var entries []object

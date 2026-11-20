@@ -298,6 +298,7 @@ type cmakeBuild struct {
 type cmakeTarget struct {
 	Install json.RawMessage `json:"install"`
 	ID      string          `json:"id"`
+	Type    string          `json:"type"`
 	Sources []struct {
 		Path        string `json:"path"`
 		IsGenerated bool   `json:"isGenerated"`
@@ -339,8 +340,12 @@ func (b cmakeBuild) target(raw cmakeTarget) target {
 		}
 	}
 
-	for _, dep := range raw.Dependencies {
-		out.deps = append(out.deps, dep.ID)
+	// A utility target, such as Visual Studio's ALL_BUILD, which depends on
+	// every target, only orders builds; it makes no target product code.
+	if raw.Type != "UTILITY" {
+		for _, dep := range raw.Dependencies {
+			out.deps = append(out.deps, dep.ID)
+		}
 	}
 
 	for _, artifact := range raw.Artifacts {
