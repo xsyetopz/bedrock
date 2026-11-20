@@ -48,11 +48,11 @@ build-targets: hold
 lint: hold
     cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
     RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --locked --no-deps
-    @{{ just_executable() }} rust::deny
+    @{{ quote(replace(just_executable(), '\', '/')) }} rust::deny
 
 # Move inline test modules to tests.rs and apply Clippy's fixes.
 lint-fix: hold
-    {{ just_executable() }} bedrock guard rust --fix
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard rust --fix
     cargo clippy --fix --allow-dirty --allow-staged --workspace --all-targets --all-features
     cargo fmt --all
 
@@ -62,7 +62,7 @@ test: hold
 
 # Report inline tests, suppressions, members that skip the workspace lints, and drift.
 guard:
-    {{ just_executable() }} bedrock guard rust
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard rust
 
 # Run every Rust check CI runs.
 verify: format-check typecheck lint guard test
@@ -88,4 +88,4 @@ deny:
 # Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
 [private]
 hold:
-    @{{ just_executable() }} hold-slot "$PPID"
+    @{{ quote(replace(just_executable(), '\', '/')) }} hold-slot "$PPID"

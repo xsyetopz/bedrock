@@ -88,7 +88,7 @@ test: hold
 # Fail if go.mod or go.sum need tidying, then report what the linters cannot see.
 guard:
     go mod tidy -diff
-    {{ just_executable() }} bedrock guard go
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard go
 
 # Run every Go check CI runs.
 verify: format-check typecheck lint guard test
@@ -102,4 +102,4 @@ pre-push: format-check typecheck lint guard
 # Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
 [private]
 hold:
-    @{{ just_executable() }} hold-slot "$PPID"
+    @{{ quote(replace(just_executable(), '\', '/')) }} hold-slot "$PPID"

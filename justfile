@@ -46,7 +46,7 @@ default:
 
 # Install bedrock and the pinned tools, and the git hooks lefthook.yml lists.
 setup: install-bedrock (each "setup")
-    @if [[ -z "${CI:-}" ]]; then {{ just_executable() }} install-hooks; fi
+    @if [[ -z "${CI:-}" ]]; then {{ quote(replace(just_executable(), '\', '/')) }} install-hooks; fi
 
 # Format every file in place.
 format: (each "format")
@@ -90,14 +90,14 @@ pre-commit: (bedrock "guard" "base")
         while IFS= read -r path; do configs+=("$path"); done < <(git ls-files -- ':(glob)**/.markdownlint*')
         git checkout-index --prefix="$scratch/" -- ${configs[@]+"${configs[@]}"} "${markdown[@]}"
         if [[ -d node_modules ]]; then ln -s "$PWD/node_modules" "$scratch/node_modules"; fi
-        {{ just_executable() }} --justfile "$PWD/justfile" --working-directory "$scratch" \
+        {{ quote(replace(just_executable(), '\', '/')) }} --justfile "$PWD/justfile" --working-directory "$scratch" \
             lint-markdown --no-globs "${markdown[@]/#/:}"
     fi
-    if grep -qx 'lefthook\.yml' <<<"$staged"; then {{ just_executable() }} lint-hooks; fi
+    if grep -qx 'lefthook\.yml' <<<"$staged"; then {{ quote(replace(just_executable(), '\', '/')) }} lint-hooks; fi
     # The file checks see only the staged files; see `files`.
-    for language in $({{ just_executable() }} bedrock languages --staged); do
+    for language in $({{ quote(replace(just_executable(), '\', '/')) }} bedrock languages --staged); do
         if [[ -f ".just/$language.just" ]]; then
-            BEDROCK_FILES=staged {{ just_executable() }} slot "$language::pre-commit"
+            BEDROCK_FILES=staged {{ quote(replace(just_executable(), '\', '/')) }} slot "$language::pre-commit"
         fi
     done
 
@@ -106,9 +106,9 @@ pre-commit: (bedrock "guard" "base")
 pre-push: (bedrock "guard" "base") lint-markdown lint-hooks
     #!/usr/bin/env bash
     set -euo pipefail
-    for language in $({{ just_executable() }} bedrock languages --unpushed); do
+    for language in $({{ quote(replace(just_executable(), '\', '/')) }} bedrock languages --unpushed); do
         if [[ -f ".just/$language.just" ]]; then
-            {{ just_executable() }} slot "$language::pre-push"
+            {{ quote(replace(just_executable(), '\', '/')) }} slot "$language::pre-push"
         fi
     done
 
@@ -133,7 +133,7 @@ install-bedrock:
         exec go build -o "{{ bedrock_bin }}" ./cmd/bedrock
     fi
     if [[ -x "{{ bedrock_bin }}" ]]; then exit 0; fi
-    {{ just_executable() }} download "bedrock $version" \
+    {{ quote(replace(just_executable(), '\', '/')) }} download "bedrock $version" \
         "https://github.com/xsyetopz/bedrock/releases/download/v$version" \
         "{{ bedrock_asset }}" SHA256SUMS "{{ bedrock_bin }}"
 
@@ -142,7 +142,7 @@ install-lefthook:
     #!/usr/bin/env bash
     set -euo pipefail
     if [[ -x "{{ lefthook_bin }}" ]]; then exit 0; fi
-    {{ just_executable() }} download "lefthook {{ lefthook_version }}" \
+    {{ quote(replace(just_executable(), '\', '/')) }} download "lefthook {{ lefthook_version }}" \
         "https://github.com/evilmartians/lefthook/releases/download/v{{ lefthook_version }}" \
         "{{ lefthook_asset }}" lefthook_checksums.txt "{{ lefthook_bin }}"
 
@@ -201,12 +201,12 @@ each recipe:
     set -euo pipefail
     for language in {{ languages }}; do
         if [[ -f ".just/$language.just" ]]; then
-            {{ just_executable() }} slot "$language::{{ recipe }}"
+            {{ quote(replace(just_executable(), '\', '/')) }} slot "$language::{{ recipe }}"
         fi
     done
     # project.just extends a task with a recipe named project-<task>.
-    case " $({{ just_executable() }} --summary) " in
-        *" project-{{ recipe }} "*) {{ just_executable() }} slot "project-{{ recipe }}" ;;
+    case " $({{ quote(replace(just_executable(), '\', '/')) }} --summary) " in
+        *" project-{{ recipe }} "*) {{ quote(replace(just_executable(), '\', '/')) }} slot "project-{{ recipe }}" ;;
     esac
 
 # Runs `just <args>` in one of the machine's check slots; see `hold-slot`. exec keeps the
@@ -216,8 +216,8 @@ each recipe:
 slot +args:
     #!/usr/bin/env bash
     set -euo pipefail
-    {{ just_executable() }} hold-slot $$
-    exec {{ just_executable() }} "$@"
+    {{ quote(replace(just_executable(), '\', '/')) }} hold-slot $$
+    exec {{ quote(replace(just_executable(), '\', '/')) }} "$@"
 
 # Holds one of the machine's BEDROCK_SLOTS slots, 2 unless set, for process `pid`, a just
 # run, until it exits, and lowers its CPU priority. Every checkout, worktree, and agent

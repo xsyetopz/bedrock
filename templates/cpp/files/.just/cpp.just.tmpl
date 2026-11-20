@@ -38,23 +38,23 @@ typecheck: hold
 
 # Run clang-tidy over each translation unit a build system builds, with its flags.
 lint: hold
-    {{ just_executable() }} bedrock cpp compile-commands
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock cpp compile-commands
     {{ llvm }}run-clang-tidy -quiet -j {{ jobs }} -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements
 
 # Apply the clang-tidy fixes it can, then format; `just lint` reports the rest.
 lint-fix: hold
-    {{ just_executable() }} bedrock cpp compile-commands
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock cpp compile-commands
     -{{ llvm }}run-clang-tidy -quiet -j {{ jobs }} -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements -fix
     just cpp::format
 
 # Build each CMake, Meson, and xmake project and run its tests; swift test
 # covers SwiftPM's C++ targets.
 test: hold
-    {{ just_executable() }} bedrock cpp test
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock cpp test
 
 # Report what the C++ linters cannot see; bedrock guard swift covers the C++ targets' manifest.
 guard:
-    {{ just_executable() }} bedrock guard cpp
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard cpp
 
 # Run every C++ check CI runs.
 verify: format-check lint test
@@ -67,9 +67,9 @@ pre-push: format-check lint
 
 [private]
 files:
-    {{ just_executable() }} files '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.m' '*.mm'
+    {{ quote(replace(just_executable(), '\', '/')) }} files '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.m' '*.mm'
 
 # Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
 [private]
 hold:
-    @{{ just_executable() }} hold-slot "$PPID"
+    @{{ quote(replace(just_executable(), '\', '/')) }} hold-slot "$PPID"

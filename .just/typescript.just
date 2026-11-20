@@ -20,15 +20,15 @@ setup:
 
 # Format the listed files; bun fmt passes over the ones in a language it does not format.
 format: hold
-    {{ just_executable() }} files . | xargs -0 -r bun fmt --ignore-unknown --threads={{ jobs }}
+    {{ quote(replace(just_executable(), '\', '/')) }} files . | xargs -0 -r bun fmt --ignore-unknown --threads={{ jobs }}
 
 # Fail if a listed file is not formatted.
 format-check: hold
-    {{ just_executable() }} files . | xargs -0 -r bun fmt --check --ignore-unknown --threads={{ jobs }}
+    {{ quote(replace(just_executable(), '\', '/')) }} files . | xargs -0 -r bun fmt --check --ignore-unknown --threads={{ jobs }}
 
 # Type-check without emitting anything, after a project-pre-typecheck recipe from project.just when there is one.
 typecheck: hold
-    case " $({{ just_executable() }} --summary) " in *" project-pre-typecheck "*) {{ just_executable() }} project-pre-typecheck ;; esac
+    case " $({{ quote(replace(just_executable(), '\', '/')) }} --summary) " in *" project-pre-typecheck "*) {{ quote(replace(just_executable(), '\', '/')) }} project-pre-typecheck ;; esac
     bun check
 
 # Run oxlint on the repo, or on the given paths. One run on the machine at a time; the base justfile lints Markdown.
@@ -43,7 +43,7 @@ test: hold
 
 # Report suppressions, other package managers, undocumented package API, TypeScript drift, and managed-file drift.
 guard:
-    {{ just_executable() }} bedrock guard typescript
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard typescript
 
 # Run every Bun check CI runs.
 verify: format-check typecheck lint guard test
@@ -92,4 +92,4 @@ oxlint *args:
 # Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
 [private]
 hold:
-    @{{ just_executable() }} hold-slot "$PPID"
+    @{{ quote(replace(just_executable(), '\', '/')) }} hold-slot "$PPID"

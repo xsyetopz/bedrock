@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 )
 
@@ -121,7 +122,9 @@ func writeDone(path string, s Write) (bool, error) {
 		return false, fmt.Errorf("stat `%s`: %w", s.Path, err)
 	}
 
-	if !info.Mode().IsRegular() || (s.Executable && info.Mode()&executableBits == 0) {
+	// Windows has no execute bit, and Go reports none there, so only content counts.
+	unmarked := s.Executable && runtime.GOOS != "windows" && info.Mode()&executableBits == 0
+	if !info.Mode().IsRegular() || unmarked {
 		return false, nil
 	}
 

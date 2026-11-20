@@ -50,31 +50,31 @@ build platform="": hold
 
 # Format the Haxe code.
 format: hold
-    {{ just_executable() }} bedrock haxe format
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock haxe format
 
 # Fail if the Haxe code is not formatted.
 format-check: hold
-    {{ just_executable() }} bedrock haxe format --check
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock haxe format --check
 
 # Compile each hxml file that names its target, without output.
 typecheck: hold
-    {{ just_executable() }} bedrock haxe typecheck
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock haxe typecheck
 
 # Run checkstyle with checkstyle.json.
 lint: hold
-    {{ just_executable() }} bedrock haxe lint
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock haxe lint
 
 # checkstyle fixes nothing, so this formats; `just lint` reports the rest.
 lint-fix: hold
-    {{ just_executable() }} bedrock haxe format
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock haxe format
 
 # Run each test hxml file that runs its tests.
 test: hold
-    {{ just_executable() }} bedrock haxe test
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock haxe test
 
 # Report what the Haxe linters cannot see.
 guard:
-    {{ just_executable() }} bedrock guard haxe
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard haxe
 
 # Run every Haxe check CI runs.
 verify: format-check typecheck lint guard test
@@ -88,4 +88,4 @@ pre-push: format-check typecheck lint guard
 # Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
 [private]
 hold:
-    @{{ just_executable() }} hold-slot "$PPID"
+    @{{ quote(replace(just_executable(), '\', '/')) }} hold-slot "$PPID"

@@ -29,7 +29,7 @@ test: hold (gradle "bedrockTest")
 
 # Report foreign build tools, suppressions without a reason, and drift from bedrock.
 guard:
-    {{ just_executable() }} bedrock guard jvm
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard jvm
 
 # Compile each GraalVM native-image application ahead of time and run its tests natively.
 native: (gradle "nativeCompile" "nativeTest")
@@ -37,7 +37,7 @@ native: (gradle "nativeCompile" "nativeTest")
 # Convert Java files to Kotlin with IntelliJ IDEA's J2K, then format. The first run downloads IDEA; BEDROCK_IDEA names an installed one.
 [positional-arguments]
 j2k +paths:
-    {{ just_executable() }} bedrock jvm j2k "$@"
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock jvm j2k "$@"
 
 # Run every JVM check CI runs, in one Gradle run.
 verify: guard (gradle "spotlessCheck" "bedrockCompile" "bedrockLint" "bedrockTest")
@@ -108,4 +108,4 @@ gradle +tasks:
 # Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
 [private]
 hold:
-    @{{ just_executable() }} hold-slot "$PPID"
+    @{{ quote(replace(just_executable(), '\', '/')) }} hold-slot "$PPID"

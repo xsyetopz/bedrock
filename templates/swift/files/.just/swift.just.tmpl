@@ -53,7 +53,7 @@ lint: hold
 
 # Convert XCTest unit tests (bedrock swift convert-tests) and apply SwiftLint's and swift-format's fixes.
 lint-fix: hold
-    {{ just_executable() }} bedrock guard swift --fix
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard swift --fix
     just swift::files | xargs -0 -r swiftlint lint --fix --quiet --force-exclude
     just swift::format
 
@@ -67,7 +67,7 @@ test: hold
 
 # Report XCTest outside UI tests, settings the manifest loses, foreign tools, and drift.
 guard:
-    {{ just_executable() }} bedrock guard swift
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard swift
 
 # Run every Swift check CI runs.
 verify: format-check typecheck lint guard test
@@ -114,7 +114,7 @@ trim-cache:
 
 [private]
 files:
-    {{ just_executable() }} files '*.swift'
+    {{ quote(replace(just_executable(), '\', '/')) }} files '*.swift'
 
 [private]
 xcode action:
@@ -134,4 +134,4 @@ xcode action:
 # Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
 [private]
 hold:
-    @{{ just_executable() }} hold-slot "$PPID"
+    @{{ quote(replace(just_executable(), '\', '/')) }} hold-slot "$PPID"

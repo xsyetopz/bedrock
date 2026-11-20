@@ -15,35 +15,35 @@ export DOTNET_NOLOGO := "1"
 # manifest, then the NuGet packages of each solution or project.
 setup:
     dotnet tool restore
-    {{ just_executable() }} bedrock dotnet restore
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock dotnet restore
 
 # Format C# and the MSBuild files with CSharpier, and F# with Fantomas.
 format: hold
-    {{ just_executable() }} bedrock dotnet format
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock dotnet format
 
 # Fail if a C#, F#, or MSBuild file is not formatted.
 format-check: hold
-    {{ just_executable() }} bedrock dotnet format --check
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock dotnet format --check
 
 # Build each solution or project without the analyzers, failing on a compiler warning.
 typecheck: hold
-    {{ just_executable() }} bedrock dotnet typecheck
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock dotnet typecheck
 
 # Rebuild with the analyzers and the .editorconfig code style as errors, then run FSharpLint.
 lint: hold
-    {{ just_executable() }} bedrock dotnet lint
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock dotnet lint
 
 # Apply the code-style and analyzer fixes dotnet format can make, then format.
 lint-fix: hold
-    {{ just_executable() }} bedrock dotnet lint --fix
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock dotnet lint --fix
 
 # Run the tests.
 test: hold
-    {{ just_executable() }} bedrock dotnet test
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock dotnet test
 
 # Report what the .NET linters cannot see: suppressions without a reason, and sizes.
 guard:
-    {{ just_executable() }} bedrock guard dotnet
+    {{ quote(replace(just_executable(), '\', '/')) }} bedrock guard dotnet
 
 # Run every .NET check CI runs.
 verify: format-check typecheck lint guard test
@@ -57,4 +57,4 @@ pre-push: format-check typecheck lint guard
 # Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
 [private]
 hold:
-    @{{ just_executable() }} hold-slot "$PPID"
+    @{{ quote(replace(just_executable(), '\', '/')) }} hold-slot "$PPID"
