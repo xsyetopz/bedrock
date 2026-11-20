@@ -1,6 +1,7 @@
 package rust_test
 
 import (
+	"os/exec"
 	"slices"
 	"strings"
 	"testing"
@@ -135,8 +136,9 @@ func TestInitRejectsAPlatformNoWantedKindBuildsFor(t *testing.T) {
 }
 
 // TestInitBuildsEachKindForEachPlatform runs `cargo build --target` for each
-// target a platform pins. A build that fails at the link step skips: ios needs
-// Xcode's SDK, android the NDK's clang, and linux or windows a cross linker.
+// target a platform pins. A cross build that fails for want of a linker or SDK
+// skips: ios needs Xcode's SDK, android the NDK's clang, and linux or windows
+// a cross linker. A build for the host's own target never skips.
 func TestInitBuildsEachKindForEachPlatform(t *testing.T) {
 	t.Parallel()
 
@@ -152,6 +154,9 @@ func TestInitBuildsEachKindForEachPlatform(t *testing.T) {
 				// Arrange
 				root := bedrocktest.Repo(t, nil)
 				bedrocktest.Adopt(t, root, true, selectRust(t, config.Options{"kind": kind, "platform": name}))
+				installToolchain(t, root)
+
+				host := hostTriple(t, root)
 
 				for _, triple := range platformTriples()[name] {
 					// Act
@@ -160,7 +165,7 @@ func TestInitBuildsEachKindForEachPlatform(t *testing.T) {
 					// Assert
 					switch {
 					case ok:
-					case missingToolchainPart(output):
+					case triple != host && missingToolchainPart(output):
 						t.Logf("skip %s: %s", triple, firstLine(output, "linker"))
 					default:
 						t.Errorf("cargo build --target %s failed:\n%s", triple, output)
@@ -171,11 +176,34 @@ func TestInitBuildsEachKindForEachPlatform(t *testing.T) {
 	}
 }
 
-// missingToolchainPart reports whether a failed build lacked a linker, SDK, or
-// downloadable target here, not whether the crate is wrong.
+// hostTriple returns the target rustc in root builds for by default.
+func hostTriple(t *testing.T, root string) string {
+	t.Helper()
+
+	command := exec.CommandContext(t.Context(), "rustc", "-vV")
+	command.Dir = root
+
+	output, err := command.Output()
+	if err != nil {
+		t.Fatalf("rustc -vV: %v", err)
+	}
+
+	for line := range strings.SplitSeq(string(output), "\n") {
+		if host, ok := strings.CutPrefix(line, "host: "); ok {
+			return host
+		}
+	}
+
+	t.Fatalf("rustc -vV names no host:\n%s", output)
+
+	return ""
+}
+
+// missingToolchainPart reports whether a failed cross build lacked a linker,
+// SDK, or downloadable target here, not whether the crate is wrong.
 func missingToolchainPart(output string) bool {
 	for _, marker := range []string{
-		"linker `", "linking with", "could not find", "is not installed",
+		"linker `", "linking with", "xcrun: error", "is not installed",
 		"error: toolchain", "unable to update", "failed to download", "error sending request",
 	} {
 		if strings.Contains(output, marker) {

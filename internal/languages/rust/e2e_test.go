@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/xsyetopz/bedrock/internal/bedrocktest"
@@ -36,6 +37,32 @@ func cargoSharing(t *testing.T, root, targetDir string, args ...string) (bool, s
 	return err == nil, string(output)
 }
 
+// rustupLock serializes toolchain installs: rustup installs the toolchain and
+// targets a `rust-toolchain.toml` pins on first use, and concurrent installs
+// into one `~/.rustup` race and fail on each other's partial downloads.
+var rustupLock sync.Mutex //nolint:gochecknoglobals // one lock for every test that shares ~/.rustup
+
+// installToolchain installs the toolchain and targets root's
+// `rust-toolchain.toml` pins, one install at a time. Without rustup, the cargo
+// on `PATH` builds as it is.
+func installToolchain(t *testing.T, root string) {
+	t.Helper()
+
+	if _, err := exec.LookPath("rustup"); err != nil {
+		return
+	}
+
+	rustupLock.Lock()
+	defer rustupLock.Unlock()
+
+	command := exec.CommandContext(t.Context(), "rustup", "toolchain", "install")
+	command.Dir = root
+
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("rustup toolchain install: %v\n%s", err, output)
+	}
+}
+
 func requireCargo(t *testing.T) {
 	t.Helper()
 
@@ -64,6 +91,7 @@ func TestInitPassesFormatClippyTestsAndTheGuard(t *testing.T) {
 			root := bedrocktest.Repo(t, nil)
 			bedrocktest.Adopt(t, root, true, selectRust(t, config.Options{"kind": kind}))
 			bedrocktest.CommitAll(t, root)
+			installToolchain(t, root)
 
 			// Act
 			// Sequential: the checks share one target directory.
@@ -100,6 +128,7 @@ func TestADependencyTheCrateNeverUsesFailsCargoCheck(t *testing.T) {
 	// Arrange
 	root := bedrocktest.Repo(t, nil)
 	bedrocktest.Adopt(t, root, true, selectRust(t, config.Options{"kind": "lib"}))
+	installToolchain(t, root)
 
 	manifests, err := filepath.Glob(filepath.Join(root, "crates", "*", "Cargo.toml"))
 	if err != nil || len(manifests) != 1 {
