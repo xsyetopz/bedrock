@@ -43,11 +43,14 @@ async function buildSource($: Engine, checkout: string): Promise<string> {
 	return binary;
 }
 
-/** The release asset name for this machine, such as `bedrock-darwin-arm64`. */
+/** The release asset name for this machine, such as `bedrock-darwin-arm64` or `bedrock-windows-x64.exe`. */
 export const assetName = (system: string, machine: string): string => {
-	const os = system.toLowerCase();
+	// Git Bash, MSYS2, and Cygwin report Windows as MINGW64_NT-10.0, MSYS_NT-10.0, or CYGWIN_NT-10.0.
+	const windows = /^(?:mingw|msys|cygwin)/iu.test(system);
+	const os = windows ? "windows" : system.toLowerCase();
 	const arch = machine === "aarch64" || machine === "arm64" ? "arm64" : "x64";
-	return `bedrock-${os}-${arch}`;
+	// Windows runs a program only by its .exe name.
+	return `bedrock-${os}-${arch}${windows ? ".exe" : ""}`;
 };
 
 /**

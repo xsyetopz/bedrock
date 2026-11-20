@@ -32,7 +32,7 @@ languages := "typescript rust swift cpp jvm go haxe dotnet"
 
 # The bedrock release bedrock_version in .editorconfig pins; "source" runs the CLI from this checkout.
 bedrock_version := `sed -n 's/^bedrock_version = //p' .editorconfig 2>/dev/null | tail -n 1 || true`
-bedrock_asset := "bedrock-" + replace(os(), "macos", "darwin") + "-" + replace(replace(arch(), "aarch64", "arm64"), "x86_64", "x64")
+bedrock_asset := "bedrock-" + replace(os(), "macos", "darwin") + "-" + replace(replace(arch(), "aarch64", "arm64"), "x86_64", "x64") + if os() == "windows" { ".exe" } else { "" }
 # One copy per release, shared by every checkout and worktree; a source build stays in its own checkout.
 bedrock_bin := if bedrock_version == "source" { justfile_directory() / "bin" / "bedrock" } else { cache_directory() / "bedrock" / bedrock_version / bedrock_asset }
 # The lefthook release that runs the git hooks lefthook.yml lists.

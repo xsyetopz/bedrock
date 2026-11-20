@@ -25,7 +25,10 @@ describe("assetName", () => {
 	test.each([
 		["Darwin", "arm64", "bedrock-darwin-arm64"],
 		["Linux", "aarch64", "bedrock-linux-arm64"],
-		["Linux", "x86_64", "bedrock-linux-x64"]
+		["Linux", "x86_64", "bedrock-linux-x64"],
+		["MINGW64_NT-10.0-26100", "x86_64", "bedrock-windows-x64.exe"],
+		["MSYS_NT-10.0-26100", "aarch64", "bedrock-windows-arm64.exe"],
+		["CYGWIN_NT-10.0-26100", "x86_64", "bedrock-windows-x64.exe"]
 	])("names the %s %s asset", (system, arch, asset) => {
 		expect(assetName(system, arch)).toBe(asset);
 	});
