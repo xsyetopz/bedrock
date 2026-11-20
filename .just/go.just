@@ -58,12 +58,13 @@ build platform arch="": hold
         ios)
             # gomobile binds the root package and needs the iOS SDK, which comes with Xcode.
             # gobind has to be on PATH, so build the one the module pins into a scratch directory.
+            # -iosversion raises gomobile's iOS 13 default to iOS 15, the oldest Xcode 26 and later build for.
             tools="$(mktemp -d)"
             trap 'rm -rf "$tools"' EXIT
             name="$(go list -f '{{{{.Name}}' .)"
             mkdir -p dist
             GOBIN="$tools" go install golang.org/x/mobile/cmd/gobind
-            PATH="$tools:$PATH" go tool gomobile bind -target ios -o "dist/$(tr '[:lower:]' '[:upper:]' <<<"${name:0:1}")${name:1}.xcframework" .
+            PATH="$tools:$PATH" go tool gomobile bind -target ios -iosversion 15.0 -o "dist/$(tr '[:lower:]' '[:upper:]' <<<"${name:0:1}")${name:1}.xcframework" .
             exit 0 ;;
         *) echo "unknown platform {{ platform }}; use linux, macos, windows, freebsd, wasi, wasm, or ios" >&2; exit 1 ;;
     esac

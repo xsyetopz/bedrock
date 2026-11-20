@@ -13,6 +13,8 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C and C++, Java and 
 | `haxe` | `command`, `library` | Haxe 4.3.7 alone or beside any other language, haxe-formatter 1.18.0, haxe-checkstyle 2.9.0 with size bounds, a type check of each hxml build, the test hxml files that run their tests |
 | `dotnet` | `console`, `library`, `webapi`, `worker`, `avalonia`, `android`, `apple` | .NET 10 LTS for C# and F#, CSharpier 1.4.0 and Fantomas 8.1.3 reading `.editorconfig`, the SDK analyzers with the `.editorconfig` code style as errors, FSharpLint 0.27.2, `dotnet test` |
 
+Every language that builds for an Apple platform builds for the same oldest OS: macOS 13, iOS, iPadOS, and Mac Catalyst 15, tvOS 15, watchOS 9, and visionOS 1. The App Store accepts builds only from Xcode 26 and later, and those build for no iOS, tvOS, watchOS, or visionOS older than these. Go's darwin linker and Bun's compiled executables set their own macOS minimum.
+
 ## What Every Repo Gets
 
 Every language writes the same base, so a repo with several languages has one of each:

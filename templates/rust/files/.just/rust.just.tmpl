@@ -7,6 +7,10 @@ set working-directory := ".."
 jobs := env("BEDROCK_RUST_JOBS", env("BEDROCK_JOBS", "4"))
 export CARGO_BUILD_JOBS := env("CARGO_BUILD_JOBS", jobs)
 export RUST_TEST_THREADS := env("RUST_TEST_THREADS", jobs)
+# rustc and the cc crate read the Apple floors from these; rustc's own defaults sit below
+# them. iOS 15 is the oldest Xcode 26 and later build for.
+export MACOSX_DEPLOYMENT_TARGET := env("MACOSX_DEPLOYMENT_TARGET", "13.0")
+export IPHONEOS_DEPLOYMENT_TARGET := env("IPHONEOS_DEPLOYMENT_TARGET", "15.0")
 
 # Install the toolchain from rust-toolchain.toml, cargo-deny, and kache, then
 # route Cargo through kache. `kache init` sets the wrapper for this user, not

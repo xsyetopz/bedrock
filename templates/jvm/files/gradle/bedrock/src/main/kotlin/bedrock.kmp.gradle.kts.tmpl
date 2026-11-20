@@ -4,6 +4,7 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
 import bedrock.java8
+import bedrock.macosMinimum
 import bedrock.platforms
 import bedrock.strict
 import bedrock.version
@@ -53,7 +54,7 @@ kotlin {
   }
   // Compose Multiplatform runs desktop on the JVM, not on native targets.
   if (nativeDesktop) {
-    if ("macos" in selected) macosArm64()
+    if ("macos" in selected) macosArm64().macosMinimum(version("macos-min"))
     if ("linux" in selected) linuxX64()
     if ("windows" in selected) mingwX64()
   }

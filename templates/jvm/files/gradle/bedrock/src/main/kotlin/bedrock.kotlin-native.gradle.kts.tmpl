@@ -1,6 +1,7 @@
 // Managed by bedrock: a Kotlin/Native executable for the machine that builds it, or for the
 // platforms in the bedrock.platforms property of the module's gradle.properties. The
 // sources go in src/nativeMain and src/nativeTest.
+import bedrock.macosMinimum
 import bedrock.platforms
 import bedrock.strict
 import bedrock.version
@@ -41,6 +42,7 @@ kotlin {
   executables
     .filter { it.konanTarget.family == Family.OSX }
     .forEach { target ->
+      target.macosMinimum(version("macos-min"))
       // Xcode 27's linker turns the cached stdlib's debug info into entries dsymutil cannot open,
       // which drops it from the dSYM and prints a warning for each. Re-check on each Kotlin release.
       @OptIn(KotlinNativeCacheApi::class)

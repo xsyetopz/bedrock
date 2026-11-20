@@ -43,7 +43,7 @@ A new project's `group` is `com.example.<directory name>` unless `gradle.propert
 
 Android 5 (API 21) is the minimum SDK. Jetpack Compose 1.10 and activity 1.12 need API 23, so Compose stays on 1.9, Compose Multiplatform on 1.9.3, and activity-compose on 1.11.
 
-iOS targets start at 15.0, Kotlin/Native's minimum. Kotlin 2.2 still builds for iOS 12; moving to it would mean an older Kotlin for every module.
+iOS targets start at 15.0, Kotlin/Native's minimum and the oldest iOS that Xcode 26 and later, which the App Store requires, build for. macOS targets link for 13.0, the floor every bedrock language shares, above Kotlin/Native's 12.0 default.
 
 ## Java to Kotlin
 

@@ -4,6 +4,9 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set working-directory := ".."
 
+# hxcpp reads the macOS floor from the environment and defaults to 10.6 without it.
+export MACOSX_DEPLOYMENT_TARGET := env("MACOSX_DEPLOYMENT_TARGET", "13.0")
+
 # Start the local haxelib repo, .haxelib, and install the pinned checkstyle and
 # formatter into it. A project-setup recipe in project.just runs after this one
 # and installs the project's own libraries, such as with
