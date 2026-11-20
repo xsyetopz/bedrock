@@ -24,10 +24,14 @@ Every compiler warning is an error. On top of the compilers:
 | `java-library`, `kotlin-library` | `bedrock.java`, or `bedrock.kotlin` | A jar for other code |
 | `java-application`, `kotlin-application` | adds `bedrock.application` | A jar, and a ProGuard-shrunk `build/libs/<name>-min.jar` |
 | `java-native` | adds `bedrock.native-image` | Also a GraalVM native executable, from `just jvm::native` |
-| `kotlin-native` | `bedrock.kotlin-native` | A Kotlin/Native executable for the host |
-| `kmp` | `bedrock.kmp` | A Kotlin Multiplatform library for the JVM, Android, and iOS |
-| `cmp` | `bedrock.cmp` and `bedrock.android` | Compose Multiplatform UI in a shared module for Android and iOS, and the Android app |
+| `java-gradle-plugin`, `kotlin-gradle-plugin` | adds `bedrock.gradle-plugin` | A Gradle plugin with the Gradle API and TestKit, as Java 17 bytecode, the floor of Gradle's API |
+| `scala-library`, `scala-application` | `bedrock.scala`, and `application` for the application | Scala 3 with scalafmt, every warning an error |
+| `kotlin-native` | `bedrock.kotlin-native` | A Kotlin/Native executable for the host, or for `@linux`, `@macos`, and `@windows` |
+| `kmp` | `bedrock.kmp` | A Kotlin Multiplatform library for the JVM and `@android`, `@ios`, `@linux`, `@macos`, `@wasi`, `@wasm`, or `@windows` |
+| `cmp` | `bedrock.cmp` and `bedrock.android` | Compose Multiplatform UI in a shared module for the JVM and `@android`, `@ios`, `@linux`, `@macos`, `@wasm`, or `@windows`, and the Android app |
 | `android` | `bedrock.android` | An Android app in Compose |
+
+`@<platform>,...` after the kind, such as `bedrock init app jvm:kmp@android,ios,wasm`, writes the list to the `bedrock.platforms` property of the module's `gradle.properties`, which the plugins read; `kmp` and `cmp` build for `android` and `ios` without it. `cmp` runs Compose on the JVM for `linux`, `macos`, and `windows`, as Compose Multiplatform supports the desktop, and in the browser for `wasm`. Its wasm tests stay off, since Compose's skiko cannot load its wasm module on Node.js, where bedrock.kmp runs them. A build for `android` needs the Android SDK: the recipes stop and say so when neither `ANDROID_HOME` nor `sdk.dir` in `local.properties` names it.
 
 A new project's `group` is `com.example.<directory name>` unless `gradle.properties` already names one or `--group <package>` sets it, such as `bedrock init app jvm:kotlin-library --group org.acme.app`. `.editorconfig` keeps the group as `bedrock_jvm_group`, so `bedrock update` uses it again, and the starter sources sit under its package path. A `--group` wins over the `group` in `gradle.properties`: adopt rewrites that line, notes the change, and leaves the code in its old package for you to move.
 

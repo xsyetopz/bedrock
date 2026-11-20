@@ -4,14 +4,14 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C and C++, Java and 
 
 | Language | Kinds | Tooling |
 | --- | --- | --- |
-| `typescript` | `library`, `cli`, `plugin` | Bun 1.4.5, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
-| `rust` | `lib`, `bin`, `no-std`, `ffi`, `wasm`, `bun-ffi` | Rust 1.100.0, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, unit tests in `tests.rs` files |
-| `swift` | `library`, `executable`, `app` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config |
-| `cpp` | | C and C++ alone or beside any other language, clang-format and clang-tidy over the `compile_commands.json` of SwiftPM, CMake, Meson, and xmake, each build system's tests |
-| `jvm` | `java-library`, `java-application`, `java-native`, `kotlin-library`, `kotlin-application`, `kotlin-native`, `kmp`, `cmp`, `android` | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |
-| `go` | `command`, `library` | Go 1.27, golangci-lint 2.15 with a strict config, `go test`, `GOMEMLIMIT`, `-p`, and `run.concurrency` bounds on every recipe |
-| `haxe` | | Haxe 4.3.7 alone or beside any other language, haxe-formatter 1.18.0, haxe-checkstyle 2.9.0 with size bounds, a type check of each hxml build, the test hxml files that run their tests |
-| `dotnet` | | .NET 10 LTS for C# and F#, CSharpier 1.4.0 and Fantomas 8.1.3 reading `.editorconfig`, the SDK analyzers with the `.editorconfig` code style as errors, FSharpLint 0.27.2, `dotnet test` |
+| `typescript` | `library`, `cli`, `plugin`, `server`, `react` | Bun 1.4.5, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
+| `rust` | `lib`, `bin`, `cli`, `service`, `no-std`, `ffi`, `staticlib`, `proc-macro`, `wasm`, `bun-ffi` | Rust 1.100.0, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, unit tests in `tests.rs` files |
+| `swift` | `library`, `executable`, `tool`, `macro`, `build-tool-plugin`, `command-plugin`, `app` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config |
+| `cpp` | `library`, `header-only`, `executable` | C and C++ alone or beside any other language, clang-format and clang-tidy over the `compile_commands.json` of SwiftPM, CMake, Meson, and xmake, each build system's tests |
+| `jvm` | `java-library`, `java-application`, `java-native`, `java-gradle-plugin`, `kotlin-library`, `kotlin-application`, `kotlin-native`, `kotlin-gradle-plugin`, `scala-library`, `scala-application`, `kmp`, `cmp`, `android` | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |
+| `go` | `command`, `library`, `service` | Go 1.27, golangci-lint 2.15 with a strict config, `go test`, `GOMEMLIMIT`, `-p`, and `run.concurrency` bounds on every recipe |
+| `haxe` | `command`, `library` | Haxe 4.3.7 alone or beside any other language, haxe-formatter 1.18.0, haxe-checkstyle 2.9.0 with size bounds, a type check of each hxml build, the test hxml files that run their tests |
+| `dotnet` | `console`, `library`, `webapi`, `worker`, `avalonia`, `android`, `apple` | .NET 10 LTS for C# and F#, CSharpier 1.4.0 and Fantomas 8.1.3 reading `.editorconfig`, the SDK analyzers with the `.editorconfig` code style as errors, FSharpLint 0.27.2, `dotnet test` |
 
 ## What Every Repo Gets
 
@@ -60,20 +60,43 @@ Without a language, adopt takes the ones `.editorconfig` lists or the repo has. 
 ## Start a Repo
 
 ```bash
-bedrock init <dir> rust:lib                 # or bin, no-std, ffi, wasm, bun-ffi
-bedrock init <dir> swift:library cpp        # or executable, app
-bedrock init <dir> typescript:cli           # or library, plugin
-bedrock init <dir> jvm:kotlin-library       # see the table for every kind
-bedrock init <dir> go:command               # or library
+bedrock init <dir> rust:lib@ios,android      # see the table for every kind
+bedrock init <dir> swift:library cpp         # a Swift package with C++ beside it
+bedrock init <dir> swift:app@ios,macos       # one Xcode app for both platforms
+bedrock init <dir> typescript:cli@linux,windows
+bedrock init <dir> jvm:kmp@android,ios,wasm
+bedrock init <dir> go:command@linux,wasi
+bedrock init <dir> dotnet:avalonia@linux,macos,windows,android
 ```
 
-`init` takes an empty or missing folder, writes the starter files for each kind, and adopts the result.
+`init` takes an empty or missing folder, writes the starter files for each kind, and adopts the result. `@` names the platforms a kind builds for, from this list; without it, a kind builds for the host:
+
+| Language | Kind | Platforms |
+| --- | --- | --- |
+| `typescript` | `cli`, `server` | `linux`, `macos`, `windows`, through `bun build --compile` |
+| `rust` | `lib`, `staticlib`, `ffi`, `no-std` | `android`, `ios`, `linux`, `macos`, `wasi`, `wasm`, `windows`, as the targets `rust-toolchain.toml` pins and `just rust::build-targets` builds |
+| `rust` | `bin`, `cli` | `linux`, `macos`, `wasi`, `windows` |
+| `rust` | `service` | `linux`, `macos`, `windows` |
+| `swift` | `app` | `ios`, `macos`, `tvos`, `visionos`, `watchos` |
+| `cpp` | `library`, `header-only` | `android`, `freebsd`, `ios`, `linux`, `maccatalyst`, `macos`, `tvos`, `visionos`, `wasi`, `wasm`, `watchos`, `windows`, as CMake presets |
+| `cpp` | `executable` | `android`, `freebsd`, `linux`, `macos`, `wasi`, `wasm`, `windows` |
+| `jvm` | `kmp` | the JVM and `android`, `ios`, `linux`, `macos`, `wasi`, `wasm`, `windows` |
+| `jvm` | `cmp` | the JVM and `android`, `ios`, `linux`, `macos`, `wasm`, `windows` |
+| `jvm` | `kotlin-native` | `linux`, `macos`, `windows` |
+| `go` | `command` | `freebsd`, `linux`, `macos`, `wasi`, `wasm`, `windows`, through `just go::build` |
+| `go` | `library` | `freebsd`, `ios`, `linux`, `macos`, `wasi`, `wasm`, `windows` |
+| `go` | `service` | `freebsd`, `linux`, `macos`, `windows` |
+| `haxe` | `command` | `linux`, `macos`, `windows`, through hxcpp and `just haxe::build` |
+| `dotnet` | `avalonia` | `android`, `ios`, `linux`, `macos`, `wasm`, `windows` |
+| `dotnet` | `apple` | `ios`, `maccatalyst`, `macos`, `tvos` |
+
+A kind is cross-platform wherever its toolchain allows. A kind is Apple-only when it uses Apple frameworks, such as `swift:app` and `dotnet:apple`, and Android-only when only Android needs it, such as `jvm:android` and `dotnet:android`. Windows-only desktop frameworks get no kind, since `dotnet:avalonia` covers the same apps on every desktop.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `bedrock init <dir> <lang>[:<kind>]...` | Start a repo |
+| `bedrock init <dir> <lang>[:<kind>[@<platform>,...]]...` | Start a repo |
 | `bedrock adopt [<dir>] [<lang>...]` | Move an existing repo onto bedrock |
 | `bedrock update [<dir>]` | Rewrite the managed files with this release |
 | `bedrock guard [base\|<lang>...] [--fix]` | Report what the linters cannot see |
