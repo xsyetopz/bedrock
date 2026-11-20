@@ -183,6 +183,12 @@ jobs:
         with:
           dotnet-version: 10.0.x
       # The workloads the platform kinds build with; each test skips a platform whose workload is absent.
+      # Workloads install per SDK band, and the runner image also carries a newer SDK, so the install
+      # runs under the global.json the kinds write, on the SDK the tests build with.
       - if: matrix.workloads
-        run: dotnet workload install ${{ matrix.workloads }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          echo '{"sdk":{"version":"10.0.100","rollForward":"latestFeature"}}' >global.json
+          dotnet --version
+          dotnet workload install ${{ matrix.workloads }}
       - run: go test -timeout ${{ matrix.test-timeout || '50m' }} "./internal/languages/${{ matrix.package || matrix.language }}/..."
