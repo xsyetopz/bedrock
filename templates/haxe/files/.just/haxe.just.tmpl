@@ -17,7 +17,7 @@ setup:
 # Build a native binary into dist/<platform>/ through hxcpp: build-cpp.hxml names the program.
 # hxcpp compiles for the OS it runs on, so the platform, one of linux, macos, or windows,
 # has to be this machine's; it defaults to it. CI builds each platform on its own runner.
-build platform="":
+build platform="": hold
     #!/usr/bin/env bash
     set -euo pipefail
     case "$(uname -s)" in
@@ -49,27 +49,27 @@ build platform="":
     cp "bin/cpp/$name$ext" "dist/$platform/"
 
 # Format the Haxe code.
-format:
+format: hold
     {{ just_executable() }} bedrock haxe format
 
 # Fail if the Haxe code is not formatted.
-format-check:
+format-check: hold
     {{ just_executable() }} bedrock haxe format --check
 
 # Compile each hxml file that names its target, without output.
-typecheck:
+typecheck: hold
     {{ just_executable() }} bedrock haxe typecheck
 
 # Run checkstyle with checkstyle.json.
-lint:
+lint: hold
     {{ just_executable() }} bedrock haxe lint
 
 # checkstyle fixes nothing, so this formats; `just lint` reports the rest.
-lint-fix:
+lint-fix: hold
     {{ just_executable() }} bedrock haxe format
 
 # Run each test hxml file that runs its tests.
-test:
+test: hold
     {{ just_executable() }} bedrock haxe test
 
 # Report what the Haxe linters cannot see.
@@ -84,3 +84,8 @@ pre-commit: format-check lint
 
 # The Haxe checks the pre-push hook runs: verify without the tests, which CI runs.
 pre-push: format-check typecheck lint guard
+
+# Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
+[private]
+hold:
+    @{{ just_executable() }} hold-slot "$PPID"

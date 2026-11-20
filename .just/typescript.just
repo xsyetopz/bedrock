@@ -19,26 +19,26 @@ setup:
     bun install {{ if env("CI", "") == "" { "" } else { "--frozen-lockfile" } }}
 
 # Format the listed files; bun fmt passes over the ones in a language it does not format.
-format:
+format: hold
     {{ just_executable() }} files . | xargs -0 -r bun fmt --ignore-unknown --threads={{ jobs }}
 
 # Fail if a listed file is not formatted.
-format-check:
+format-check: hold
     {{ just_executable() }} files . | xargs -0 -r bun fmt --check --ignore-unknown --threads={{ jobs }}
 
 # Type-check without emitting anything, after a project-pre-typecheck recipe from project.just when there is one.
-typecheck:
+typecheck: hold
     case " $({{ just_executable() }} --summary) " in *" project-pre-typecheck "*) {{ just_executable() }} project-pre-typecheck ;; esac
     bun check
 
 # Run oxlint on the repo, or on the given paths. One run on the machine at a time; the base justfile lints Markdown.
-lint *paths: (oxlint paths)
+lint *paths: hold (oxlint paths)
 
 # Apply oxlint's fixes, under the same lock and bounds as lint.
-lint-fix *paths: (oxlint "--fix" paths)
+lint-fix *paths: hold (oxlint "--fix" paths)
 
 # Run the tests.
-test:
+test: hold
     bun test --pass-with-no-tests
 
 # Report suppressions, other package managers, undocumented package API, TypeScript drift, and managed-file drift.
@@ -88,3 +88,8 @@ oxlint *args:
     echo $$ >"$lock/pid"
     export GOMEMLIMIT="{{ lint_memory }}" GOMAXPROCS="{{ lint_threads }}"
     bun run oxlint --threads={{ lint_threads }} --disable-nested-config {{ args }}
+
+# Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
+[private]
+hold:
+    @{{ just_executable() }} hold-slot "$PPID"

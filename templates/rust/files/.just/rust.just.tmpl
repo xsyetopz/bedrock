@@ -22,21 +22,21 @@ setup:
     kache init --yes --no-shell
 
 # Format the Rust code.
-format:
+format: hold
     cargo fmt --all
 
 # Fail if the Rust code is not formatted.
-format-check:
+format-check: hold
     cargo fmt --all --check
 
 # Build every target without running anything.
-typecheck:
+typecheck: hold
     cargo check --workspace --all-targets --all-features --locked
 
 # Build the workspace for each target rust-toolchain.toml lists (`bedrock init
 # rust:lib@ios,android` writes them); rustup installs them with the toolchain.
 # Android links with the NDK's clang, which must be on PATH.
-build-targets:
+build-targets: hold
     #!/usr/bin/env bash
     set -euo pipefail
     targets=$(sed -n 's/^targets *= *\[\(.*\)\]/\1/p' rust-toolchain.toml | tr -d '" ' | tr ',' ' ')
@@ -45,19 +45,19 @@ build-targets:
     done
 
 # Run Clippy, the rustdoc lints, and cargo-deny.
-lint:
+lint: hold
     cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
     RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --locked --no-deps
     @{{ just_executable() }} rust::deny
 
 # Move inline test modules to tests.rs and apply Clippy's fixes.
-lint-fix:
+lint-fix: hold
     {{ just_executable() }} bedrock guard rust --fix
     cargo clippy --fix --allow-dirty --allow-staged --workspace --all-targets --all-features
     cargo fmt --all
 
 # Run the tests.
-test:
+test: hold
     cargo test --workspace --all-features --locked
 
 # Report inline tests, suppressions, members that skip the workspace lints, and drift.
@@ -84,3 +84,8 @@ deny:
         exit 1
     fi
     echo "Skipped cargo-deny: it is not installed. Run just setup; CI runs it."
+
+# Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
+[private]
+hold:
+    @{{ just_executable() }} hold-slot "$PPID"

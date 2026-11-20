@@ -10,7 +10,12 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 # caps the compile, test, lint, and format processes each language runs at once;
 # BEDROCK_<LANGUAGE>_JOBS, such as BEDROCK_SWIFT_JOBS, overrides it for one language. And
 # BEDROCK_SLOTS, 2 unless set, caps the tasks that run at once across every checkout,
-# worktree, and agent session on the machine; see `slot`.
+# worktree, and agent session on the machine; see `hold-slot`.
+
+# Names this run. The outermost just picks it and the ones it starts inherit it, so a nested
+# task can see that its run already holds a slot. A process walk would do the same, but agent
+# sandboxes refuse `ps`.
+export BEDROCK_RUN := env("BEDROCK_RUN", uuid())
 
 mod? typescript ".just/typescript.just"
 mod? rust ".just/rust.just"
@@ -204,37 +209,51 @@ each recipe:
         *" project-{{ recipe }} "*) {{ just_executable() }} slot "project-{{ recipe }}" ;;
     esac
 
-# Runs `just <args>` at low CPU priority once one of the machine's BEDROCK_SLOTS slots is
-# free. Every checkout, worktree, and agent session shares the slots, so five agents that
-# check at once run two checks and queue the rest, instead of each starting its own
-# compilers. A slot is a directory in /tmp, which every user and sandbox shares, unlike
-# $TMPDIR; mkdir is atomic, and a dead holder's slot is taken over. A run inside a slot
-# takes no second one, so a task that calls another cannot wait on itself.
+# Runs `just <args>` in one of the machine's check slots; see `hold-slot`. exec keeps the
+# process ID, so the slot stays held until the task ends.
 [private]
 [positional-arguments]
 slot +args:
     #!/usr/bin/env bash
     set -euo pipefail
-    run=({{ just_executable() }} "$@")
-    # A sandbox may refuse to lower the priority, which nice reports and then runs anyway;
-    # the run then keeps the normal priority, without the report.
-    if [[ -z "$(nice -n 10 true 2>&1)" ]]; then run=(nice -n 10 "${run[@]}"); fi
-    if [[ -n "${BEDROCK_SLOT:-}" ]]; then exec "${run[@]}"; fi
+    {{ just_executable() }} hold-slot $$
+    exec {{ just_executable() }} "$@"
+
+# Holds one of the machine's BEDROCK_SLOTS slots, 2 unless set, for process `pid`, a just
+# run, until it exits, and lowers its CPU priority. Every checkout, worktree, and agent
+# session shares the slots, so five agents that check at once run two checks and queue
+# the rest, instead of each starting its own compilers. A slot is a directory in /tmp,
+# which every user and sandbox shares, unlike $TMPDIR; mkdir is atomic, and a dead
+# holder's slot is taken over. A run that already holds a slot takes no second one, so a
+# task that runs another cannot wait on itself; BEDROCK_RUN marks the run.
+[private]
+hold-slot pid:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pid={{ pid }}
+    dir=/tmp/bedrock-slots
+    mkdir -p "$dir" 2>/dev/null || true
+    if grep -qxF "$BEDROCK_RUN" "$dir"/*/run 2>/dev/null; then exit 0; fi
+    # A holder kill cannot signal belongs to another user and still counts as alive.
+    alive() { [[ "$(kill -0 "$1" 2>&1 || true)" != *"No such process"* ]]; }
     slots="${BEDROCK_SLOTS:-2}"
-    mkdir -p /tmp/bedrock-slots 2>/dev/null || true
     waited=
     while :; do
         for ((i = 0; i < slots; i++)); do
-            slot="/tmp/bedrock-slots/$i"
+            slot="$dir/$i"
             if mkdir "$slot" 2>/dev/null; then
-                trap 'rm -rf "$slot"' EXIT
-                echo $$ >"$slot/pid"
-                BEDROCK_SLOT="$slot" "${run[@]}"
+                echo "$pid" >"$slot/pid"
+                echo "$BEDROCK_RUN" >"$slot/run"
+                # A sandbox may refuse; the run then keeps its priority.
+                renice -n 10 -p "$pid" >/dev/null 2>&1 || true
+                # Frees the slot once the run exits, however it ends. A sandbox that ends a
+                # command's processes with it ends this too; the next run takes that slot over.
+                nohup bash -c "$(declare -f alive)"'; while alive "$1"; do sleep 1; done; rm -rf "$2"' \
+                    _ "$pid" "$slot" >/dev/null 2>&1 &
                 exit 0
             fi
             holder="$(cat "$slot/pid" 2>/dev/null || true)"
-            # A holder kill cannot signal belongs to another user and still counts as alive.
-            if [[ -n "$holder" && "$(kill -0 "$holder" 2>&1 || true)" == *"No such process"* ]]; then
+            if [[ -n "$holder" ]] && ! alive "$holder"; then
                 rm -rf "$slot"
                 continue 2
             fi

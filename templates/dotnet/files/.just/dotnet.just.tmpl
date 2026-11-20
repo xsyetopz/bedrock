@@ -18,27 +18,27 @@ setup:
     {{ just_executable() }} bedrock dotnet restore
 
 # Format C# and the MSBuild files with CSharpier, and F# with Fantomas.
-format:
+format: hold
     {{ just_executable() }} bedrock dotnet format
 
 # Fail if a C#, F#, or MSBuild file is not formatted.
-format-check:
+format-check: hold
     {{ just_executable() }} bedrock dotnet format --check
 
 # Build each solution or project without the analyzers, failing on a compiler warning.
-typecheck:
+typecheck: hold
     {{ just_executable() }} bedrock dotnet typecheck
 
 # Rebuild with the analyzers and the .editorconfig code style as errors, then run FSharpLint.
-lint:
+lint: hold
     {{ just_executable() }} bedrock dotnet lint
 
 # Apply the code-style and analyzer fixes dotnet format can make, then format.
-lint-fix:
+lint-fix: hold
     {{ just_executable() }} bedrock dotnet lint --fix
 
 # Run the tests.
-test:
+test: hold
     {{ just_executable() }} bedrock dotnet test
 
 # Report what the .NET linters cannot see: suppressions without a reason, and sizes.
@@ -53,3 +53,8 @@ pre-commit: format-check guard
 
 # The .NET checks the pre-push hook runs: verify without the tests, which CI runs.
 pre-push: format-check typecheck lint guard
+
+# Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
+[private]
+hold:
+    @{{ just_executable() }} hold-slot "$PPID"

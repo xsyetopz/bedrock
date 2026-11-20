@@ -25,31 +25,31 @@ setup:
     if [[ -n "$(git ls-files --cached --others --exclude-standard -- xmake.lua '*/xmake.lua')" ]] && ! command -v xmake >/dev/null; then brew install xmake; fi
 
 # Format the C and C++ code.
-format:
+format: hold
     just cpp::files | xargs -0 -r -P {{ jobs }} -n 64 {{ llvm }}clang-format -i
 
 # Fail if the C and C++ code is not formatted.
-format-check:
+format-check: hold
     just cpp::files | xargs -0 -r -P {{ jobs }} -n 64 {{ llvm }}clang-format --dry-run --Werror
 
 # clang-tidy in lint compiles each translation unit, and the build systems
 # compile them in test, so no separate type check runs.
-typecheck:
+typecheck: hold
 
 # Run clang-tidy over each translation unit a build system builds, with its flags.
-lint:
+lint: hold
     {{ just_executable() }} bedrock cpp compile-commands
     {{ llvm }}run-clang-tidy -quiet -j {{ jobs }} -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements
 
 # Apply the clang-tidy fixes it can, then format; `just lint` reports the rest.
-lint-fix:
+lint-fix: hold
     {{ just_executable() }} bedrock cpp compile-commands
     -{{ llvm }}run-clang-tidy -quiet -j {{ jobs }} -p . -clang-tidy-binary {{ llvm }}clang-tidy -clang-apply-replacements-binary {{ llvm }}clang-apply-replacements -fix
     just cpp::format
 
 # Build each CMake, Meson, and xmake project and run its tests; swift test
 # covers SwiftPM's C++ targets.
-test:
+test: hold
     {{ just_executable() }} bedrock cpp test
 
 # Report what the C++ linters cannot see; bedrock guard swift covers the C++ targets' manifest.
@@ -68,3 +68,8 @@ pre-push: format-check lint
 [private]
 files:
     {{ just_executable() }} files '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.m' '*.mm'
+
+# Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
+[private]
+hold:
+    @{{ just_executable() }} hold-slot "$PPID"

@@ -18,24 +18,24 @@ setup:
     go mod download
 
 # Format the Go code.
-format:
+format: hold
     golangci-lint fmt
 
 # Fail if the Go code is not formatted.
-format-check:
+format-check: hold
     golangci-lint fmt --diff
 
 # Build every package and compile every test, without running anything.
-typecheck:
+typecheck: hold
     go build ./...
     go test -run '^$' ./...
 
 # Run golangci-lint.
-lint:
+lint: hold
     golangci-lint run
 
 # Apply the fixes golangci-lint can make, then format.
-lint-fix:
+lint-fix: hold
     golangci-lint run --fix
     golangci-lint fmt
 
@@ -43,7 +43,7 @@ lint-fix:
 # none, a compile check of every package. The platform is one of linux, macos, windows, freebsd,
 # wasi (wasip1), wasm (js, with wasm_exec.js beside the build), or ios (a gomobile xcframework
 # of the root package). arch overrides the platform's default GOARCH.
-build platform arch="":
+build platform arch="": hold
     #!/usr/bin/env bash
     set -euo pipefail
     arch="{{ arch }}"
@@ -82,7 +82,7 @@ build platform arch="":
     fi
 
 # Run the tests.
-test:
+test: hold
     go test ./...
 
 # Fail if go.mod or go.sum need tidying, then report what the linters cannot see.
@@ -98,3 +98,8 @@ pre-commit: format-check lint guard
 
 # The Go checks the pre-push hook runs: verify without the tests, which CI runs.
 pre-push: format-check typecheck lint guard
+
+# Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
+[private]
+hold:
+    @{{ just_executable() }} hold-slot "$PPID"

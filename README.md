@@ -42,8 +42,8 @@ Three bounds keep a check from taking the machine, even with several agents or w
 | Bound | Default | What it caps |
 | --- | --- | --- |
 | The file list | git's | Each formatter and linter gets the files `just files` lists, the ones git tracks or would track. Ignored build output, a nested repository or worktree such as `.claude/worktrees/`, a symbolic link, and each file `.gitattributes` marks `linguist-generated` stay out. The pre-commit hook lists only the staged files. |
-| `BEDROCK_JOBS` | 4 | The compile, test, lint, and format processes one language runs at once, through each tool's own switch: `--jobs`, `-j`, `--threads`, `--max-workers`, `-maxCpuCount`, `GOFLAGS=-p`, `CARGO_BUILD_JOBS`. `BEDROCK_<LANGUAGE>_JOBS`, such as `BEDROCK_SWIFT_JOBS`, overrides it for one language. |
-| `BEDROCK_SLOTS` | 2 | The `just <task>` runs across every checkout, worktree, and agent session on the machine. The rest wait for a slot, a directory under `/tmp/bedrock-slots`, and each runs at low priority. A direct call such as `just swift::test` takes no slot. |
+| `BEDROCK_JOBS` | 4 | The compile, test, lint, and format processes one language runs at once, through each tool's own switch: `--jobs`, `-j`, `--threads`, `--max-workers`, `-maxCpuCount`, `GOFLAGS=-p`, `CARGO_BUILD_JOBS`, and `-maximum-parallel-testing-workers` for Xcode's test runners. `BEDROCK_<LANGUAGE>_JOBS`, such as `BEDROCK_SWIFT_JOBS`, overrides it for one language. |
+| `BEDROCK_SLOTS` | 2 | The `just <task>` runs across every checkout, worktree, and agent session on the machine. The rest wait for a slot, a directory under `/tmp/bedrock-slots`, and each runs at low priority. A direct call such as `just swift::test` takes one too; a task that runs another inside the same run takes no second. |
 
 ## Adopt a Repo
 

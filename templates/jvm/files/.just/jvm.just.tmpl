@@ -10,22 +10,22 @@ setup: (gradle "--quiet" "help")
     if ! command -v uvx >/dev/null && ! command -v pipx >/dev/null; then brew install uv; fi
 
 # Format the Java with google-java-format and the Kotlin with ktfmt's kotlinlang style.
-format: (gradle "spotlessApply")
+format: hold (gradle "spotlessApply")
 
 # Fail if the Java or Kotlin is not formatted.
-format-check: (gradle "spotlessCheck")
+format-check: hold (gradle "spotlessCheck")
 
 # Compile the main code and tests, where every warning is an error.
-typecheck: (gradle "bedrockCompile")
+typecheck: hold (gradle "bedrockCompile")
 
 # Run Error Prone, NullAway, and Android Lint on top of the compilers' warnings.
-lint: (gradle "bedrockLint")
+lint: hold (gradle "bedrockLint")
 
 # Apply the formatters' fixes.
-lint-fix: format
+lint-fix: hold format
 
 # Run the tests.
-test: (gradle "bedrockTest")
+test: hold (gradle "bedrockTest")
 
 # Report foreign build tools, suppressions without a reason, and drift from bedrock.
 guard:
@@ -104,3 +104,8 @@ gradle +tasks:
     fi
     # Gradle's workers default to one per core; see BEDROCK_JOBS in the justfile.
     exec ./gradlew --console=plain --max-workers="${BEDROCK_JVM_JOBS:-${BEDROCK_JOBS:-4}}" "$@"
+
+# Takes one of the machine's check slots for this run; see `hold-slot` in the justfile.
+[private]
+hold:
+    @{{ just_executable() }} hold-slot "$PPID"
