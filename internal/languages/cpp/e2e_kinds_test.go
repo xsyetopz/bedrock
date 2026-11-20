@@ -204,8 +204,8 @@ func TestEndToEndASharedLibraryExportsItsAPI(t *testing.T) {
 
 	for _, args := range [][]string{
 		{"cmake", "-S", ".", "-B", build, "-DBUILD_SHARED_LIBS=ON"},
-		{"cmake", "--build", build},
-		{"ctest", "--test-dir", build, "--output-on-failure"},
+		{"cmake", "--build", build, "--config", "Debug"},
+		{"ctest", "--test-dir", build, "-C", "Debug", "--output-on-failure"},
 	} {
 		if ok, output := runIn(t, root, nil, args[0], args[1:]...); !ok {
 			failed = append(failed, strings.Join(args, " ")+":\n"+output)

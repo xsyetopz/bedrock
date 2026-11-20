@@ -16,6 +16,9 @@ import (
 // runs a Meson project's tests.
 const testName = "test"
 
+// cmakeConfig is the configuration the test recipe builds and tests.
+const cmakeConfig = "Debug"
+
 // command is one program run with its arguments.
 type command []string
 
@@ -30,9 +33,11 @@ func testRuns(ctx context.Context, c *language.Context) ([][]command, error) {
 			return nil, configureErr
 		}
 
+		// A multi-config generator, Visual Studio's by default on Windows, builds
+		// and tests a named configuration; a single-config one ignores the name.
 		return [][]command{{
-			{"cmake", "--build", build},
-			{"ctest", "--test-dir", build, "--output-on-failure", "--no-tests=ignore"},
+			{"cmake", "--build", build, "--config", cmakeConfig},
+			{"ctest", "--test-dir", build, "-C", cmakeConfig, "--output-on-failure", "--no-tests=ignore"},
 		}}, nil
 	})
 	if err != nil {

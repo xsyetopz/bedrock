@@ -91,7 +91,10 @@ func readJSON(path string, into any) error {
 	return nil
 }
 
-func addTest() *regexp.Regexp { return regexp.MustCompile(`(?m)^add_test\((.*)\)$`) }
+// addTest matches an add_test line of a CTestTestfile.cmake. A multi-config
+// generator, Visual Studio's or Ninja Multi-Config, indents one per
+// configuration inside `if(CTEST_CONFIGURATION_TYPE ...)`.
+func addTest() *regexp.Regexp { return regexp.MustCompile(`(?m)^[ \t]*add_test\((.*)\)\r?$`) }
 
 // quotedArgument returns the text of the quoted argument that starts at line[i]
 // and the index of its closing quote, or false when it never closes.

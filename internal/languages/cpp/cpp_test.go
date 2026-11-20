@@ -72,7 +72,7 @@ func TestGuardRecipeRunsBedrockGuardCpp(t *testing.T) {
 
 	// Assert
 	recipe := bedrocktest.Written(result.Steps, ".just/cpp.just")
-	if !strings.Contains(recipe, "{{ just_executable() }} bedrock guard cpp") {
+	if !strings.Contains(recipe, "just_executable(), '\\', '/')) }} bedrock guard cpp") {
 		t.Errorf("`.just/cpp.just` does not run the guard:\n%s", recipe)
 	}
 }

@@ -140,7 +140,7 @@ func TestCompileCommandsPassesTheSdkToolchainIncludeDeploymentTargetAndTargetInc
 
 	// Assert
 	want := []string{
-		"clang++", "-std=c++20", "-isysroot", "/sdk", "-isystem", "/tc/usr/include",
+		"clang++", "-std=c++20", "-isysroot", "/sdk", "-isystem", filepath.FromSlash("/tc/usr/include"),
 		"-mmacosx-version-min=12.0", "-I", h.root + "/Sources/Lib/include", "-c", h.root + "/Sources/Lib/a.cpp",
 	}
 	if got := stringsOf(entries[0]["arguments"]); !slices.Equal(got, want) {
@@ -201,11 +201,14 @@ func TestCompileCommandsConfiguresOnlyTheTopCMakeProject(t *testing.T) {
 	entries := compileEntries(t, h)
 
 	// Assert
-	if calls := h.runner.called("cmake"); len(calls) != 1 || !strings.Contains(calls[0], "-S "+h.root+"/port ") {
+	if calls := h.runner.called(
+		"cmake",
+	); len(calls) != 1 ||
+		!strings.Contains(calls[0], "-S "+filepath.Join(h.root, "port")+" ") {
 		t.Errorf("cmake calls = %v", calls)
 	}
 
-	if len(entries) != 1 || entries[0]["file"] != h.root+"/port/main.c" {
+	if len(entries) != 1 || entries[0]["file"] != filepath.Join(h.root, "port", "main.c") {
 		t.Errorf("entries = %v", entries)
 	}
 }
@@ -295,7 +298,7 @@ func TestCompileCommandsSkipsASubprojectThatFailsToConfigure(t *testing.T) {
 	entries := compileEntries(t, h)
 
 	// Assert
-	if len(entries) != 1 || entries[0]["file"] != h.root+"/port/main.c" {
+	if len(entries) != 1 || entries[0]["file"] != filepath.Join(h.root, "port", "main.c") {
 		t.Errorf("entries = %v", entries)
 	}
 
