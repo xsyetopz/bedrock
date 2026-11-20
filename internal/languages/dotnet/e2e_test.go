@@ -1,6 +1,7 @@
 package dotnet_test
 
 import (
+	"context"
 	"maps"
 	"os"
 	"os/exec"
@@ -402,6 +403,22 @@ func TestStartedKindsPassFormatTypecheckLintGuardAndTest(t *testing.T) {
 	}
 }
 
+// shutdownBuildServers stops the compiler and MSBuild servers a build left
+// running. Each keeps the working directory of the build that started it,
+// and Windows refuses to delete a directory a process works in, so the test's
+// temporary directory could not be removed.
+func shutdownBuildServers(t *testing.T, dir string) {
+	t.Helper()
+
+	// t.Context is already done when a failed test unwinds.
+	shutdown := exec.CommandContext(context.WithoutCancel(t.Context()), "dotnet", "build-server", "shutdown")
+	shutdown.Dir = dir
+
+	if output, err := shutdown.CombinedOutput(); err != nil {
+		t.Logf("dotnet build-server shutdown: %v\n%s", err, output)
+	}
+}
+
 // checkKind starts the kind and runs the recipes a change must pass.
 func checkKind(t *testing.T, kase kindCase, buildSlot *sync.Mutex) {
 	t.Helper()
@@ -423,6 +440,8 @@ func checkKind(t *testing.T, kase kindCase, buildSlot *sync.Mutex) {
 
 	// Arrange
 	ctx := started(t, kase.kind, kase.platform)
+
+	defer shutdownBuildServers(t, ctx.Root)
 	guarder, _ := bedrocktest.Language(t, "dotnet").(language.Guarder)
 
 	// Act
