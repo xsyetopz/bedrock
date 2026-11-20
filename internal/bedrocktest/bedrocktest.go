@@ -35,9 +35,11 @@ func Engine(t *testing.T) *plan.Engine {
 	return &plan.Engine{
 		Registry:  registry,
 		Templates: bedrock.Templates(),
-		Runner:    execx.System{Stdout: io.Discard, Stderr: io.Discard},
-		Stdout:    io.Discard,
-		Stderr:    io.Discard,
+		// The tools' output reaches the test log, which go test prints only for a
+		// failed test or under -v, so a failing e2e run in CI says why.
+		Runner: execx.System{Stdout: t.Output(), Stderr: t.Output()},
+		Stdout: io.Discard,
+		Stderr: io.Discard,
 	}
 }
 
