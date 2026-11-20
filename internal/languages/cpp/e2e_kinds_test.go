@@ -38,9 +38,7 @@ func llvmBin() (string, bool) {
 func requireTools(t *testing.T, tools ...string) {
 	t.Helper()
 
-	if testing.Short() {
-		t.Skip("builds a project with the real toolchain")
-	}
+	bedrocktest.E2E(t, "builds a project with the real toolchain")
 
 	for _, tool := range tools {
 		if _, err := exec.LookPath(tool); err != nil {
@@ -367,9 +365,7 @@ func platformSteps(t *testing.T, root, platform string, ready readiness) [][]str
 
 //nolint:paralleltest // each build takes a toolchain's whole attention, so the matrix runs one preset at a time
 func TestEndToEndEachPlatformPresetConfiguresAndBuilds(t *testing.T) {
-	if testing.Short() {
-		t.Skip("builds a project with the real toolchain")
-	}
+	bedrocktest.E2E(t, "builds a project with the real toolchain")
 
 	for kind, platforms := range cppSpec(t).Platforms {
 		for _, platform := range platforms {

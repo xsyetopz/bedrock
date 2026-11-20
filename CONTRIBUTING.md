@@ -36,7 +36,7 @@ A language is a brick: a package under `internal/languages/<language>` and the f
 1. Write `templates/<language>`: `files/` copied as they are, `blocks/` merged into the shared files, such as the `.gitignore` block, and the `.just/<language>.just` recipes, with `format`, `lint`, `test`, `guard`, `verify`, and `pre-push`.
 2. Give the package a `New()` that returns a `language.Language`: a `Spec` with the ID, block name, markers, kinds, and tools. Add only the capabilities in `internal/language` it needs, such as a `Guarder` for what its linters cannot see.
 3. Register `New()` at the end of `internal/catalog`, so existing repos keep their block order.
-4. Test the plan and guard through the `internal/bedrocktest` helpers, with a second adopt that plans nothing, and add an `e2e_test.go` that inits each kind and runs the real toolchain, skipped under `-short` and when it is missing. Add the language to the matrix in `.github/workflows/e2e.yml`.
+4. Test the plan and guard through the `internal/bedrocktest` helpers, with a second adopt that plans nothing, and add an `e2e_test.go` that inits each kind and runs the real toolchain. It starts with `bedrocktest.E2E(t, ...)`, which skips it unless `BEDROCK_E2E=1` is set, and skips when the toolchain is missing. Add the language to the matrix in `.github/workflows/e2e.yml`.
 
 ## Commits
 

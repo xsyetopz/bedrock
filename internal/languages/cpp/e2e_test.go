@@ -83,9 +83,7 @@ func TestEndToEndAProjectsTestSourcesAreTestFilesAndItsTestsRun(t *testing.T) {
 		t.Run(system.name, func(t *testing.T) {
 			t.Parallel()
 
-			if testing.Short() {
-				t.Skip("builds a project with the real toolchain")
-			}
+			bedrocktest.E2E(t, "builds a project with the real toolchain")
 
 			if _, err := exec.LookPath(system.tool); err != nil {
 				t.Skipf("`%s` is not installed", system.tool)
@@ -126,9 +124,7 @@ func TestEndToEndAFailingTestFailsBedrockCppTest(t *testing.T) {
 		t.Run(system.name, func(t *testing.T) {
 			t.Parallel()
 
-			if testing.Short() {
-				t.Skip("builds a project with the real toolchain")
-			}
+			bedrocktest.E2E(t, "builds a project with the real toolchain")
 
 			if _, err := exec.LookPath(system.tool); err != nil {
 				t.Skipf("`%s` is not installed", system.tool)

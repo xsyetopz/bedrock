@@ -27,9 +27,7 @@ func (cppStub) Spec() language.Spec {
 func skipE2E(t *testing.T) {
 	t.Helper()
 
-	if testing.Short() {
-		t.Skip("end-to-end tests run real toolchains")
-	}
+	bedrocktest.E2E(t, "end-to-end tests run real toolchains")
 }
 
 func skipWithoutSwift(t *testing.T) {

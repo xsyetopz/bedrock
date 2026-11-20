@@ -101,9 +101,7 @@ public class GreetingTests
 func requireDotnet(t *testing.T) {
 	t.Helper()
 
-	if testing.Short() {
-		t.Skip("e2e runs the real .NET SDK")
-	}
+	bedrocktest.E2E(t, "e2e runs the real .NET SDK")
 
 	if _, err := exec.LookPath("dotnet"); err != nil {
 		t.Skip("dotnet is not installed")

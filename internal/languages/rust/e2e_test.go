@@ -66,9 +66,7 @@ func installToolchain(t *testing.T, root string) {
 func requireCargo(t *testing.T) {
 	t.Helper()
 
-	if testing.Short() {
-		t.Skip("runs the Rust toolchain")
-	}
+	bedrocktest.E2E(t, "runs the Rust toolchain")
 
 	if _, err := exec.LookPath("cargo"); err != nil {
 		t.Skip("`cargo` is not on `PATH`")

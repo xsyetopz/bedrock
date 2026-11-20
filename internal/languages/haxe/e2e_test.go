@@ -29,9 +29,7 @@ func e2eSources() map[string]string {
 func requireHaxe(t *testing.T) {
 	t.Helper()
 
-	if testing.Short() {
-		t.Skip("e2e runs the real toolchain")
-	}
+	bedrocktest.E2E(t, "e2e runs the real toolchain")
 
 	if _, err := exec.LookPath("haxe"); err != nil {
 		t.Skip("haxe is not installed")

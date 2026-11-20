@@ -143,9 +143,7 @@ const gradleJDK = 17
 //
 //nolint:paralleltest // Gradle builds share one cache and must run in sequence.
 func TestInitedKindsBuildWithGradle(t *testing.T) {
-	if testing.Short() {
-		t.Skip("a Gradle build is slow")
-	}
+	bedrocktest.E2E(t, "a Gradle build is slow")
 
 	if _, err := exec.LookPath("java"); err != nil {
 		t.Skip("no JDK on PATH")

@@ -25,9 +25,7 @@ func run(t *testing.T, root, name string, args ...string) (bool, string) {
 func requireTools(t *testing.T, tools ...string) {
 	t.Helper()
 
-	if testing.Short() {
-		t.Skip("runs the Go toolchain")
-	}
+	bedrocktest.E2E(t, "runs the Go toolchain")
 
 	for _, tool := range tools {
 		if _, err := exec.LookPath(tool); err != nil {

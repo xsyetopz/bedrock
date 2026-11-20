@@ -3,7 +3,7 @@
 - Bedrock is one Go CLI, `cmd/bedrock`, and the Claude Code plugin in `plugins/bedrock`. `just bedrock <command>` builds it into `bin/` and runs it from source.
 - Put what every repo gets in `templates/base` and what one language adds in `templates/<language>`; the code that plans and guards it goes in `internal/languages/<language>`, registered in `internal/catalog`. Shared logic belongs in the core packages under `internal/`, and the capabilities a language can implement are in `internal/language`.
 - Write each managed file through a template, and keep the plan idempotent: a second `bedrock adopt` on the same repo plans no steps.
-- Give each language kind an e2e test that inits it and runs its real toolchain, skipped when that toolchain is absent.
+- Give each language kind an e2e test that inits it and runs its real toolchain. Start it with `bedrocktest.E2E(t, ...)`, which skips it unless `BEDROCK_E2E=1` is set, and skip it too when the toolchain is absent. CI's e2e workflow sets the variable; run one locally with `BEDROCK_E2E=1 go test -run <Test> ./internal/languages/<language>/`, since the matrix takes minutes of every core.
 - Make each kind cross-platform and list the platforms it builds for in `Spec.Platforms`, such as an Avalonia desktop app `@macos,linux,windows`. A kind is platform-specific only when the platform requires it: Apple-only for Apple frameworks, Android-only for what only Android needs. Legacy single-platform frameworks such as WPF and WinForms get no kind, because a cross-platform one covers the same need.
 - Keep `bedrock_version` in `.editorconfig` on `source`, so this repo checks itself with the code in its own tree.
 

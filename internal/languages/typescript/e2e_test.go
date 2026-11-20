@@ -49,9 +49,7 @@ func buildLeaves(t *testing.T, root string, artifacts []string) {
 func TestInitKindInstallsTypeChecksLintsTestsAndPassesTheGuard(t *testing.T) {
 	t.Parallel()
 
-	if testing.Short() {
-		t.Skip("installs packages")
-	}
+	bedrocktest.E2E(t, "installs packages")
 
 	if _, err := exec.LookPath("bun"); err != nil {
 		t.Skip("bun is not installed")

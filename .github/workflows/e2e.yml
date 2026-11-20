@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+# The e2e tests skip themselves unless this is set, so `just verify` stays a unit run.
+env:
+  BEDROCK_E2E: "1"
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

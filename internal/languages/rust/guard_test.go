@@ -255,9 +255,7 @@ func TestTestFilesClassifiesWhatRustcBuildsOnlyUnderTest(t *testing.T) {
 func TestAfterApplyMigratesAnOldEditionWhenCargoIsPresent(t *testing.T) {
 	t.Parallel()
 
-	if testing.Short() {
-		t.Skip("runs `cargo fix`")
-	}
+	bedrocktest.E2E(t, "runs `cargo fix`")
 
 	root := bedrocktest.Repo(t, map[string]string{
 		"Cargo.toml": "[package]\nname = \"old\"\nversion = \"0.1.0\"\nedition = \"2018\"\n",
@@ -293,9 +291,7 @@ func TestAfterApplyMigratesAnOldEditionWhenCargoIsPresent(t *testing.T) {
 func TestAfterApplyFailsWhenTheMigrationCannotCompile(t *testing.T) {
 	t.Parallel()
 
-	if testing.Short() {
-		t.Skip("runs `cargo fix`")
-	}
+	bedrocktest.E2E(t, "runs `cargo fix`")
 
 	root := bedrocktest.Repo(t, map[string]string{
 		"Cargo.toml": "[package]\nname = \"broken\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
