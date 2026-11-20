@@ -128,7 +128,7 @@ To fix the errors, run `just lint-fix`, which moves each inline `#[cfg(test)] mo
 `bedrock adopt` on a Swift repo works with a `Package.swift` or an `.xcodeproj`; with neither, it prints a note, and `bedrock init <dir> swift:library` (or `swift:executable`, `swift:app`) starts a package. Naming `cpp`, or passing `--cxx`, adds the C++ setup, which [C and C++](#c-and-c) describes; when a repo whose `.editorconfig` already lists its languages has C, C++, or Objective-C++ files and no `cpp`, adopt prints a note to add it. Adopt:
 
 - writes `.swift-version`, `.swift-format`, and `.swiftlint.yml`, `Tests/.swiftlint.yml` when `Tests` exists, and `Config/Bedrock.xcconfig` when the repo has an Xcode project, and removes `.swiftformat`, `.swiftlint.yaml`, and `Mintfile`;
-- raises `Package.swift` to tools version 6.4, raises a macOS platform below 12 to `.macOS(.v12)`, and adds the `// >>> swift-bedrock` block, which turns on Swift 6 mode, the upcoming features, strict memory safety, and warnings as errors for each target;
+- raises `Package.swift` to tools version 6.4, raises a macOS platform below 13 to `.macOS(.v13)`, and adds the `// >>> swift-bedrock` block, which turns on Swift 6 mode, the upcoming features, strict memory safety, and warnings as errors for each target;
 - runs `swift package migrate` for the upcoming features it can rewrite code for. InternalImportsByDefault and ImmutableWeakCaptures need a person;
 - sets `Config/Bedrock.xcconfig` as the base configuration of each Xcode project's build configurations;
 - removes the `BuildTools` package that swift-bedrock releases before 0.2 wrote, and notes each `project.just`, `.gitignore`, `.just/*.just`, or workflow file that still mentions it;

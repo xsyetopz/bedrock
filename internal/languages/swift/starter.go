@@ -75,7 +75,7 @@ func (m *manifestParts) render(name string) string {
 
 	out.WriteString("\nlet package = Package(\n" +
 		`  name: "` + name + "\",\n" +
-		"  platforms: [.macOS(.v12)],\n")
+		"  platforms: [.macOS(.v13)],\n")
 
 	fields := []struct {
 		label string

@@ -141,7 +141,7 @@ func TestCompileCommandsPassesTheSdkToolchainIncludeDeploymentTargetAndTargetInc
 	// Assert
 	want := []string{
 		"clang++", "-std=c++20", "-isysroot", "/sdk", "-isystem", filepath.FromSlash("/tc/usr/include"),
-		"-mmacosx-version-min=12.0", "-I", h.root + "/Sources/Lib/include", "-c", h.root + "/Sources/Lib/a.cpp",
+		"-mmacosx-version-min=13.0", "-I", h.root + "/Sources/Lib/include", "-c", h.root + "/Sources/Lib/a.cpp",
 	}
 	if got := stringsOf(entries[0]["arguments"]); !slices.Equal(got, want) {
 		t.Errorf("arguments = %v, want %v", got, want)

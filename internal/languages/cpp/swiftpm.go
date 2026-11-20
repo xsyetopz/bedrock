@@ -58,7 +58,7 @@ func swiftEntries(root string, describe swiftDescribe, info swiftInfo, sdk strin
 		common = append(common, "-isysroot", sdk)
 	}
 
-	common = append(common, "-isystem", toolchainInclude, "-mmacosx-version-min=12.0")
+	common = append(common, "-isystem", toolchainInclude, "-mmacosx-version-min=13.0")
 
 	for _, t := range describe.Targets {
 		if t.ModuleType == "ClangTarget" {

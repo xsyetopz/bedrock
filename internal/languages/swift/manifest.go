@@ -27,13 +27,13 @@ func withToolsVersion(text string) string {
 }
 
 func oldMacOS() *regexp.Regexp {
-	return regexp.MustCompile(`\.macOS\(\s*(?:\.v10_\d+|\.v11|"(?:10\.\d+|11)(?:\.\d+)*")\s*\)`)
+	return regexp.MustCompile(`\.macOS\(\s*(?:\.v10_\d+|\.v1[12]|"(?:10\.\d+|1[12])(?:\.\d+)*")\s*\)`)
 }
 
-// withMinimumMacOS raises a macOS target below 12, the oldest the templates
-// build for, to `.v12`.
+// withMinimumMacOS raises a macOS target below 13, the oldest the templates
+// build for, to `.v13`.
 func withMinimumMacOS(text string) string {
-	return oldMacOS().ReplaceAllString(text, ".macOS(.v12)")
+	return oldMacOS().ReplaceAllString(text, ".macOS(.v13)")
 }
 
 // manifestOrder lists the manifest blocks in file order.

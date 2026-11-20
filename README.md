@@ -6,7 +6,7 @@ Strict, shared setups for TypeScript (on Bun), Rust, Swift, C and C++, Java and 
 | --- | --- | --- |
 | `typescript` | `library`, `cli`, `plugin`, `server`, `react` | Bun 1.4.5, TypeScript 7 through `bun check`, `bun fmt`, oxlint with type-aware rules, `bun test` |
 | `rust` | `lib`, `bin`, `cli`, `service`, `no-std`, `ffi`, `staticlib`, `proc-macro`, `wasm`, `bun-ffi` | Rust 1.100.0, edition 2024, workspace lints, Clippy, rustdoc lints, cargo-deny, kache, unit tests in `tests.rs` files |
-| `swift` | `library`, `executable`, `tool`, `macro`, `build-tool-plugin`, `command-plugin`, `app` | Swift 6.4 for macOS 12 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config |
+| `swift` | `library`, `executable`, `tool`, `macro`, `build-tool-plugin`, `command-plugin`, `app` | Swift 6.4 for macOS 13 and newer, swift-format, SwiftLint, Swift Testing, an Xcode config |
 | `cpp` | `library`, `header-only`, `executable` | C and C++ alone or beside any other language, clang-format and clang-tidy over the `compile_commands.json` of SwiftPM, CMake, Meson, and xmake, each build system's tests |
 | `jvm` | `java-library`, `java-application`, `java-native`, `java-gradle-plugin`, `kotlin-library`, `kotlin-application`, `kotlin-native`, `kotlin-gradle-plugin`, `scala-library`, `scala-application`, `kmp`, `cmp`, `android` | Gradle 9.9, GraalVM Community 25, Java 8 bytecode, Android 5 and newer, Error Prone and NullAway, google-java-format and ktfmt, ProGuard and R8, JUnit 6, J2K |
 | `go` | `command`, `library`, `service` | Go 1.27, golangci-lint 2.15 with a strict config, `go test`, `GOMEMLIMIT`, `-p`, and `run.concurrency` bounds on every recipe |

@@ -28,7 +28,7 @@ func TestAdoptRaisesTheToolsVersionAndAddsTheStrictBlock(t *testing.T) {
 		t.Errorf("manifest keeps the old tools version:\n%s", manifest)
 	}
 
-	if !strings.Contains(manifest, ".macOS(.v12)") || strings.Contains(manifest, ".v10_15") {
+	if !strings.Contains(manifest, ".macOS(.v13)") || strings.Contains(manifest, ".v10_15") {
 		t.Errorf("manifest keeps the old macOS minimum:\n%s", manifest)
 	}
 
@@ -38,6 +38,38 @@ func TestAdoptRaisesTheToolsVersionAndAddsTheStrictBlock(t *testing.T) {
 
 	if !result.ProjectFiles["Package.swift"] {
 		t.Error("`Package.swift` is not the project's own")
+	}
+}
+
+func TestAdoptRaisesMacOSBelow13AndKeepsNewerTargets(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]string{
+		".macOS(.v12)":   ".macOS(.v13)",
+		`.macOS("12.4")`: ".macOS(.v13)",
+		".macOS(.v13)":   ".macOS(.v13)",
+		".macOS(.v14)":   ".macOS(.v14)",
+		`.macOS("13.5")`: `.macOS("13.5")`,
+	}
+
+	for declared, want := range cases {
+		t.Run(declared, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			manifest := "// swift-tools-version: 6.4\nimport PackageDescription\n" +
+				"let package = Package(name: \"X\", platforms: [" + declared + ", .iOS(.v12)])\n"
+			root, _ := planSwift(t, map[string]string{"Package.swift": manifest})
+
+			// Act
+			bedrocktest.Adopt(t, root, false, bedrocktest.Select(t, "swift", nil))
+
+			// Assert
+			got := bedrocktest.Read(t, root, "Package.swift")
+			if !strings.Contains(got, "platforms: ["+want+", .iOS(.v12)]") {
+				t.Errorf("platforms %s, want %s and `.iOS(.v12)` untouched:\n%s", declared, want, got)
+			}
+		})
 	}
 }
 
