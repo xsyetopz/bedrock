@@ -22,7 +22,7 @@ interface Fake {
 	readonly root?: string;
 	readonly files?: readonly string[];
 	readonly calls?: string[][];
-	/** Answers one process call; the default succeeds with no output. */
+	/** Answers one process call; the default succeeds with no output, and a throw rejects the call as a program that can't start does. */
 	readonly answer?: (argv: readonly string[]) => ProcessResult;
 }
 
@@ -38,7 +38,9 @@ export const engine = ({
 	process: {
 		run: (argv) => {
 			calls.push([...argv]);
-			return Promise.resolve(answer(argv));
+			return new Promise((resolve) => {
+				resolve(answer(argv));
+			});
 		}
 	},
 	session: { cwd: () => Promise.resolve("/work") }
@@ -60,6 +62,16 @@ export const machine =
 		};
 		return { ...OK, stdout: replies[argv.join(" ")] ?? "" };
 	};
+
+/** A machine with no `bedrock` on PATH: Claude Code rejects a run of a program it can't start. */
+export const withoutBedrock = (argv: readonly string[]): ProcessResult => {
+	if (argv[0] === "bedrock") {
+		throw new Error(
+			'$.process.run(bedrock) failed to start: ENOENT: Executable not found in $PATH: "bedrock"'
+		);
+	}
+	return machine("")(argv);
+};
 
 /** A machine where the release download fails with `stderr`. */
 export const offline =

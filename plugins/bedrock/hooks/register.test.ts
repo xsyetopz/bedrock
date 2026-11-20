@@ -87,6 +87,34 @@ describe("runBedrock", () => {
 		expect(result.text).toContain("offline");
 		expect(result.context).toEqual([]);
 	});
+
+	test("reports a run that cannot start with the command to retype", async () => {
+		const $ = engine({
+			answer: (argv) => {
+				if (argv[0] === "sh") {
+					throw new Error("$.process.run(sh) failed to start: ENOENT");
+				}
+				return OK;
+			}
+		});
+
+		const result = await runBedrock($, "adopt rust --yes");
+
+		expect(result.text).toContain("ENOENT");
+		expect(result.text).toContain("/bedrock adopt rust --yes");
+	});
+
+	test("names the typed command when bedrock cannot be found", async () => {
+		const $ = engine({
+			root: INSTALLED,
+			files: [],
+			answer: offline("offline")
+		});
+
+		const { text } = await runBedrock($, "init go --yes");
+
+		expect(text).toContain("/bedrock init go --yes");
+	});
 });
 
 describe("foreignPackageManager", () => {

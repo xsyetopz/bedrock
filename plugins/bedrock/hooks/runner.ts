@@ -21,9 +21,16 @@ chmod +x "$tmp"
 mv -f "$tmp" "$dest"`;
 
 // Helpers that take $ are function declarations: Claude Code follows $ past an import only into a function declaration.
+// $.process.run rejects when the program can't start, as `bedrock` off PATH can't; that probe has no output.
 async function output($: Engine, argv: readonly string[]): Promise<string> {
-	const { exitCode, stdout } = await $.process.run(argv, { timeoutMs: 10_000 });
-	return exitCode === 0 ? stdout.trim() : "";
+	try {
+		const { exitCode, stdout } = await $.process.run(argv, {
+			timeoutMs: 10_000
+		});
+		return exitCode === 0 ? stdout.trim() : "";
+	} catch {
+		return "";
+	}
 }
 
 // `go run` would report a failed check as exit 1 whatever bedrock returned, and

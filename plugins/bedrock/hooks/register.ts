@@ -1,4 +1,4 @@
-import type { BashCall, Engine, Hook, On } from "./engine.ts";
+import type { BashCall, Engine, Hook, On, ProcessResult } from "./engine.ts";
 import { findBedrock } from "./runner.ts";
 
 // A package manager in command position: at a line start or after ; & | ( $( or `, past env assignments and sudo, exec, or command.
@@ -30,32 +30,40 @@ const applyHint = (args: readonly string[]): string =>
 		? `\n\nTo apply this plan, run /bedrock ${args.filter((arg) => arg !== "--dry-run").join(" ")} --yes`
 		: "";
 
-/** Runs bedrock with the arguments of `/bedrock` or `/adopt`, in the session's folder. */
+/**
+ * Runs bedrock with the arguments of `/bedrock` or `/adopt`, in the session's folder.
+ * A run that can't start reports the typed command, since the prompt it came from is gone.
+ */
 export const runBedrock = async (
 	$: Engine,
 	input: string
 ): Promise<{ text: string; context: string[] }> => {
 	const args = bedrockArgs(input);
-	let command: string[];
+	let result: ProcessResult;
 	try {
-		command = await findBedrock($);
+		const command = await findBedrock($);
+		const cwd = await $.session.cwd();
+		result = await $.process.run(
+			[
+				"sh",
+				"-c",
+				'cd "$1" && shift && exec "$@"',
+				"sh",
+				cwd,
+				...command,
+				...args
+			],
+			{ timeoutMs: 600_000 }
+		);
 	} catch (error) {
-		const text = error instanceof Error ? error.message : String(error);
-		return { text, context: [] };
+		const reason = error instanceof Error ? error.message : String(error);
+		const typed = `/bedrock ${input.trim()}`.trim();
+		return {
+			text: `${reason}\n\nNothing ran. To try again, run: ${typed}`,
+			context: []
+		};
 	}
-	const cwd = await $.session.cwd();
-	const { exitCode, stdout, stderr } = await $.process.run(
-		[
-			"sh",
-			"-c",
-			'cd "$1" && shift && exec "$@"',
-			"sh",
-			cwd,
-			...command,
-			...args
-		],
-		{ timeoutMs: 600_000 }
-	);
+	const { exitCode, stdout, stderr } = result;
 	const status = exitCode === 0 ? "" : `\n(bedrock exited ${exitCode})`;
 	const text = `${`${stdout}${stderr}`.trim()}${status}${exitCode === 0 ? applyHint(args) : ""}`;
 	return { text, context: [`/bedrock ${args.join(" ")}:\n${text}`] };

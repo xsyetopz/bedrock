@@ -8,7 +8,8 @@ import {
 	engine,
 	INSTALLED,
 	machine,
-	offline
+	offline,
+	withoutBedrock
 } from "./fake-engine.ts";
 import { assetName, findBedrock, VERSION } from "./runner.ts";
 
@@ -76,6 +77,15 @@ describe("findBedrock", () => {
 			`https://github.com/xsyetopz/bedrock/releases/download/v${VERSION}`,
 			"bedrock-darwin-arm64"
 		]);
+	});
+
+	test("downloads the pinned release when no bedrock is on PATH", async () => {
+		const $ = engine({ root: INSTALLED, files: [], answer: withoutBedrock });
+		const binary = `${INSTALLED}/.bedrock/${VERSION}/bedrock-darwin-arm64`;
+
+		const command = await findBedrock($);
+
+		expect(command).toEqual([binary]);
 	});
 
 	test("reuses a downloaded release", async () => {
