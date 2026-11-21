@@ -17,6 +17,10 @@ oxlint loads its eslint, typescript, unicorn, oxc, import, promise, node, and je
 
 `ignorePatterns` leaves out dependencies, build and coverage output, generated `*.gen.*` files, agent worktrees in `.claude`, and OpenSpec proposals in `openspec`.
 
+## Claude Code Plugins
+
+Claude Code writes a plugin's ambient types to `.claude-plugin/types/claude-code/index.d.ts` only when a session loads the plugin, and git-ignores them. A plugin tsconfig that lists those files is invalid wherever no session has run, such as CI, and oxlint reports `Invalid tsconfig`. The `lint` recipe skips a folder that holds `.claude-plugin/plugin.json`, whose `tsconfig.json` lists `.claude-plugin/types/`, and that lacks the types file, and it prints one line to stderr naming the folder. Start `claude --plugin-dir <dir>` once to write the types, and the folder is linted again. A path argument inside the folder, such as `just typescript::lint plugins/<name>`, lints it regardless, and fails while the types are absent.
+
 ## Suppression Comments
 
 The setup has no escape hatch. `typescript/ban-ts-comment` rejects `@ts-ignore`, `@ts-expect-error`, and `@ts-nocheck`, and `bun run guard` rejects `eslint-disable`, `oxlint-disable`, and `biome-ignore` anywhere in the source. `@ts-check` is fine. When a rule fires, change the code until it passes.
