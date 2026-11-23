@@ -327,6 +327,37 @@ func TestPatchedLizardMeasuresAFunctionAfterATemplateComparison(t *testing.T) {
 	expectLines(t, "errors", report.Errors, []string{"src/clamp.cpp:2: `clamp` code lines is 6, over 4"})
 }
 
+// cppTemplateNameComparison has a template parameter whose default compares a
+// constant, and a template argument list before it. A `<` after a name is a
+// bracket or a comparison by what the name is, and lizard took the comparison
+// for a bracket that no `>` closed.
+const cppTemplateNameComparison = `constexpr int Limit = 4;
+template <typename T = Box<int>, int N = Limit < 2>
+int clamp(int a) {
+    int b = a;
+    if (b < 0) b = 0;
+    if (b > 9) b = 9;
+    return b;
+}
+`
+
+func TestPatchedLizardMeasuresAFunctionAfterATemplateNameComparison(t *testing.T) {
+	t.Parallel()
+	bedrocktest.E2E(t, "runs the pinned `lizard` through `uvx`")
+
+	// Arrange
+	root := bedrocktest.Repo(t, map[string]string{
+		".editorconfig": "root = true\n\n[*.cpp]\nbedrock_function_code_lines_error = 4\n",
+		"src/clamp.cpp": cppTemplateNameComparison,
+	})
+
+	// Act
+	report := guard(t, execx.System{}, root, sized{lizard: []string{"cpp"}})
+
+	// Assert
+	expectLines(t, "errors", report.Errors, []string{"src/clamp.cpp:3: `clamp` code lines is 6, over 4"})
+}
+
 // cppHeaderAlternatives is a C++ header that spells `&&` and `||` as `and`
 // and `or`, and a C struct whose members are named `and` and `or`. The
 // unpatched lizard counted `and` and `or` in no header.

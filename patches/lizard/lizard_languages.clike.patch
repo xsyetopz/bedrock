@@ -23,14 +23,17 @@ behavior they had.
   references, not a logical `&&`.
 - A template header with a comparison, `template <bool B = (1 < 2)>` or
   `template <auto V = 1 < 2>`, closes at its own `>`: a `<` inside
-  parentheses, or after a literal, `)` or `]`, compares. A header also ends at
-  `{`, `}` or `;`.
+  parentheses, or after a literal, `)` or `]`, compares. A `<` after a name,
+  as in `template <int N = M < 2>`, is a bracket or a comparison by what the
+  name is: a header still open at its declaration's `{`, `;` or `}` closes at
+  the first `>` that leaves only the comparisons open and comes before a
+  name, and the `<` nearest before that `>` compare.
 - A function-try-block, `int f() try { } catch (...) { }`, is one function
   that ends after its last handler.
 
 --- a/lizard_languages/clike.py
 +++ b/lizard_languages/clike.py
-@@ -5,12 +5,23 @@
+@@ -5,14 +5,144 @@
  import re
  import itertools
  from .code_reader import CodeStateMachine, CodeReader
@@ -58,8 +61,129 @@ behavior they had.
 +_CPP_CHAR_TOKEN = r"|'(?:\\.|[^'\\\n])*'|'"
  
  
++def _layout(token):
++    return token == '\n' or token.startswith(('/*', '//'))
++
++
++class _Angles(object):  # pylint: disable=R0903
++    '''The angle depth of a template header, read as the nesting machines
++    read it: a `<` or `>` inside `()` or `[]`, or a `<` after a literal, `)`
++    or `]`, is no bracket.'''
++
++    def __init__(self):
++        self.depth = 0
++        self.nested = 0
++        self.previous = ''
++
++    def feed(self, token):
++        '''Reads a token, and returns True when it is an opening bracket.'''
++        opens = False
++        if token in ('(', '['):
++            self.nested += 1
++        elif token in (')', ']'):
++            self.nested = max(self.nested - 1, 0)
++        elif not self.nested and token == '<' and not compares(self.previous):
++            self.depth += 1
++            opens = True
++        elif not self.nested and token == '>':
++            self.depth -= 1
++        if not _layout(token):
++            self.previous = token
++        return opens
++
++
++def _angle_depths(header):
++    '''The angle depth after each token of a header, and the indexes of its
++    opening brackets.'''
++    angles = _Angles()
++    depths, opens = [], []
++    for i, token in enumerate(header):
++        if angles.feed(token):
++            opens.append(i)
++        depths.append(angles.depth)
++    return depths, opens
++
++
++def _header_close(header, depths, extra):
++    '''The `>` that closes a header which `extra` comparisons left open: the
++    first one that leaves `extra` angles open, never fewer after it, and
++    starts a declaration, which begins with a name or an attribute.'''
++    following = [t for t in header if not _layout(t)][1:] + ['']
++    words = iter(following)
++    for i, token in enumerate(header):
++        if _layout(token):
++            continue
++        after = next(words)
++        if token == '>' and depths[i] == extra \
++                and min(depths[i:]) >= extra \
++                and (after[:1].isalpha() or after[:1] in ('_', '[')):
++            return i
++    return None
++
++
++def _resolve_header(header):
++    '''Marks as `@<` the comparisons, such as the one in `template <int N =
++    M < 2>`, that leave a header open at its declaration's `{`, `;` or `}`.
++    A `<` after a name is a bracket or a comparison by what the name is, so
++    the header closes at the `>` a declaration follows, and the `<` nearest
++    before that `>` compare.'''
++    depths, opens = _angle_depths(header)
++    extra = depths[-1] if depths else 0
++    if extra <= 0:
++        return header
++    close = _header_close(header, depths, extra)
++    if close is None:
++        return header
++    marked = [i for i in opens if 0 < i < close][-extra:]
++    if len(marked) < extra:
++        return header
++    resolved = list(header)
++    for i in marked:
++        resolved[i] = '@<'
++    depths, _ = _angle_depths(resolved[:close + 1])
++    if depths[-1] != 0 or 0 in depths[:-1]:
++        return header
++    return resolved
++
++
++def template_headers(tokens):
++    '''Holds each `template <...>` header until it closes or its declaration
++    begins, and resolves the comparisons that would leave it open.'''
++    header = None  # the tokens from `<`, once `template` came
++    angles = None
++    pending = False  # `template` came, and its `<` may follow
++    for token in tokens:
++        if header is not None:
++            header.append(token)
++            angles.feed(token)
++            if _layout(token):
++                continue
++            if angles.depth <= 0:
++                for held in header:
++                    yield held
++                header = None
++            elif token in ('{', ';', '}'):
++                for held in _resolve_header(header):
++                    yield held
++                header = None
++            continue
++        if pending and token == '<':
++            header = [token]
++            angles = _Angles()
++            angles.feed(token)
++            pending = False
++            continue
++        if not _layout(token):
++            pending = token == 'template'
++        yield token
++    for held in header or ():
++        yield held
++
++
  class CCppCommentsMixin(object):  # pylint: disable=R0903
-@@ -29,22 +40,105 @@
+ 
+     @staticmethod
+@@ -29,22 +159,107 @@
      language_names = ['cpp', 'c']
      macro_pattern = re.compile(r"#\s*(\w+)\s*(.*)", re.M | re.S)
  
@@ -119,6 +243,8 @@ behavior they had.
 +        stream = self._preprocess(tokens)
 +        if self._c_family and not self._cpp_source:
 +            stream = self._alternative_operators(stream)
++        if self._c_family:
++            stream = template_headers(stream)
 +        return stream
 +
 +    _ALTERNATIVES = {'and': '&&', 'or': '||'}
@@ -171,7 +297,7 @@ behavior they had.
          tilde = False
          for token in tokens:
              if token == '~':
-@@ -55,26 +149,102 @@
+@@ -55,26 +270,102 @@
              elif not token.isspace() or token == '\n':
                  macro = self.macro_pattern.match(token)
                  if macro:
@@ -198,14 +324,14 @@ behavior they had.
 +                    yield self._asm_token(token)
                  else:
                      yield token
-+
+ 
 +    # A CodeWarrior or MSVC assembly body, `asm void f() { ... }` or
 +    # `asm { ... }`, holds mnemonics such as `and` and `or`, which are no
 +    # C++ operators there. GCC's `asm("...")` keeps its text in a string.
 +    _ASM_KEYWORDS = frozenset(('asm', '__asm', '__asm__'))
 +    _ASM_QUALIFIERS = frozenset((
 +        'volatile', '__volatile__', 'goto', 'inline', '('))
-+
+ 
 +    def _asm_token(self, token):
 +        if isinstance(self._asm, int):
 +            return '@' + token if token in self.conditions else token
@@ -216,7 +342,7 @@ behavior they had.
 +        elif token == ';' and self._asm == 'head':
 +            self._asm = None  # `asm void f();` declares, with no body
 +        return token
- 
++
 +    def _preprocessor_line(self, directive):
 +        if not self._c_family:
 +            # Kept for C# and the other readers: `#if`, `#ifdef` and `#elif`
@@ -240,7 +366,7 @@ behavior they had.
 +        elif directive == 'endif' and self._pp_stack:
 +            self._pp_stack.pop()
 +            self._pp_ignore = 0
- 
++
 +
  class CppRValueRefStates(CodeStateMachine):
      # pylint: disable=R0903
@@ -278,7 +404,7 @@ behavior they had.
      @CodeStateMachine.read_until_then('=;{})')
      def _r_value_ref(self, token, _):
          if token == "=":
-@@ -147,3 +317,97 @@
+@@ -147,3 +438,97 @@
      def _read_attribute(self, _):
          """Ignores C++11 attributes inside [[ ]]."""
          pass
