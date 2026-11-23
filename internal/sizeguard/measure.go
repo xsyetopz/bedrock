@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -103,6 +104,13 @@ func measure(
 	// bedrock applies the bounds itself, so lizard's own thresholds must not fail the run.
 	args = append(args, "--ignore_warnings", "-1", "-t", strconv.Itoa(runtime.NumCPU()))
 
+	hookDir, env, err := stageHook()
+	if err != nil {
+		return measures{}, err
+	}
+
+	defer func() { _ = os.RemoveAll(hookDir) }()
+
 	formats := []string{"--csv", "--xml"}
 	results := make([]execx.Result, len(formats))
 	errs := make([]error, len(formats))
@@ -112,7 +120,9 @@ func measure(
 	for i, format := range formats {
 		wait.Go(func() {
 			full := append(append(append([]string{}, lizard[1:]...), args...), format, ".")
-			results[i], errs[i] = runner.Run(ctx, execx.Command{Dir: root, Name: lizard[0], Args: full})
+			results[i], errs[i] = runner.Run(ctx, execx.Command{
+				Dir: root, Name: lizard[0], Args: full, Env: env,
+			})
 		})
 	}
 

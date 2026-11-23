@@ -1,0 +1,68 @@
+Fixes to the Java reader of lizard 1.26.1.
+
+- A record's compact constructor ends at its own `}`, not at that of a nested
+  block such as `R { if (a < 0) { throw ...; } }`.
+- A record declared as the first member of a class, right after `{`, is a
+  record.
+- A text block is one token. Read as an empty string plus an opening quote,
+  an odd number of quotes inside shifted every later string, and keywords in
+  a JSON key counted as code.
+
+--- a/lizard_languages/java.py
++++ b/lizard_languages/java.py
+@@ -33,7 +33,9 @@
+         return False
+     if last_token in (']', '>'):
+         return False
+-    if last_token[0] in '_{$':
++    if last_token[0] in '_$':
++        # '{' is not here: a record that opens a class body, e.g. the first
++        # member of `class A { record P(int x) {...} }`, follows '{'.
+         return False
+     if last_token[0].isalpha():
+         if last_token[0].islower() and last_token in _JAVA_CLASS_MODIFIERS:
+@@ -51,6 +53,16 @@
+     ext = ['java']
+     language_names = ['java']
+ 
++    @staticmethod
++    def generate_tokens(source_code, addition='', token_class=None):
++        # A text block is one token. The shared string rule reads three quotes as an
++        # empty string plus an opening quote, so an odd number of quotes inside
++        # a block shifts every later string and the keywords in a JSON key
++        # count as code.
++        return CLikeReader.generate_tokens(
++            source_code, r'|"""(?:\\.|[^"\\]|"(?!""))*"""' + addition,
++            token_class)
++
+     def __init__(self, context):
+         super(JavaReader, self).__init__(context)
+         self.parallel_states = [
+@@ -66,6 +78,7 @@
+         self.is_enum = False
+         self.in_record_constructor = False
+         self.in_method_body = False
++        self._compact_depth = 0
+         self.handling_dot_class = False
+         self.handling_method_ref = False
+         self._java_after_unqualified_annotation = False
+@@ -222,6 +235,7 @@
+ 
+     def _state_record_compact_constructor(self, token):
+         if token == '{':
++            self._compact_depth = 1
+             self._state = self._state_record_constructor_body
+             return
+         self.in_record_constructor = False
+@@ -233,7 +247,10 @@
+         self._state(token)
+ 
+     def _state_record_constructor_body(self, token):
+-        if token == '}':
++        # The body ends at its own '}', not at that of a nested block,
++        # e.g. `R { if (a < 0) { throw ...; } }`.
++        self._compact_depth += _JAVA_BRACE_COUNT.get(token, 0)
++        if self._compact_depth == 0:
+             self.in_record_constructor = False
+             self._state = self._state_global
+ 

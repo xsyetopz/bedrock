@@ -1,0 +1,270 @@
+Fixes to the Scala reader of lizard 1.26.1, which now reads each `def` with a
+machine of its own instead of Go's.
+
+- A body ends where its brackets close or, in Scala 3's indentation syntax,
+  at the first line indented no deeper than its `def`, not at the first line
+  break. A body that starts on the line of its `=` also ends at a deeper
+  line that starts a new member.
+- A `def` without `=` or a body, such as `def size: Int`, is an abstract
+  declaration, not a function.
+- Curried parameter lists all count, and a comma inside a type or default
+  value, `(Int, Int) => Int` or `Map[K, V]`, does not split a parameter.
+- A triple-quoted string is one token that ends at the last quote of its
+  closing run, and a backtick name may hold spaces and keywords.
+
+--- a/lizard_languages/scala.py
++++ b/lizard_languages/scala.py
+@@ -1,9 +1,8 @@
+ '''
+ Language parser for Scala
+ '''
+-from .code_reader import CodeReader
++from .code_reader import CodeReader, CodeStateMachine
+ from .clike import CCppCommentsMixin
+-from .golike import GoLikeStates
+ __author__ = 'David Baum'
+ 
+ 
+@@ -21,29 +20,226 @@
+ 
+     def __init__(self, context):
+         super(ScalaReader, self).__init__(context)
++        context.line_indent = 0
+         self.parallel_states = [ScalaStates(context)]
+ 
++    @staticmethod
++    def generate_tokens(source_code, addition='', token_class=None):
++        return CodeReader.generate_tokens(
++            source_code,
++            # A triple-quoted string is one token that ends at the last quote of
++            # the closing run. The shared string rule reads three quotes as an
++            # empty string plus an opening quote, so an odd number of quotes
++            # inside would shift every later string and keywords in the text
++            # would count as code.
++            r'|"""(?:[^"]|"{1,2}(?!"))*"{3,}' +
++            # Backtick names may hold spaces and keywords.
++            r"|`[^`\n]+`" +
++            addition,
++            token_class)
+ 
+-class ScalaStates(GoLikeStates):  # pylint: disable=R0903
++    def preprocess(self, tokens):
++        # A Scala 3 body is delimited by indentation, so each token carries the
++        # indent of its line: the whitespace tokens are dropped here, where
++        # they are still visible.
++        at_line_start = True
++        indent = 0
++        for token in tokens:
++            if token == '\n':
++                at_line_start = True
++                indent = 0
++                yield token
++            elif token.isspace():
++                if at_line_start:
++                    indent = len(token)
++            else:
++                if at_line_start:
++                    self.context.line_indent = indent
++                    at_line_start = False
++                yield token
+ 
+-    FUNC_KEYWORD = 'def'
+ 
+-    def _state_global(self, token):
+-        super(ScalaStates, self)._state_global(token)
++class _Frame:  # pylint: disable=R0903
++    '''One `def` being read: its signature first, then its body.'''
+ 
+-    def _expect_function_impl(self, token):
+-        if token == "=":
+-            self._state = self._expect_function_body
++    def __init__(self, indent, line):
++        self.indent = indent
++        self.phase = 'name'  # name, signature, body
++        self.depth = 0      # open brackets: in the signature or in the body
++        self.mode = None    # what the open brackets of the signature hold
++        self.after_colon = False
++        self.lists = 0
++        self.last_token = 'def'
++        self.last_line = line
++        self.body_tokens = 0
++        self.inline_body = False  # the body starts on the line of its `=`
++
++
++class ScalaStates(CodeStateMachine):  # pylint: disable=R0903
++    '''
++    A function ends where its body ends, not at the first line break: the body
++    runs while the lines that follow are indented deeper than the `def`, or
++    while its brackets are open. A `def` without a body is an abstract
++    declaration, which is not a function.
++    '''
++
++    _OPEN = {'(', '[', '{'}
++    _CLOSE = {')', ']', '}'}
++    # A line that starts with one of these continues the declaration above it.
++    _HEADER_CONTINUES = {'(', '[', ':', '=', '{', '=>', 'with', 'extends'}
++    _HEADER_OPEN = {':', '=>', ',', 'with', 'extends', '=', '('}
++    _CONDITIONS = {'if', 'for', 'while', 'catch', 'do', 'case'}
++    # A line that starts with one of these is a new member, not a deeper
++    # line of a body that already began on the line of its `=`.
++    _MEMBER_STARTS = {
++        'def', 'val', 'var', 'lazy', 'class', 'object', 'trait', 'enum',
++        'type', 'given', 'extension', 'private', 'protected', 'override',
++        'final', 'implicit', 'abstract', 'sealed',
++    }
++    # A line that ends with one of these opens a block that goes on below.
++    _BLOCK_OPENS = {'=', '=>', ':', 'then', 'else', 'do', 'with', 'yield',
++                    'try', 'finally', 'match', '->', '<-'}
++
++    def __init__(self, context):
++        super(ScalaStates, self).__init__(context)
++        self.frames = []
++        self._state = self._feed
++
++    def _starts_line(self, token, frame):
++        '''True when the token is the first one on its line.'''
++        return self.context.current_line - token.count('\n') > frame.last_line
++
++    def _feed(self, token):
++        context = self.context
++        if self.frames:
++            starts = self._starts_line(token, self.frames[-1])
++            lines = token.count('\n') + 1 if starts else 0
++            while self.frames:
++                frame = self.frames[-1]
++                if self._body_ends(frame, token, starts):
++                    self._close(frame, token, lines)
++                elif self._declaration_ends(frame, token, starts):
++                    self._drop(frame, lines)
++                else:
++                    break
++        if token == 'def' and not self._in_declaration():
++            context.push_new_function('')
++            self.frames.append(_Frame(context.line_indent, context.current_line))
++            return
++        if self.frames:
++            self._read(self.frames[-1], token)
++            self.frames[-1].last_token = token
++            self.frames[-1].last_line = context.current_line
++
++    def _in_declaration(self):
++        return bool(self.frames) and self.frames[-1].phase != 'body'
++
++    def _body_ends(self, frame, token, starts):
++        if frame.phase != 'body' or frame.depth > 0:
++            return False
++        if token == ';' or token in self._CLOSE:
++            return True
++        if not starts or frame.body_tokens == 0:
++            return False
++        return (self.context.line_indent <= frame.indent
++                or frame.inline_body and token in self._MEMBER_STARTS
++                and frame.last_token not in self._BLOCK_OPENS)
++
++    def _declaration_ends(self, frame, token, starts):
++        '''A declaration without `=` or a body: `def size: Int`.'''
++        if frame.phase == 'body':
++            return False
++        if frame.phase == 'signature' and frame.depth > 0:
++            return False
++        if token == ';' or token in self._CLOSE:
++            return True
++        return (starts and frame.phase == 'signature'
++                and token not in self._HEADER_CONTINUES
++                and frame.last_token not in self._HEADER_OPEN)
++
++    def _close(self, frame, token, lines):
++        # The token that ends the body was counted in the function it ends:
++        # it moves, with its line, to the enclosing code.
++        context = self.context
++        function = context.current_function
++        function.nloc -= lines
++        function.end_line = frame.last_line
++        if token in self._CONDITIONS and function.cyclomatic_complexity > 1:
++            function.cyclomatic_complexity -= 1
++        context.end_of_function()
++        context.current_function.nloc += lines
++        self._pop(frame)
++
++    def _drop(self, frame, lines):
++        context = self.context
++        context.current_function.nloc -= lines
++        self.fold_into_enclosing_function()
++        context.current_function.nloc += lines
++        self._pop(frame)
++
++    def _pop(self, frame):
++        self.frames.pop()
++        if self.frames:
++            self.frames[-1].last_line = max(
++                self.frames[-1].last_line, frame.last_line)
++
++    def _read(self, frame, token):
++        if frame.phase == 'name':
++            self.context.add_to_function_name(token)
++            frame.phase = 'signature'
++        elif frame.phase == 'signature':
++            self._read_signature(frame, token)
+         else:
+-            super(ScalaStates, self)._expect_function_impl(token)
++            if frame.body_tokens == 0:
++                frame.inline_body = not self._starts_line(token, frame)
++            frame.body_tokens += 1
++            if token in self._OPEN:
++                frame.depth += 1
++            elif token in self._CLOSE:
++                frame.depth -= 1
+ 
+-    def _expect_function_body(self, token):
+-        if self.context.newline:
+-            self.context.end_of_function()
+-            self.next(self._state_global, token)
+-        elif token == '{':
+-            self.sub_state(ScalaStates(self.context))
++    def _read_signature(self, frame, token):
++        context = self.context
++        if frame.depth == 0:
++            if token in ('(', '[') and not frame.after_colon:
++                frame.depth = 1
++                frame.mode = 'parameters' if token == '(' else 'type'
++                if frame.mode == 'parameters':
++                    if frame.lists:
++                        # Curried lists count as one parameter list.
++                        context.parameter(',')
++                    frame.lists += 1
++            elif token in ('(', '['):
++                frame.depth = 1
++                frame.mode = 'type'
++            elif token == '=' or token == '{':
++                frame.phase = 'body'
++                frame.depth = 0
++                if token == '{':
++                    frame.depth = 1
++                    frame.body_tokens = 1
++            elif token == ':':
++                frame.after_colon = True
++            return
++        if token in self._OPEN:
++            frame.depth += 1
++        elif token in self._CLOSE:
++            frame.depth -= 1
++            if frame.depth == 0:
++                return
++        if frame.mode == 'parameters':
++            if token == ',' and frame.depth > 1:
++                # A comma inside `(Int, Int) => Int`, `Map[K, V]`, `f(1, 2)`.
++                context.add_to_long_function_name(' ,')
++            else:
++                context.parameter(token)
+ 
+     def statemachine_before_return(self):
+-        if self._state == self._expect_function_body:
+-            self.context.end_of_function()
++        while self.frames:
++            frame = self.frames[-1]
++            if frame.phase == 'body':
++                self.context.current_function.end_line = frame.last_line
++                self.context.end_of_function()
++                self._pop(frame)
++            else:
++                self._drop(frame, 0)

@@ -17,6 +17,12 @@ import (
 //go:embed all:templates
 var templateFS embed.FS
 
+// patchFS holds patches/<tool>/*.patch, the fixes bedrock carries for the
+// tools it runs at a pinned release, such as lizard.
+//
+//go:embed patches
+var patchFS embed.FS
+
 // manifest is the root package.json, whose version field is the release.
 //
 //go:embed package.json
@@ -31,6 +37,18 @@ func Templates() fs.FS {
 	sub, err := fs.Sub(templateFS, "templates")
 	if err != nil {
 		// fs.Sub fails only on an invalid directory name, and "templates" is valid.
+		panic(err)
+	}
+
+	return sub
+}
+
+// LizardPatches returns the unified diffs bedrock applies to the lizard
+// release it pins, each against a module of the installed package.
+func LizardPatches() fs.FS {
+	sub, err := fs.Sub(patchFS, "patches/lizard")
+	if err != nil {
+		// fs.Sub fails only on an invalid directory name, and this one is valid.
 		panic(err)
 	}
 

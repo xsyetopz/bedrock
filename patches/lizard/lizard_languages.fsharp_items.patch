@@ -1,0 +1,32 @@
+Fixes to the F# item layout of lizard 1.26.1.
+
+- `interface I with` holds members as a type does.
+- A member of an object expression heads an item, though the brackets
+  around it close only after its last member.
+
+--- a/lizard_languages/fsharp_items.py
++++ b/lizard_languages/fsharp_items.py
+@@ -1,6 +1,7 @@
+ '''The offside layout of F# light syntax items.'''
+ 
+-CONTAINER_HEADINGS = frozenset({'type', 'module', 'namespace'})
++# `interface I with` holds members like a type does
++CONTAINER_HEADINGS = frozenset({'type', 'module', 'namespace', 'interface'})
+ 
+ 
+ class OffsideItems:
+@@ -25,6 +26,14 @@
+         items.append((column, self._kind(column, heading)))
+         return True
+ 
++    def starts_member(self, column):
++        '''An object expression's member heads an item, though the
++        brackets around it close only after its last member.'''
++        items = self._items
++        while items and items[-1][0] >= column:
++            items.pop()
++        items.append((column, 'item'))
++
+     def reheaded(self, heading):
+         '''The current item's heading follows its attribute group.'''
+         column = self._items[-1][0]

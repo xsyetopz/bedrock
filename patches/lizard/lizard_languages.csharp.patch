@@ -1,0 +1,182 @@
+Fixes to the C# reader of lizard 1.26.1.
+
+- Verbatim (@"...") and raw ("""...""") strings: read as C strings, a
+  backslash before their closing quote left them open, so the code after
+  them turned into strings and one function swallowed the next.
+- Property, indexer, and event accessors: their bodies have no parameter
+  list, so lizard measured none of them and took `if (...) {` inside one for
+  a function named `if`. Each accessor now measures as Member::get, and a
+  statement keyword never names a function.
+- Expression-bodied members: a member ending in `=> ...;` stayed the pending
+  function, so the next "{" reopened it and lizard reported it twice with a
+  wrong end line. A "=>" after a property's name measures as its getter, one
+  that initializes a field measures as no function, and a body ends only at
+  a ";" outside every bracket.
+
+--- a/lizard_languages/csharp.py
++++ b/lizard_languages/csharp.py
+@@ -5,6 +5,25 @@
+ from .clike import CLikeReader, CLikeStates, CLikeNestingStackStates
+ 
+ 
++# A raw string, with its `$` prefixes, opens and closes with three or more
++# quotes and escapes nothing. A verbatim string, `@"..."`, `$@"..."` or
++# `@$"..."`, escapes a quote by doubling it, so a backslash before a quote
++# ends nothing. Read as C strings, `@"\"""` closes one quote late and turns
++# the code after it into strings.
++_RAW_STRING = r'|\$*"{3,}.*?"{3,}'
++_VERBATIM_STRING = r'|(?:\$@|@\$?)"(?:[^"]|"")*"'
++
++# Accessors are the bodies of properties, indexers and events. They have no
++# parameter list, so the C-like states never see them as functions.
++_ACCESSORS = {'get', 'set', 'init', 'add', 'remove'}
++
++# A statement keyword followed by `(...) {` has the shape of a method. Outside
++# a method body, as in a lambda that initializes a field, it is still a
++# statement and never names a function.
++_STATEMENTS = {'if', 'for', 'foreach', 'while', 'switch', 'catch', 'using',
++               'lock', 'fixed', 'return', 'when'}
++
++
+ class CSharpReader(CLikeReader):
+     # pylint: disable=R0903
+ 
+@@ -27,7 +46,8 @@
+     @staticmethod
+     def generate_tokens(source_code, addition='', token_class=None):
+         return CLikeReader.generate_tokens(
+-                source_code, r"|(?:\?\?)", token_class)
++                source_code, _RAW_STRING + _VERBATIM_STRING + r"|(?:\?\?)",
++                token_class)
+ 
+ 
+ class CSharpStates(CLikeStates):
+@@ -39,8 +59,18 @@
+         # type's own "{" is not counted; "{" seen in the global state is.
+         self._enclosing_classes = []
+         self._open_braces = 0
++        # (member name, brace depth inside its "{"), for each open block a
++        # member such as a property opened in the global state.
++        self._members = []
++        self._member = None
++        self._square = 0
++        self._assigned = False
++        self._depth = 0
+ 
+     def try_new_function(self, name):
++        if name in _STATEMENTS:
++            self._state = self._state_global
++            return
+         if not self.in_primary_constructor:
+             super(CSharpStates, self).try_new_function(name)
+             if self.class_name and self.context.current_function:
+@@ -50,22 +80,43 @@
+         """Override to handle C# expression-bodied members (=>)"""
+         if token == '=>':
+             # Expression-bodied member: confirm function and enter expression body
+-            self.context.confirm_new_function()
+-            self._state = self._state_expression_body
++            self._enter_expression_body()
+         else:
+             super(CSharpStates, self)._state_dec_to_imp(token)
+ 
++    def _enter_expression_body(self):
++        self.context.confirm_new_function()
++        # The body opens no "{" of its own, so a "{" inside it, as of a
++        # lambda block, must not take the function as its nesting.
++        self.context.start_new_function_nesting(None)
++        self._state = self._state_expression_body
++
+     def _state_expression_body(self, token):
+         """Read the expression body until semicolon, processing tokens for complexity"""
+-        if token == ';':
++        # A lambda block in the body, as in Select(x => { return x; }), has
++        # semicolons of its own; only one outside every bracket ends it.
++        self._depth += {'(': 1, '[': 1, '{': 1, ')': -1, ']': -1, '}': -1}.get(token, 0)
++        if token == ';' and self._depth <= 0:
++            self._depth = 0
+             # End of expression-bodied method, finalize function and return to global state
+             self.context.end_of_function()
+             self._state = self._state_global
+ 
+     def _state_global(self, token):
++        if self._in_member() and token in _ACCESSORS:
++            self._state = lambda next_token: self._state_accessor(
++                token, next_token)
++            return
++        if token == '=>':
++            self._arrow()
++            return
++        self._track_member(token)
+         if token == '{':
+             self._open_braces += 1
++            self._members.append((self._member, self._open_braces))
+         elif token == '}':
++            if self._in_member():
++                self._members.pop()
+             entered_at = (
+                 self._enclosing_classes[-1][1]
+                 if self._enclosing_classes else None)
+@@ -81,6 +132,62 @@
+         else:
+             super(CSharpStates, self)._state_global(token)
+ 
++    def _in_member(self):
++        return bool(self._members) and \
++            self._members[-1][1] == self._open_braces
++
++    def _track_member(self, token):
++        """Keep the last name outside [...], the member a "{" opens."""
++        if token == '=' and self._square == 0:
++            self._assigned = True
++        if token in (';', '{', '}'):
++            self._assigned = False
++        if token == '[':
++            self._square += 1
++        elif token == ']':
++            self._square = max(self._square - 1, 0)
++        elif token in (';', '}', '=', '=>'):
++            self._member = None
++        elif self._square == 0 and (token[0].isalpha() or token[0] == '_'):
++            self._member = token
++
++    def _arrow(self):
++        """Read a "=>" the global state sees: after a member's name it opens
++        an expression-bodied property, a getter; after "=" it is a lambda
++        that initializes a field, whose body measures as no function."""
++        if self._member and not self._assigned:
++            name = f"{self._member}::get"
++            self.context.try_new_function(name)
++            if self.class_name:
++                self.context.current_function.name = \
++                    f"{self.class_name}::{name}"
++            self._enter_expression_body()
++        else:
++            self._state = self._state_initializer
++        self._member = None
++        self._assigned = False
++
++    def _state_initializer(self, token):
++        self._depth += {'(': 1, '[': 1, '{': 1, ')': -1, ']': -1, '}': -1}.get(token, 0)
++        if token == ';' and self._depth <= 0:
++            self._depth = 0
++            self._state = self._state_global
++
++    def _state_accessor(self, accessor, token):
++        """Measure an accessor body as a function named Member::accessor."""
++        if token not in ('{', '=>'):
++            self._state = self._state_global
++            self._state(token)
++            return
++        name = f"{self._members[-1][0] or ''}::{accessor}".lstrip(':')
++        self.context.try_new_function(name)
++        if self.class_name:
++            self.context.current_function.name = f"{self.class_name}::{name}"
++        if token == '=>':
++            self._enter_expression_body()
++        else:
++            self.next(self._state_entering_imp, token)
++
+     def _state_class_declaration(self, token):
+         if token == '(':  # Primary constructor
+             self.in_primary_constructor = True

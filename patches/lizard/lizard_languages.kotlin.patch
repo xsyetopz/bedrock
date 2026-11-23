@@ -1,0 +1,314 @@
+Fixes to the Kotlin reader of lizard 1.26.1.
+
+- `type` is a plain name. Read as Go's keyword, `add(type)` skipped the `)`
+  and the next token, often a function's closing `}`.
+- A raw string is one token that ends at the last quote of its closing run,
+  and a backtick name may hold spaces, as test names do.
+- An expression body ends with its line unless the line goes on, by an
+  operator at its end or at the start of the next line, or by an open
+  bracket. A block inside it, a lambda or an object body, is read like a
+  function body, so a `fun` inside is a function of its own.
+- A declaration without a body, an abstract or interface member, is not a
+  function, and no longer takes the body of the next one.
+- A lambda or function type arrow starts no anonymous function; only a
+  `when` branch arrow counts as a branch.
+- A declaration header may span lines; an extension function is named
+  `Type.name`.
+- A comma inside a parameter's type or default value, `(Int, Int) -> Int` or
+  `Map<K, V>`, does not split the parameter.
+- `get` and `set` start an accessor only when `(` follows them.
+- The members of an `interface` are read as a class's are: a member with a
+  body is a function of its own.
+- An expression body ends on the line of its last token, and the token after
+  it counts toward the enclosing code.
+
+--- a/lizard_languages/kotlin.py
++++ b/lizard_languages/kotlin.py
+@@ -28,7 +28,14 @@
+     def generate_tokens(source_code, addition='', token_class=None):
+         return CodeReader.generate_tokens(
+             source_code,
+-            r"|`\w+`" +
++            # A raw string is one token that ends at the last quote of the
++            # closing run. The shared string rule reads three quotes as an empty
++            # string plus an opening quote, so an odd number of quotes inside
++            # would shift every later string and keywords in the text would
++            # count as code.
++            r'|"""(?:[^"]|"{1,2}(?!"))*"{3,}' +
++            # Backtick names may hold spaces, as in test names.
++            r"|`[^`\n]+`" +
+             r"|\w+\?" +
+             r"|\w+\!!" +
+             r"|\?\?" +
+@@ -40,11 +47,28 @@
+ class KotlinStates(GoLikeStates):  # pylint: disable=R0903
+ 
+     FUNC_KEYWORD = 'fun'
++    # `type` is a plain name in Kotlin. Read as Go's keyword, `add(type)`
++    # skipped the `)` and the next token, often a function's closing `}`.
++    TYPE_KEYWORD = 'typealias'
+     _ACCESSORS = {'get', 'set'}
+     _ACCESSOR_MODIFIERS = {'public', 'protected', 'internal', 'private', 'inline', 'external'}
+     _EXPRESSION_BODY_ENDERS = {
+         'fun', 'class', 'interface', 'val', 'var',
+     }
++    # A line that starts with one of these continues the expression above it.
++    _LINE_START_CONTINUES = {
++        '.', '?', '?:', '&&', '||', 'else', 'catch', 'finally', 'as', 'as?',
++        'is', '!is', 'in', '!in', 'by', '==', '!=', '===', '!==', '<=', '>=',
++        '*', '/', '%', '->', ':', '=',
++    }
++    # A line that ends with one of these continues on the next line.
++    _LINE_END_CONTINUES = {
++        '=', '+', '-', '*', '/', '%', '&&', '||', '?:', '.', '?', ',', '->',
++        '==', '!=', '===', '!==', '<=', '>=', '<', '>', ':', 'else', 'as',
++        'as?', 'is', 'in', '!', 'by',
++    }
++    # A declaration header goes on over a line break at one of these.
++    _HEADER_CONTINUES = {':', ',', '{', '=', 'where', '.', '<'}
+ 
+     def __init__(self, context, in_when_cases=False, accessor_declaration_scope=None):
+         super().__init__(context)
+@@ -55,25 +79,41 @@
+             accessor_declaration_scope or context.global_pseudo_function
+         )
+         self._when_return_state = self._state_global
++        # Line of the last token of an expression body or declaration header,
++        # so a token that starts a new line can be told from one that does not.
++        self._body_line = 0
++        self._expr_started = False
++        self._paren_keyword = []
++        self._after_control_paren = False
++        self._header_depth = 0
++        self._dec_nest = 0
++        # The token after `get` or `set` is `(` in an accessor with a body.
++        self._accessor_head = False
+ 
+     def _state_global(self, token):
+         if (token in self._ACCESSORS
++                and self.last_token not in ('.', '::', '@', ':', '=')
+                 and self.context.current_function is self._accessor_declaration_scope):
+             self._accessor_name = token
++            self._accessor_head = True
+             self.context.push_new_function(token)
++            self._body_line = self.context.current_line
++            self._header_depth = 0
+             self._state = self._expect_function_impl
+         elif (token in ('class', 'object') and self.last_token != '::'
+               and self.context.current_function is not self.context.global_pseudo_function):
+             self._state = self._local_class_header
+         elif token == '->':
++            # Only a `when` branch is a branch. The arrow of a lambda or of a
++            # function type adds nothing; the lambda body counts in the
++            # function that holds it. Starting a function here waited for a
++            # `{` that a lambda does not have and took the next block.
+             if self._in_when_cases:
+                 self.context.add_condition()
+-            else:
+-                self.context.push_new_function("(anonymous)")
+-                self._state = super(KotlinStates, self)._expect_function_impl
+         elif token in ('val', 'var', ','):
+             self._state = self._expect_declaration_name
+         elif token == 'interface':
++            self._body_line = self.context.current_line
+             self._state = self._interface
+         elif token == 'when':
+             self._start_when(self._state_global)
+@@ -101,33 +141,132 @@
+     def _expect_declaration_name(self, token):
+         self._state = self._state_global
+ 
++    def _starts_line(self, token):
++        """True when the token is the first one on its line."""
++        return self.context.current_line - token.count('\n') > self._body_line
++
++    @CodeStateMachine.read_inside_brackets_then("()", '_expect_function_impl')
++    def _function_dec(self, token):
++        # A comma separates parameters only outside the nested brackets of a
++        # type or default value: `(Int, Int) -> Int`, `Map<K, V>`, `f(1, 2)`.
++        self._body_line = self.context.current_line
++        self._header_depth = 0
++        if token == '(' and self.br_count == 1:
++            self._dec_nest = 0
++        if token in '()':
++            return
++        if token in ('[', '{') or (
++                token == '<' and self.last_token
++                and (self.last_token[0].isalnum() or self.last_token[0] == '_')):
++            self._dec_nest += 1
++        elif token in (']', '}') or (token == '>' and self._dec_nest > 0):
++            self._dec_nest = max(self._dec_nest - 1, 0)
++        if token == ',' and (self.br_count > 1 or self._dec_nest > 0):
++            self.context.add_to_long_function_name(' ,')
++            return
++        self.context.parameter(token)
++
++    def _expect_function_dec(self, token):
++        if token == '.':
++            # An extension function: `fun String.name(...)`.
++            self.context.add_to_function_name(token)
++            self._state = self._extension_name
++        else:
++            super()._expect_function_dec(token)
++
++    def _extension_name(self, token):
++        self.context.add_to_function_name(token)
++        self._state = self._expect_function_dec
++
+     def _expect_function_impl(self, token):
++        if self._accessor_head:
++            self._accessor_head = False
++            if token != '(':
++                # `private set`, `@get:Name` or a call of `get`: not an
++                # accessor with a body, so nothing starts here.
++                self.fold_into_enclosing_function()
++                self.next(self._state_global, token)
++                return
+         if token == '=':
+             self._expr_nesting = 0
++            self._expr_started = False
++            self._paren_keyword = []
++            self._after_control_paren = False
++            self._body_line = self.context.current_line
+             self._state = self._expression_body
+         elif token == '{':
+             self.next(self._function_impl, token)
++        elif self._header_ends(token):
++            # A declaration without a body: an abstract or interface member,
++            # or an accessor like `private set`. Waiting for a `{` would take
++            # the body of the next function.
++            self.fold_into_enclosing_function()
++            self.next(self._state_global, token)
++        else:
++            self._body_line = self.context.current_line
+ 
++    def _header_ends(self, token):
++        if token in '([':
++            self._header_depth += 1
++        elif token in ')]':
++            self._header_depth -= 1
++        elif self._header_depth <= 0:
++            if token in (';', '}'):
++                return True
++            if (self._starts_line(token)
++                    and token not in self._HEADER_CONTINUES
++                    and self.last_token not in self._HEADER_CONTINUES):
++                return True
++        return False
++
+     def _start_when(self, return_state):
+         self._when_return_state = return_state
+         self._state = self._when_cases
+ 
+     def _expression_body(self, token):
++        if (self._expr_nesting == 0 and self._expr_started
++                and self._starts_line(token)
++                and not self._after_control_paren
++                and token not in self._LINE_START_CONTINUES
++                and self.last_token not in self._LINE_END_CONTINUES):
++            # The expression ends with the line, unless the line goes on.
++            self._end_expression_body(token)
++            return
++        self._expr_started = True
++        self._after_control_paren = False
+         if token == 'when':
+             self._start_when(self._expression_body)
++            self._body_line = self.context.current_line
+             return
+-        if token in '{([':
++        self._body_line = self.context.current_line
++        if token == '{':
++            # A block in the expression, a lambda or an object body, is read as
++            # a function body is, so a `fun` inside it is a function of its own.
++            def block_end():
++                self._body_line = self.context.current_line
++            self.sub_state(self.statemachine_clone(), block_end)
++            return
++        if token in '([':
+             self._expr_nesting += 1
++            self._paren_keyword.append(
++                token == '(' and self.last_token in ('if', 'while', 'for'))
+             return
+-        if token in ')]}':
++        if token in ')]':
+             if self._expr_nesting > 0:
+                 self._expr_nesting -= 1
+-                return
+-            if token == '}':
+-                self._end_expression_body(token)
++                if self._paren_keyword and self._paren_keyword.pop() \
++                        and self._expr_nesting == 0:
++                    # `if (c)` and the like take their body on the next line.
++                    self._after_control_paren = True
+             return
+-        if self._expr_nesting == 0 and self._is_expression_body_ender(token):
++        if token == '}':
++            # The block of the enclosing code closes: the matching braces of
++            # the expression itself were read by the block above.
+             self._end_expression_body(token)
++            return
++        if self._expr_nesting == 0 and (
++                token == ';' or self._is_expression_body_ender(token)):
++            self._end_expression_body(token)
+ 
+     def _is_expression_body_ender(self, token):
+         if token in self._ACCESSORS:
+@@ -145,21 +284,46 @@
+                 or self.last_token in self._ACCESSOR_MODIFIERS)
+ 
+     def _end_expression_body(self, token):
+-        self.context.end_of_function()
++        context = self.context
++        function = context.current_function
++        # The token that ends the body is counted in the function it ends. A
++        # token that starts a line takes its line along, and the function
++        # ended on the line of its last token, not on the next declaration.
++        lines = token.count('\n') + 1 if self._starts_line(token) else 0
++        function.nloc -= lines
++        function.end_line = self._body_line
++        context.end_of_function()
++        # The line of the token belongs to the enclosing code, as the line of a
++        # nested `fun` does when the body does not end there.
++        context.current_function.nloc += lines
+         self.next(self._state_global, token)
+ 
+     def statemachine_before_return(self):
+         if self._state == self._expression_body:
+             self.context.end_of_function()
+ 
+-    @CodeStateMachine.read_inside_brackets_then("{}")
+-    def _interface(self, end_token):
+-        if end_token == "}":
++    def _interface(self, token):
++        # The header of `interface Name<T> : Base {`; its members are read like
++        # those of a class, so a member with a body is a function of its own.
++        if token == '{':
+             self._state = self._state_global
++            self.sub_state(self.statemachine_clone())
++        elif token == ';' or token == '}' or (
++                self._starts_line(token)
++                and token not in self._HEADER_CONTINUES
++                and self.last_token not in self._HEADER_CONTINUES):
++            self.next(self._state_global, token)
++        else:
++            self._body_line = self.context.current_line
+ 
+     def _function_name(self, token):
+         if token == "<":
+             self.next(self._template, token)
++        elif token == 'interface':
++            # `fun interface Name { ... }` declares a type, not a function.
++            self.fold_into_enclosing_function()
++            self._body_line = self.context.current_line
++            self._state = self._interface
+         else:
+             return super(KotlinStates, self)._function_name(token)
+ 
+@@ -169,6 +333,7 @@
+ 
+     def _when_cases(self, token):
+         def callback():
++            self._body_line = self.context.current_line
+             self.context.add_condition(inc=-1)
+             self.next(self._when_return_state)
+         if token != '{':

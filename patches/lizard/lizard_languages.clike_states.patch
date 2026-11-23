@@ -1,0 +1,313 @@
+Fixes to the function recognition of the C, C++ and Objective-C readers of
+lizard 1.26.1, in a CppStates class that only they use. C#, Java and the other
+C-like readers keep CLikeStates.
+
+- `concept C = requires(T a) { a + b; };` and a trailing requires-clause are
+  not function heads, and the clause runs to the body's `{`.
+- A `<` that no `>` closes, as in `kA < kB;`, ends at the next `{`, `}` or
+  `;` instead of turning the rest of the file into one function name.
+- The parameter list is read whole: a comparison or shift in a default value
+  (`int x = a < b`) is no template bracket, and `{}` and `[]` nest like `()`.
+- An unnamed parameter, such as `S&&`, `const S&` or `void (*cb)(int)`,
+  counts as one parameter.
+- `override`, `final`, `volatile`, `__attribute__((...))`, `__declspec(...)`
+  and `alignas(...)` after the parameters do not restart the function.
+- A function-try-block measures as one function, handlers included.
+- `) MACRO1 MACRO2 {` reads the macros as attributes, not K&R parameter
+  declarations, unless a `;` came first or the words start a declaration of
+  their own, as in `MACRO(x)` followed by `namespace a {`.
+
+--- a/lizard_languages/clike_states.py
++++ b/lizard_languages/clike_states.py
+@@ -1,5 +1,6 @@
+ """Function recognition shared by C-like language readers."""
+ 
++import re
+ from .code_reader import CodeStateMachine
+ 
+ 
+@@ -248,3 +249,284 @@
+             # End of capture list, now expect parameters
+             self._state = self._state_lambda_params
+         # Otherwise, continue in capture list
++
++
++_NAMED_PARAMETER = re.compile(r'[\w$]+(\s=.*)?(\s:.*)?$')
++_OPENERS = ('(', '[', '{')
++_DECLARATION_KEYWORDS = frozenset((
++    'namespace', 'struct', 'class', 'union', 'enum', 'extern', 'typedef',
++    'using', 'template', 'concept'))
++_CLOSERS = {')': '(', ']': '[', '}': '{'}
++
++
++def _is_word(token):
++    return token[0].isalpha() or token[0] == '_'
++
++
++# pylint: disable=R0903,R0902
++class CppStates(CLikeStates):
++    ''' Function recognition for C, C++ and Objective-C. Java, C# and the
++    other C-like readers keep CLikeStates. '''
++
++    # Qualifiers and attributes that may sit between `)` and the body.
++    _TRAILING_QUALIFIERS = ('override', 'final', 'volatile')
++    _ATTRIBUTE_SPECIFIERS = ('__attribute__', '__declspec', 'alignas')
++
++    def __init__(self, context):
++        super(CppStates, self).__init__(context)
++        self._dec_tokens = []
++        self._name_angles = 0
++        self._name_nested = 0
++        self._head_try = False
++        self._declared = False
++        self._imp_try = False
++        self._try_end = (0, 0, 0)
++        self._clause = [False, 0, 0]  # nested requires, parentheses, block
++
++    def try_new_function(self, name):
++        self._head_try = False
++        self._declared = False
++        super(CppStates, self).try_new_function(name)
++
++    def _state_global(self, token):
++        if token == 'requires':
++            self._state = self._state_requires_expression
++        else:
++            super(CppStates, self)._state_global(token)
++
++    # `concept C = requires(T a) { a + b; };` is not a function head.
++    def _state_requires_expression(self, token):
++        if token == '(':
++            self.next(self._state_requires_parameters, token)
++        elif token == '{':
++            self.next(self._state_requires_block, token)
++        else:
++            self.next(self._state_global, token)
++
++    @CodeStateMachine.read_inside_brackets_then("()", "_state_requires_body")
++    def _state_requires_parameters(self, _):
++        pass
++
++    def _state_requires_body(self, token):
++        if token == '{':
++            self.next(self._state_requires_block, token)
++        else:
++            self.next(self._state_global, token)
++
++    @CodeStateMachine.read_inside_brackets_then("{}", "_state_global")
++    def _state_requires_block(self, _):
++        pass
++
++    # `kA < kB;` and `std::array<int, (N < 3)> a;` hold a `<` that no `>`
++    # closes. Parentheses shield a comparison, and a `;`, `{` or `}` ends the
++    # name, so the rest of the file is not read as part of it.
++    def _state_template_in_name(self, token):
++        if token in ('{', '}', ';') or (
++                token in (')', ']') and not self._name_nested):
++            self._name_angles = self._name_nested = 0
++            self.next(self._state_global, token)
++            return
++        self.context.add_to_function_name(token)
++        if token in ('(', '['):
++            self._name_nested += 1
++        elif token in (')', ']'):
++            self._name_nested -= 1
++        elif self._name_nested:
++            return
++        elif token == '<':
++            self._name_angles += 1
++        elif token == '>':
++            self._name_angles -= 1
++            if self._name_angles <= 0:
++                self._name_angles = 0
++                self._state = self._state_function
++
++    # The parameter list is read whole, so that a `<` or `>` that is a
++    # comparison or a shift (`int x = a < b`, `sizeof(T) > 2`) is not taken
++    # for a template bracket, and `{}` and `[]` nest like `()` (`= {1, 2}`,
++    # `int a[]`).
++    @CodeStateMachine.read_inside_brackets_then("()", "_state_dec_to_imp")
++    def _state_dec(self, token):
++        self._dec_tokens.append(token)
++        if self.br_count == 0:
++            tokens, self._dec_tokens = self._dec_tokens, []
++            self._read_parameters(tokens[1:-1])
++
++    @staticmethod
++    def _template_brackets(tokens):
++        """Indexes of the `<` and `>` that pair up as template brackets."""
++        pending, paired = [], set()
++        for i, token in enumerate(tokens):
++            if token in _OPENERS or token == '<':
++                pending.append((token, i))
++            elif token in _CLOSERS:
++                while pending and pending[-1][0] != _CLOSERS[token]:
++                    pending.pop()
++                if pending:
++                    pending.pop()
++            elif token == '>' and pending and pending[-1][0] == '<':
++                paired.update((pending.pop()[1], i))
++        return paired
++
++    def _read_parameters(self, tokens):
++        context = self.context
++        paired = self._template_brackets(tokens)
++        context.add_to_long_function_name('(')
++        depth = 1
++        groups = [([], [])]  # parameter tokens, and all tokens
++        for i, token in enumerate(tokens):
++            opens = token in _OPENERS or (token == '<' and i in paired)
++            closes = token in _CLOSERS or (token == '>' and i in paired)
++            if closes:
++                depth = max(depth - 1, 1)
++            if depth == 1 and not opens and not closes:
++                if token == ',':
++                    context.add_to_long_function_name(' ,')
++                    groups.append(([], []))
++                    continue
++                groups[-1][1].append(token)
++                if token != 'void':  # reserved: no parameters
++                    context.add_to_long_function_name(' ' + token)
++                    groups[-1][0].append(token)
++            else:
++                context.add_to_long_function_name(token)
++                groups[-1][1].append(token)
++            if opens:
++                depth += 1
++        context.add_to_long_function_name(')')
++        self._store_parameters(groups)
++
++    def _store_parameters(self, groups):
++        parameters = []
++        for index, (own, every) in enumerate(groups):
++            text = ' '.join(own)
++            if not _NAMED_PARAMETER.search(text):
++                # `S&&`, `const S&`, `S*`, `void (*cb)(int)` name nothing
++                # parameter_count can see, but each is one parameter.
++                name = self._unnamed_parameter(every, own)
++                text = (text + ' ' + name).strip() if name else text
++            parameters.append(text if index == 0 else ' ' + text)
++        if len(groups) == 1 and not parameters[0]:
++            parameters = []
++        self.context.current_function.full_parameters[:] = parameters
++
++    @staticmethod
++    def _unnamed_parameter(every, own):
++        for i in range(len(every) - 2):
++            if every[i] == '(' and every[i + 1] in ('*', '&', '^') \
++                    and _is_word(every[i + 2]):
++                return every[i + 2]
++        for tokens in (own, every):
++            words = [t for t in tokens if _is_word(t) and t != 'void']
++            if words:
++                return words[-1]
++        return None
++
++    def _state_dec_to_imp(self, token):
++        if token in self._TRAILING_QUALIFIERS:
++            return
++        if token == 'try':
++            self._head_try = True
++        elif token in self._ATTRIBUTE_SPECIFIERS:
++            self._state = self._state_attribute_specifier
++        elif token == 'requires':
++            self._clause = [False, 0, 0]
++            self._state = self._state_requires_clause
++        else:
++            super(CppStates, self)._state_dec_to_imp(token)
++
++    # `__attribute__((noinline))`, `__declspec(...)` and `alignas(...)`
++    # follow the parameters; the `(` must not restart the function under them.
++    @CodeStateMachine.read_inside_brackets_then("()", "_state_dec_to_imp")
++    def _state_attribute_specifier(self, _):
++        pass
++
++    # A trailing requires-clause runs to the body's `{`. A `{` that follows a
++    # nested `requires` belongs to that requires-expression instead.
++    def _state_requires_clause(self, token):
++        clause = self._clause
++        if clause[2]:
++            clause[2] += {'{': 1, '}': -1}.get(token, 0)
++        elif token == 'requires':
++            clause[0] = True
++        elif token == '(':
++            clause[1] += 1
++        elif token == ')':
++            clause[1] -= 1
++        elif clause[1]:
++            return
++        elif token == '{' and clause[0]:
++            clause[0], clause[2] = False, 1
++        elif token in ('{', ';'):
++            self.next(self._state_dec_to_imp, token)
++
++    # A function-try-block, `f() try { } catch (...) { }`, is one function:
++    # the handlers are read past, after the body.
++    def _state_entering_imp(self, token):
++        self._imp_try = self._head_try
++        if self._head_try:
++            self.context.current_function.cpp_try = True
++        self._head_try = False
++        super(CppStates, self)._state_entering_imp(token)
++
++    @CodeStateMachine.read_inside_brackets_then("{}")
++    def _state_imp(self, _):
++        self._state = self._state_expect_catch \
++            if self._imp_try else self._state_global
++        self._snapshot_function()
++        self._imp_try = False
++
++    def _snapshot_function(self):
++        # The next function's first line is counted into this one before its
++        # first token reaches here; the function ends where its last `}` did.
++        function = self.context.current_function
++        self._try_end = (
++            function.end_line, function.nloc, function.token_count)
++
++    def _state_expect_catch(self, token):
++        if token == 'catch':
++            self._state = self._state_catch_parameters
++        else:
++            stack = self.context.nesting_stack
++            if stack and getattr(stack[-1], 'cpp_try', False):
++                function = self.context.current_function
++                (function.end_line, function.nloc,
++                 function.token_count) = self._try_end
++                self.context.pop_nesting()
++            self.next(self._state_global, token)
++
++    @CodeStateMachine.read_inside_brackets_then("()", "_state_catch_body")
++    def _state_catch_parameters(self, _):
++        pass
++
++    def _state_catch_body(self, token):
++        if token == '{':
++            self.next(self._state_catch_block, token)
++        else:
++            self._state_expect_catch(token)
++
++    @CodeStateMachine.read_inside_brackets_then("{}", "_state_expect_catch")
++    def _state_catch_block(self, _):
++        self._snapshot_function()
++
++    # After `) MACRO1 MACRO2 {` the macros are attributes, not parameter
++    # declarations. Once a `;` has passed, the words were K&R declarations
++    # or a declaration such as `using F = void(*)(int) NOEXCEPT;`, and a
++    # later `struct S {` is no body of it.
++    def _state_old_c_params(self, token):
++        if token == ';':
++            self._declared = True
++        words = self._saved_tokens
++        if token == '{' and all(_is_word(t) for t in words):
++            if any(t in _DECLARATION_KEYWORDS for t in words):
++                # `MACRO(x) namespace a {`: the call took no `;`, and the
++                # words start a declaration of their own.
++                self._state = self._state_global
++                for tkn in words + [token]:
++                    self._state(tkn)
++                return
++            if not self._declared:
++                self._saved_tokens = []
++                self._state_dec_to_imp(token)
++                return
++        super(CppStates, self)._state_old_c_params(token)

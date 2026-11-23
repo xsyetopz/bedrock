@@ -1,0 +1,61 @@
+Fixes to the F# tokenizer of lizard 1.26.1.
+
+- `$@"` and `@$"` strings are verbatim, but Pygments lexes them as escaped
+  ones, so a trailing `\"` swallowed the rest of the file.
+- A name with a prime, `id'`, is one token: Pygments leaves the `'` apart.
+
+--- a/lizard_languages/fsharp_tokens.py
++++ b/lizard_languages/fsharp_tokens.py
+@@ -2,6 +2,8 @@
+ joined, `#` directive lines dropped and each line's first code token
+ marked with its column."""
+ 
++import re
++
+ import pygments.token as py_token
+ from .pygments_fragments import join_fragments, lex_keeping_newlines
+ 
+@@ -24,15 +26,41 @@
+         return token
+ 
+ 
++# `$@"` and `@$"` strings are verbatim, but Pygments lexes them as escaped
++# ones, so a trailing `\"` swallows the rest of the file. Its `@"` lexing is
++# right; a space keeps every column and line.
++_VERBATIM_INTERPOLATED = re.compile(r'(?<![\w"@$])(?:\$@|@\$)"')
++
++
+ def generate_tokens(source_code, is_comment):
+     '''`is_comment(token)` tells comments, which start no line.'''
+-    return _mark_line_starts(join_fragments(
++    source_code = _VERBATIM_INTERPOLATED.sub(' @"', source_code)
++    return _mark_line_starts(_join_primes(join_fragments(
+         lex_keeping_newlines(source_code, 'fsharp'),
+         joins=lambda _run, value: is_operator(value),
+         comment_types=(py_token.String.Doc,),
+-        keep_spaces=True), is_comment)
++        keep_spaces=True)), is_comment)
+ 
+ 
++def _join_primes(tokens):
++    '''Pygments leaves the `'` of `id' (x: 'T)` as a token of its own;
++    an identifier directly followed by one is a name with a prime.'''
++    held = None
++    for token in tokens:
++        if held is not None:
++            if token == "'":
++                held += token
++                continue
++            yield held
++            held = None
++        if re.match(r'\w+$', token):
++            held = token
++        else:
++            yield token
++    if held is not None:
++        yield held
++
++
+ def _mark_line_starts(tokens, is_comment):
+     column, at_line_start, directive = 0, True, False
+     for token in tokens:

@@ -146,7 +146,7 @@ A kind is cross-platform wherever its toolchain allows. A kind is Apple-only whe
 
 ### Size Bounds
 
-Each language's linters bound what they can: oxlint, golangci-lint, SwiftLint, Clippy, clang-tidy, and haxe-checkstyle check function length and complexity themselves. bedrock-lizard fills only the gaps, running the pinned [lizard](https://github.com/terryyin/lizard) 1.26.1 through `uvx` or `pipx`. `just setup` installs uv, and the CI workflows that run the guard install it too:
+Each language's linters bound what they can: oxlint, golangci-lint, SwiftLint, Clippy, clang-tidy, and haxe-checkstyle check function length and complexity themselves. bedrock-lizard fills only the gaps, running the pinned [lizard](https://github.com/terryyin/lizard) 1.26.1 through `uvx` or `pipx`. bedrock applies its fixes from `patches/lizard` as lizard imports the modules they change, one patch per module, each listing the misreads of lizard 1.26.1 it fixes: in C#, C, C++, Objective-C, Java, Kotlin, Scala, Rust, and F#, such as C# verbatim strings read as C strings, a Kotlin parameter named `type` read as Go's keyword, and Scala 3 bodies ended at their first line break. `just setup` installs uv, and the CI workflows that run the guard install it too:
 
 | Language | Native bounds | bedrock-lizard checks |
 | --- | --- | --- |

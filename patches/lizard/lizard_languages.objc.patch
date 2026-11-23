@@ -1,0 +1,169 @@
+Fixes to the Objective-C reader of lizard 1.26.1.
+
+- It shares the C and C++ fixes in clike and clike_states: raw strings, digit
+  separators, preprocessor conditionals, templates and parameter lists.
+- A block literal at file scope, `^(int v) { ... }`, is no function named
+  `(`.
+- A C or C++ function in an Objective-C file keeps the C rules: the selector
+  rules read `override` or `try` as a name.
+- An attribute macro after a selector, `NS_SWIFT_NAME(sw(x:))` or
+  `NS_AVAILABLE(10_0)`, no longer renames the method `)` or adds a parameter.
+- Each selector part counts as one parameter.
+
+--- a/lizard_languages/objc.py
++++ b/lizard_languages/objc.py
+@@ -1,11 +1,14 @@
+ ''' Language parser for Python '''
+ 
+ from .code_reader import CodeStateMachine
+-from .clike import CLikeReader, CLikeStates, CLikeNestingStackStates
++from .clike import CLikeReader, CppNestingStackStates
++from .clike_states import CLikeStates, CppStates, _is_word
+ 
+ 
+ class ObjCReader(CLikeReader):
+ 
++    c_family = True
++
+     ext = ['m', 'mm']
+     language_names = ['objectivec', 'objective-c', 'objc']
+ 
+@@ -13,7 +16,7 @@
+         super(ObjCReader, self).__init__(context)
+         self.parallel_states = [
+                 ObjCStates(context),
+-                CLikeNestingStackStates(context)]
++                CppNestingStackStates(context)]
+ 
+     def fake_and_useless(self):
+         pass
+@@ -22,7 +25,7 @@
+         pass
+ 
+ 
+-class ObjCStates(CLikeStates):  # pylint: disable=R0903
++class ObjCStates(CppStates):  # pylint: disable=R0903
+     # @interface and @protocol declare an API; a body may only appear in
+     # @implementation. Their contents must not reach the C-like states, where
+     # "Name () { ivars }" of a class extension looks like a function definition
+@@ -31,8 +34,11 @@
+         super(ObjCStates, self).__init__(context)
+         self._objc_param_paren_depth = 0
+         self._objc_after_at = False
++        self._objc_previous = ''
++        self._objc_method_head = False
+ 
+     def _state_global(self, token):
++        previous, self._objc_previous = self._objc_previous, token
+         if self._objc_after_at:
+             self._objc_after_at = False
+             if token == 'interface':
+@@ -46,9 +52,34 @@
+         super(ObjCStates, self)._state_global(token)
+         if token == 'typedef':
+             self.next(self._typedef, token)
++        elif token == '^':
++            self._state = self._state_objc_block
+         elif token == '(':
++            # The parentheses after `-` or `+` hold a method's return type.
++            self._objc_method_head = previous in ('-', '+')
+             self.next(self._state_dec, token)
+ 
++    # A block literal at file scope, `^(int v) { ... }`, is no function: it
++    # was read as one named `(`. Its parameters and body are skipped.
++    def _state_objc_block(self, token):
++        if token == '(':
++            self.next(self._state_objc_block_parameters, token)
++        elif token == '{':
++            self.next(self._state_objc_block_body, token)
++        elif token == '*' or _is_word(token):  # `^int(int a) { }`
++            return
++        else:
++            self.next(self._state_global, token)
++
++    @CodeStateMachine.read_inside_brackets_then(
++        "()", "_state_objc_block")
++    def _state_objc_block_parameters(self, _):
++        pass
++
++    @CodeStateMachine.read_inside_brackets_then("{}", "_state_global")
++    def _state_objc_block_body(self, _):
++        pass
++
+     def _state_objc_declaration(self, token):
+         """Skip an @interface / @protocol section up to its @end."""
+         if self._objc_after_at:
+@@ -76,8 +107,13 @@
+     def _state_dec_to_imp(self, token):
+         if token in ("+", "-"):
+             self._state = self._state_global
+-        else:
++        elif not self._objc_method_head:
++            # A C or C++ function, as in the other C-like readers: the
++            # selector rules below would read `override` or `try` as a name.
+             super(ObjCStates, self)._state_dec_to_imp(token)
++        else:
++            self._objc_method_head = False
++            CLikeStates._state_dec_to_imp(self, token)
+             if self._state != self._state_imp:
+                 self._state = self._state_objc_dec_begin
+                 self.context.restart_new_function(token)
+@@ -88,6 +124,8 @@
+             self.context.add_to_function_name(token)
+         elif token == '{':
+             self.next(self._state_entering_imp, "{")
++        elif _is_word(token):
++            self.next(self._state_objc_attributes, token)
+         else:
+             self._state = self._state_global
+ 
+@@ -100,10 +138,38 @@
+             pass
+         elif token == '{':
+             self.next(self._state_entering_imp, "{")
++        elif _is_word(token):
++            # The next selector part, or an attribute macro: `:` tells which.
++            self._objc_part = token
++            self._state = self._state_objc_part
+         else:
+             self._state = self._state_objc_dec_begin
+             self.context.add_to_function_name(" " + token)
+ 
++    def _state_objc_part(self, token):
++        if token == ':':
++            self.context.add_to_function_name(" " + self._objc_part)
++            self.next(self._state_objc_dec_begin, token)
++        else:
++            self.next(self._state_objc_attributes, token)
++
++    # `NS_SWIFT_NAME(sw(x:))` or `NS_AVAILABLE(10_0)` after the selector: the
++    # method was renamed `)` or given a parameter by it.
++    def _state_objc_attributes(self, token):
++        if token == '(':
++            self.next(self._state_objc_attribute_arguments, token)
++        elif token == '{':
++            self.next(self._state_entering_imp, token)
++        elif _is_word(token):
++            return
++        else:
++            self.next(self._state_global, token)
++
++    @CodeStateMachine.read_inside_brackets_then(
++        "()", "_state_objc_attributes")
++    def _state_objc_attribute_arguments(self, _):
++        pass
++
+     def _state_objc_param_type(self, token):
+         # A block / function-pointer param type, e.g. (void (^)(int)), nests
+         # parentheses; balance them so the type ends at its matching ')'
+@@ -117,7 +183,9 @@
+                 self._state = self._state_objc_param
+         self.context.add_to_long_function_name(" " + token)
+ 
+-    def _state_objc_param(self, _):
++    def _state_objc_param(self, token):
++        # Each selector part takes one parameter; its name is what counts.
++        self.context.current_function.full_parameters.append(token)
+         self._state = self._state_objc_dec
+ 
+     @CodeStateMachine.read_until_then(';')

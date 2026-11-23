@@ -1,0 +1,205 @@
+Fixes to the Rust reader of lizard 1.26.1.
+
+- Raw strings, r#"..."#, br"..." and cr"...", are one token. The shared
+  pattern read `#"` as a preprocessor line and dropped the rest of it.
+- Rust has no preprocessor: `#[attr] fn f() {}` is code.
+- `where` and `catch` add no branch, and the `?` of a `?Sized` bound is no
+  error propagation.
+- `fn(i32) -> i32`, a function pointer type, starts no function.
+- A `macro_rules!` body holds templates, not functions.
+- A declaration without a body, a trait method or an `extern` item, is not a
+  function and no longer takes the body of the next item.
+- A comma inside `Fn(A, B)`, `HashMap<K, V>`, a tuple or a struct pattern
+  does not split a parameter, and `[a, b]: [u16; 2]` counts as one.
+- After `#[attr]`, `|| x` is a closure, not a logical or.
+
+--- a/lizard_languages/rust.py
++++ b/lizard_languages/rust.py
+@@ -4,7 +4,8 @@
+ 
+ import re
+ 
+-from .code_reader import CodeReader
++from .code_reader import CodeReader, CodeStateMachine
++from .token_pattern import compiled_token_pattern, tokens_in_span
+ from .clike import CCppCommentsMixin
+ from .golike import GoLikeStates
+ 
+@@ -16,7 +17,8 @@
+     language_names = ['rust']
+ 
+     # Separated condition categories
+-    _control_flow_keywords = {'if', 'for', 'while', 'catch', 'where'}
++    # `where` opens a bound list and `catch` is no Rust keyword; neither branches.
++    _control_flow_keywords = {'if', 'for', 'while'}
+     _logical_operators = {'&&', '||'}
+     _case_keywords = set()  # Rust match arms are counted via `=>` in RustStates
+     # Note: '?' in Rust is the error propagation operator, not ternary
+@@ -26,6 +28,9 @@
+     _CLOSURE_OPENERS = {'(', '[', '{', ',', ';', ':', '=', '=>', '->',
+                         '&&', '||', '|', 'move', 'async', 'return'}
+ 
++    # After one of these a `?` is a `?Sized` bound, not error propagation.
++    _BOUND_OPENERS = {':', '+', '<', ','}
++
+     def __init__(self, context):
+         super().__init__(context)
+         self.parallel_states = [RustStates(context)]
+@@ -33,16 +38,25 @@
+     @staticmethod
+     def generate_tokens(source_code, addition='', token_class=None):
+         addition = (
++            # raw strings, before `\w+` takes the `r`; the shared pattern
++            # would read `#"` as a preprocessor line and drop the rest of
++            # the line, braces included
++            r"|(?<!\w)(?:[bc]?r(#*)\".*?\"\1)"
+             # char literals, before lifetimes, which also start with `'`
+             r"|(?:'(?:\\(?:x[0-9a-fA-F]{2}|u\{[0-9a-fA-F]+\}|.)|[^'\\\n])')"
+             r"|(?:'\w+\b)")  # lifetimes, labels
+-        return CodeReader.generate_tokens(
+-            _flatten_nested_comments(source_code), addition, token_class)
++        source_code = _flatten_nested_comments(source_code)
++        # Rust has no preprocessor: `#[attr] fn f() {}` is code, not a
++        # directive line that hides the rest of its line
++        return tokens_in_span(
++            compiled_token_pattern(addition), source_code, 0,
++            len(source_code), token_class, macros=False)
+ 
+     def preprocess(self, tokens):
+-        """Normalize an empty closure's `||` to one non-logical pipe token."""
++        """Normalize an empty closure's `||` to one non-logical pipe token,
++        and a `?Sized` bound's `?` to a non-ternary one."""
+         openers = self._CLOSURE_OPENERS
+-        last = None
++        last, prev, before, attribute = None, None, None, 0  # attribute: depth in `#[...]`
+         for token in tokens:
+             if token.isspace():
+                 if token == '\n':
+@@ -50,10 +64,19 @@
+                 continue
+             if token == '||' and last in openers:
+                 yield '|'
++            elif token == '?' and last in self._BOUND_OPENERS:
++                yield '?bound'  # no operand precedes it: not a `?` try
+             else:
+                 yield token
+             if token[0] != '/':  # comments do not end an expression
+                 last = token
++                if attribute:
++                    attribute += (token == '[') - (token == ']')
++                    if not attribute:
++                        last = '{'  # `#[attr] || x`: an expression follows
++                elif token == '[' and (prev == '#' or prev == '!' and before == '#'):
++                    attribute = 1
++                before, prev = prev, token
+ 
+ 
+ class RustStates(GoLikeStates):  # pylint: disable=R0903
+@@ -68,8 +91,17 @@
+         self._if_body_depths = []
+         self._else_pending = False
+         self._paren_depth = 0
++        self._head_depth = 0
++        self._param_depth = 0
++        self._param_braces = 0
+ 
+     def _state_global(self, token):
++        if token == self.FUNC_KEYWORD:
++            self._state = self._fn_head
++            return
++        if token == 'macro_rules':
++            self._state = self._macro_rules
++            return
+         if token == '=>':
+             if self._in_match_arms:
+                 if self._seen_match_arm:
+@@ -84,6 +116,71 @@
+             return
+         super()._state_global(token)
+ 
++    def _fn_head(self, token):
++        """`fn` starts a function only when a name follows. In `fn(i32) -> i32`
++        (a pointer type) the shared Go-like machine would take the `(` for a
++        parameter list and wait for a `{` of some later item."""
++        if re.match(r'\w', token):
++            self.context.push_new_function('')
++            self._head_depth = self._param_depth = self._param_braces = 0
++            self.next(self._function_name, token)
++        else:
++            self.next(self._state_global, token)
++
++    def _macro_rules(self, token):
++        """A `macro_rules!` body holds templates, not functions: skip it."""
++        if token in '([{' and token:
++            self._param_depth = 1
++            self._state = self._skip_macro_body
++
++    def _skip_macro_body(self, token):
++        if token in ('(', '[', '{'):
++            self._param_depth += 1
++        elif token in (')', ']', '}'):
++            self._param_depth -= 1
++            if self._param_depth == 0:
++                self._state = self._state_global
++
++    def _expect_function_impl(self, token):
++        """A `;` outside brackets ends a declaration without a body (trait
++        method, `extern` block): drop it instead of waiting for the `{` of
++        whatever comes next. `[u8; 4]` in the signature has its own `;`."""
++        if token in ('(', '['):
++            self._head_depth += 1
++        elif token in (')', ']'):
++            self._head_depth = max(0, self._head_depth - 1)
++        elif token == ';' and self._head_depth == 0:
++            context = self.context
++            listed = len(context.fileinfo.function_list)
++            context.end_of_function()
++            del context.fileinfo.function_list[listed:]
++            self._state = self._state_global
++            return
++        super()._expect_function_impl(token)
++
++    @CodeStateMachine.read_inside_brackets_then("()", '_expect_function_impl')
++    def _function_dec(self, token):
++        """A comma inside `Fn(A, B)`, `HashMap<K, V>`, a tuple or a struct
++        pattern belongs to one parameter, so only a comma at the list's own
++        level splits."""
++        if token in ('(', '[', '{'):
++            self._param_depth += 1
++            self._param_braces += token == '{'
++        elif token in (')', ']', '}'):
++            self._param_depth = max(0, self._param_depth - 1)
++            self._param_braces -= token == '}' and self._param_braces > 0
++        elif token == '<' and not self._param_braces:  # not `{ 1 << 14 }`
++            self._param_depth += 1
++        elif token == '>' and not self._param_braces:
++            self._param_depth = max(0, self._param_depth - 1)
++        if token == ',' and self._param_depth > 1:  # 1 is the list itself
++            return
++        # Core counts a slot by a name followed by `:` or ending the slot,
++        # which `[dc, ac]: [u16; 2]` and `S { a, .. }: S` lack once a `]` or
++        # `..` comes between them, so brackets and dots stay out of the text.
++        if token not in ('(', ')', '[', ']', '{', '}', '.', '...'):
++            self.context.parameter(token)
++
+     def _count_let_else(self, token):
+         """Count `let ... else`. The `else` of an `if` is not another condition.
+ 
+@@ -135,7 +232,7 @@
+ 
+ _CHAR_LITERAL = re.compile(
+     r"'(?:\\(?:x[0-9a-fA-F]{2}|u\{[0-9a-fA-F]+\}|.)|[^'\\\n])'")
+-_RAW_STRING = re.compile(r'b?r(#*)"')
++_RAW_STRING = re.compile(r'[bc]?r(#*)"')
+ 
+ 
+ def _flatten_nested_comments(source):
+@@ -171,7 +268,7 @@
+             i = j
+             continue
+         elif source[i] == '"' or (
+-                source[i] in 'br' and (i == 0 or not (
++                source[i] in 'bcr' and (i == 0 or not (
+                     source[i - 1].isalnum() or source[i - 1] == '_'))
+                 and _RAW_STRING.match(source, i)):
+             raw = _RAW_STRING.match(source, i) if source[i] != '"' else None

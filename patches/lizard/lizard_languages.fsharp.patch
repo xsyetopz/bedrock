@@ -1,0 +1,129 @@
+Fixes to the F# reader of lizard 1.26.1.
+
+- A `member` of an object expression, `{ new I with member ... }`, is a
+  function of its own.
+- `let (|Even|Odd|) n`, `let (<+>) a b` and `static member (+)` are named by
+  their symbols; `let (a, b) = ...` is a tuple pattern and names none.
+- `member this.Item with get (i) = ...` reads `with get` as no parameters.
+- Parameters are counted at the bracket depth of their own heading, also
+  inside an object expression.
+
+--- a/lizard_languages/fsharp.py
++++ b/lizard_languages/fsharp.py
+@@ -64,12 +64,14 @@
+     _NAME = re.compile(r"^[\w`]")
+     _LETS = {'let', 'and'}
+     _MEMBERS = {'member', 'override', 'default', 'static'}
++    _MEMBER_HEADS = {'member', 'override', 'default'}
+     _BINDINGS = _LETS | _MEMBERS
+     _HEADINGS = _BINDINGS | CONTAINER_HEADINGS
+ 
+     def __init__(self, context):
+         super().__init__(context)
+         self._depth = 0
++        self._base = 0  # bracket depth at the current item's heading
+         self._items = OffsideItems()
+         self._self_name, self._lambda_heads = None, False
+         self._prev_line = 0
+@@ -103,7 +105,7 @@
+ 
+     def _starts_item(self, token):
+         if self._depth != 0:
+-            return False
++            return self._starts_object_member(token)
+         if self._attribute_item and self.last_token == '>]' and \
+                 token in self._HEADINGS:
+             self._items.reheaded(token)
+@@ -112,6 +114,15 @@
+         return column is not None and not is_operator(token) and \
+             self._items.starts_item(column, token)
+ 
++    def _starts_object_member(self, token):
++        '''A `member` at a line start inside brackets belongs to an object
++        expression, `{ new I with member ... }`, and heads an item there.'''
++        column = getattr(token, 'column', None)
++        if column is None or token not in self._MEMBER_HEADS:
++            return False
++        self._items.starts_member(column)
++        return True
++
+     def _start_item(self, token):
+         '''The heading's line and token, counted in the previous item,
+         move to the new one.'''
+@@ -125,6 +136,7 @@
+             previous.end_line = self._prev_line
+             context.end_of_function()
+         self._attribute_item = token == '[<'
++        self._base = self._depth
+         self._arms = ArmTracker()
+         if token in self._BINDINGS and not self._items.in_container():
+             context.push_new_function('')
+@@ -144,6 +156,8 @@
+             self._state, self._lambda_heads = self._state_name, True
+         elif token == 'member' or token in self._MODIFIERS:
+             return
++        elif token == '(':
++            self._state = self._state_symbol_start
+         elif token != 'val' and self._NAME.match(token):
+             self._self_name = token
+             self._state = self._state_member_dot
+@@ -164,9 +178,26 @@
+         if self._NAME.match(token):
+             self.context.add_to_function_name(token)
+             self._state = self._state_params
++        elif token == '(':
++            self._state = self._state_symbol_start
++        else:
++            self._drop_item()
++
++    def _state_symbol_start(self, token):
++        '''`let (|Even|Odd|) n`, `let (<+>) a b` and `static member (+) ...`
++        name a function by symbols in parentheses; `let (a, b) = ...` is a
++        tuple pattern and names none.'''
++        if is_operator(token):
++            self.context.add_to_function_name('(' + token)
++            self._state = self._state_symbol
+         else:
+             self._drop_item()
+ 
++    def _state_symbol(self, token):
++        if token == ')':
++            self._state = self._state_params
++        self.context.add_to_function_name(token)
++
+     def _state_params(self, token):
+         if token == '<' and not self._has_params:
+             self._angles = 1
+@@ -177,6 +208,9 @@
+             self._state = self._state_annotation
+         elif token == ',':
+             self._drop_item()
++        elif token in ('with', 'get', 'set') and not self._lambda_heads \
++                and self._depth == self._base:
++            return  # `member this.Item with get (i) = ...`: not parameters
+         elif token == '()':
+             self.context.add_to_long_function_name(' ()')
+             self._has_params = True
+@@ -205,11 +239,11 @@
+         '''A comma directly inside the parameter's brackets separates
+         tuple elements; a deeper one belongs to its element.'''
+         self._angles += self._angle_change(token)
+-        if self._depth == 0:
++        if self._depth == self._base:
+             self.context.add_to_long_function_name(' )')
+             self._angles = 0
+             self._state = self._state_params
+-        elif token == ',' and self._depth == 1 and self._angles <= 0:
++        elif token == ',' and self._depth == self._base + 1 and self._angles <= 0:
+             self._open_param()
+         elif token == ',':
+             self.context.add_to_long_function_name(' ,')
+@@ -226,7 +260,7 @@
+         return 0
+ 
+     def _state_annotation(self, token):
+-        if token == '=' and self._depth == 0:
++        if token == '=' and self._depth == self._base:
+             self._state = self._state_body_start
+ 
+     def _state_body_start(self, token):
