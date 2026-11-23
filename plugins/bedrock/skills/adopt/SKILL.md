@@ -9,4 +9,4 @@ allowed-tools: mcp__bedrock__run
 
 Arguments: `$ARGUMENTS`
 
-Follow the `bedrock` skill with the command line `adopt $ARGUMENTS`: run it through `mcp__bedrock__run`, summarize the plan, apply it with `--yes` when the arguments had it or the user agrees, then run `just setup`, `just verify`, and `guard`, and fix what they report.
+Follow the `bedrock` skill with the command line `adopt $ARGUMENTS`, adding no language or option the user did not name: run it through `mcp__bedrock__run`, summarize the plan, apply it with `--yes` when the arguments had it or the user agrees, then run `just setup`, `just verify`, and `guard`, and fix what they report.

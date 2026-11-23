@@ -13,16 +13,21 @@ The `mcp__bedrock__run` tool runs the bedrock CLI in the session's folder. Its `
 
 ## Pick the Command
 
-- With arguments, run that command line.
-- Without arguments, read `.editorconfig`. A `bedrock_version` in it means bedrock manages the repo: run `update`. Without one, run `adopt`.
+The command line holds only what the user asked for, since the languages, kinds, and options it names decide which files bedrock writes and keeps.
+
+- With arguments, run that command line as given.
+- Without arguments, read `.editorconfig`. A `bedrock_version` in it means bedrock manages the repo: run `update`. Without one, run `adopt` with no languages, so bedrock reports the languages its markers detect.
+- Add no language, kind, platform, or option the user did not name, even when the repo's files suggest one. A directory such as `packages/vscode-extension` is a question for the user, not a reason to add `ts`.
+- Add `--yes` or `--allow-dirty` only as the steps below allow.
 
 ## Apply a Plan
 
 A plan lists the files bedrock would write or remove.
 
 1. Summarize the plan for the user in a few lines: the languages, the files that change, the tools it removes, and the notes it prints.
-2. Apply it with the same line plus `--yes` only when the arguments already had `--yes`, or the user agrees after reading the summary.
-3. A plan with no steps needs nothing applied: say the repo is current and go on to the checks.
+2. When the plan covers a language bedrock detected that the user did not name, ask whether to keep it before applying.
+3. Apply it with the same line plus `--yes` only when the arguments already had `--yes`, or the user agrees after reading the summary.
+4. A plan with no steps needs nothing applied: say the repo is current and go on to the checks.
 
 Adopt refuses a file with uncommitted work. Show the user the files it names and ask before passing `--allow-dirty`.
 
@@ -32,6 +37,7 @@ After an applied plan, and for a run without arguments, run `just setup` and the
 
 - Fix each error at its cause in the code.
 - Keep the shared configs as bedrock wrote them, since the next `update` rewrites them.
+- Answer a question about a managed file, such as whether the build needs it, from the file and the build that reads it. Deleting or editing it to find out makes `guard` report drift and `update` restore it.
 - Move a step a removed Makefile or hook manager ran into `project.just`.
 - When a recipe reports a missing tool that `just setup` cannot install, tell the user which tool and how to install it.
 
