@@ -277,6 +277,8 @@ func (e *Engine) languageSteps(
 		return contribution{}, err
 	}
 
+	files = withoutUnused(files, own.Unused)
+
 	dirs := []string{"starter"}
 	if c.Init {
 		kinds, kindErr := config.SplitList(c.Options["kind"])
@@ -352,6 +354,18 @@ func copySteps(dir template.Dir, vars template.Variables, executables []string) 
 	}
 
 	return steps, nil
+}
+
+// withoutUnused turns each write of an unused path into its removal, which
+// the plan drops again when the path is already absent.
+func withoutUnused(files []step.Step, unused []string) []step.Step {
+	for index, file := range files {
+		if slices.Contains(unused, file.Target()) {
+			files[index] = step.Remove{Path: file.Target()}
+		}
+	}
+
+	return files
 }
 
 // starterSteps writes the templates under dir that root does not have yet:

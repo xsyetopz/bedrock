@@ -203,6 +203,25 @@ func TestGuardReportsADriftedManagedFile(t *testing.T) {
 	expectContains(t, got.stderr, "justfile: differs from what bedrock writes; run `bedrock update`")
 }
 
+func TestGuardReportsAMissingManagedFile(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	root := goRepo(t)
+	expectCode(t, bedrockIn(t, root, "adopt", "--yes", "--no-run"), cli.ExitOK)
+
+	if err := os.Remove(filepath.Join(root, "justfile")); err != nil {
+		t.Fatal(err)
+	}
+
+	// Act
+	got := bedrockIn(t, root, "guard", "base")
+
+	// Assert
+	expectCode(t, got, cli.ExitFailed)
+	expectContains(t, got.stderr, "justfile: missing; run `bedrock update`")
+}
+
 func TestGuardRejectsAScopeNotAdopted(t *testing.T) {
 	t.Parallel()
 

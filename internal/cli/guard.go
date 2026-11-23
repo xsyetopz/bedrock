@@ -13,6 +13,7 @@ import (
 	"github.com/xsyetopz/bedrock/internal/language"
 	"github.com/xsyetopz/bedrock/internal/plan"
 	"github.com/xsyetopz/bedrock/internal/selection"
+	"github.com/xsyetopz/bedrock/internal/step"
 )
 
 const baseScope = "base"
@@ -235,10 +236,29 @@ func (a *App) drift(ctx context.Context, root string, cfg config.Config, selecte
 	var findings []string
 
 	for _, s := range built.Steps {
-		if !built.ProjectFiles[s.Target()] {
-			findings = append(findings, s.Target()+": differs from what bedrock writes; run `bedrock update`")
+		if built.ProjectFiles[s.Target()] {
+			continue
 		}
+
+		state := "differs from what bedrock writes"
+
+		switch {
+		case isRemoval(s):
+			state = "bedrock removes it"
+		case !fsutil.Exists(filepath.Join(root, s.Target())):
+			state = "missing"
+		}
+
+		findings = append(findings, s.Target()+": "+state+"; run `bedrock update`")
 	}
 
 	return findings, nil
+}
+
+// isRemoval reports whether a drift step deletes its path, as it does for a
+// managed file nothing in the repository uses any longer.
+func isRemoval(s step.Step) bool {
+	_, ok := s.(step.Remove)
+
+	return ok
 }

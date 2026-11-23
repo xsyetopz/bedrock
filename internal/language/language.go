@@ -134,6 +134,11 @@ type Contribution struct {
 	// ProjectFiles are written paths that stay the project's own; the
 	// drift check skips them.
 	ProjectFiles []string
+	// Unused are paths under templates/<id>/files the repository has no use
+	// for, such as Gradle convention plugins no build script applies. The
+	// plan skips writing them and removes a copy an earlier run left, so
+	// the repository holds only the managed files its build reads.
+	Unused []string
 }
 
 // Finding is one guard result: "path:line: message" or "path: message".

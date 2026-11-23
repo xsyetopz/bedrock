@@ -229,11 +229,17 @@ func (JVM) Plan(_ context.Context, c *language.Context) (language.Contribution, 
 		steps = append(steps, step.Remove{Path: legacy})
 	}
 
+	unused, err := unusedConventions(c, steps)
+	if err != nil {
+		return language.Contribution{}, err
+	}
+
 	return language.Contribution{
 		Steps: steps,
 		Notes: notes,
 		ProjectFiles: append(
 			[]string{fileSettingsGradleKts, fileGradleProperties},
 			writtenPaths(migrated, kinds.steps)...),
+		Unused: unused,
 	}, nil
 }
