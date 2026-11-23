@@ -297,3 +297,65 @@ func TestPatchedLizardMeasuresAnIndentedScalaBody(t *testing.T) {
 	// Assert
 	expectLines(t, "errors", report.Errors, []string{"src/main/scala/Shapes.scala:2: `area` code lines is 5, over 4"})
 }
+
+// cppTemplateComparison has a template parameter whose default compares two
+// literals. The unpatched lizard took the `<` for a bracket, read the function
+// as part of the template name, and measured nothing.
+const cppTemplateComparison = `template <auto V = 1 < 2>
+int clamp(int a) {
+    int b = a;
+    if (b < 0) b = 0;
+    if (b > 9) b = 9;
+    return b;
+}
+`
+
+func TestPatchedLizardMeasuresAFunctionAfterATemplateComparison(t *testing.T) {
+	t.Parallel()
+	bedrocktest.E2E(t, "runs the pinned `lizard` through `uvx`")
+
+	// Arrange
+	root := bedrocktest.Repo(t, map[string]string{
+		".editorconfig": "root = true\n\n[*.cpp]\nbedrock_function_code_lines_error = 4\n",
+		"src/clamp.cpp": cppTemplateComparison,
+	})
+
+	// Act
+	report := guard(t, execx.System{}, root, sized{lizard: []string{"cpp"}})
+
+	// Assert
+	expectLines(t, "errors", report.Errors, []string{"src/clamp.cpp:2: `clamp` code lines is 6, over 4"})
+}
+
+// cppHeaderAlternatives is a C++ header that spells `&&` and `||` as `and`
+// and `or`, and a C struct whose members are named `and` and `or`. The
+// unpatched lizard counted `and` and `or` in no header.
+const cppHeaderAlternatives = `struct pair { int and; int or; };
+namespace logic {
+inline bool either(bool a, bool b, pair p) {
+    return a and b or p.and;
+}
+}
+`
+
+func TestPatchedLizardCountsAlternativeOperatorsInAHeader(t *testing.T) {
+	t.Parallel()
+	bedrocktest.E2E(t, "runs the pinned `lizard` through `uvx`")
+
+	// Arrange
+	root := bedrocktest.Repo(t, map[string]string{
+		".editorconfig":   "root = true\n\n[*.h]\nbedrock_function_complexity_error = 2\n",
+		"include/logic.h": cppHeaderAlternatives,
+	})
+
+	// Act
+	report := guard(t, execx.System{}, root, sized{lizard: []string{"cpp"}})
+
+	// Assert
+	expectLines(
+		t,
+		"errors",
+		report.Errors,
+		[]string{"include/logic.h:3: `logic::either` cyclomatic complexity is 3, over 2"},
+	)
+}

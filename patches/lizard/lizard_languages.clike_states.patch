@@ -5,7 +5,9 @@ C-like readers keep CLikeStates.
 - `concept C = requires(T a) { a + b; };` and a trailing requires-clause are
   not function heads, and the clause runs to the body's `{`.
 - A `<` that no `>` closes, as in `kA < kB;`, ends at the next `{`, `}` or
-  `;` instead of turning the rest of the file into one function name.
+  `;` instead of turning the rest of the file into one function name, and a
+  `<` after a literal, `)` or `]` compares, so the function after `template
+  <auto V = 1 < 2>` keeps its own name.
 - The parameter list is read whole: a comparison or shift in a default value
   (`int x = a < b`) is no template bracket, and `{}` and `[]` nest like `()`.
 - An unnamed parameter, such as `S&&`, `const S&` or `void (*cb)(int)`,
@@ -26,7 +28,7 @@ C-like readers keep CLikeStates.
  from .code_reader import CodeStateMachine
  
  
-@@ -248,3 +249,284 @@
+@@ -248,3 +249,299 @@
              # End of capture list, now expect parameters
              self._state = self._state_lambda_params
          # Otherwise, continue in capture list
@@ -44,6 +46,14 @@ C-like readers keep CLikeStates.
 +    return token[0].isalpha() or token[0] == '_'
 +
 +
++def compares(previous):
++    '''True when a `<` after this token is a comparison: no template name
++    ends in a literal, `)` or `]`, as in `template <auto V = 1 < 2>`.'''
++    return bool(previous) and (
++        previous[0].isdigit() or previous[0] in '\'")]'
++        or previous[0] == '.' and previous[1:2].isdigit())
++
++
 +# pylint: disable=R0903,R0902
 +class CppStates(CLikeStates):
 +    ''' Function recognition for C, C++ and Objective-C. Java, C# and the
@@ -58,6 +68,7 @@ C-like readers keep CLikeStates.
 +        self._dec_tokens = []
 +        self._name_angles = 0
 +        self._name_nested = 0
++        self._name_previous = ''
 +        self._head_try = False
 +        self._declared = False
 +        self._imp_try = False
@@ -99,14 +110,17 @@ C-like readers keep CLikeStates.
 +        pass
 +
 +    # `kA < kB;` and `std::array<int, (N < 3)> a;` hold a `<` that no `>`
-+    # closes. Parentheses shield a comparison, and a `;`, `{` or `}` ends the
-+    # name, so the rest of the file is not read as part of it.
++    # closes. Parentheses shield a comparison, a `<` after a literal, `)` or
++    # `]` compares, and a `;`, `{` or `}` ends the name, so the rest of the
++    # file is not read as part of it.
 +    def _state_template_in_name(self, token):
 +        if token in ('{', '}', ';') or (
 +                token in (')', ']') and not self._name_nested):
 +            self._name_angles = self._name_nested = 0
++            self._name_previous = ''
 +            self.next(self._state_global, token)
 +            return
++        previous, self._name_previous = self._name_previous, token
 +        self.context.add_to_function_name(token)
 +        if token in ('(', '['):
 +            self._name_nested += 1
@@ -114,12 +128,15 @@ C-like readers keep CLikeStates.
 +            self._name_nested -= 1
 +        elif self._name_nested:
 +            return
++        elif token == '<' and compares(previous):
++            return
 +        elif token == '<':
 +            self._name_angles += 1
 +        elif token == '>':
 +            self._name_angles -= 1
 +            if self._name_angles <= 0:
 +                self._name_angles = 0
++                self._name_previous = ''
 +                self._state = self._state_function
 +
 +    # The parameter list is read whole, so that a `<` or `>` that is a

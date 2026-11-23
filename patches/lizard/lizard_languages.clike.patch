@@ -8,8 +8,10 @@ behavior they had.
   that swallowed the code up to the next `'`.
 - A character literal ends on its own line, so the lone `'` of
   `#error Don't` pairs with nothing.
-- `and` and `or` count as branches in C++ files only; in C and ObjC they are
-  plain names.
+- `and` and `or` count as branches in every C++ source. In a header, a C or
+  an ObjC source, where they may be names, they count only between two
+  operands: `a and b` is `a && b`, while `int and = p->and;` and the selector
+  part `and:` hold names.
 - `#if`, `#ifdef` and `#elif` add no branch to a function: conditional
   compilation picks one side. Both sides of `#if A / int f() { / #else /
   int f(long) { / #endif` are read, so the `{` the first side left open is
@@ -19,8 +21,10 @@ behavior they had.
   `and` and `or`, are no C++ operators.
 - `auto&&`, `const&&`, `static_cast<T&&>`, `S&&)` and `S&&,` are rvalue
   references, not a logical `&&`.
-- A template header with a parenthesized comparison, `template <bool B =
-  (1 < 2)>`, closes at its own `>`, and a header ends at `{`, `}` or `;`.
+- A template header with a comparison, `template <bool B = (1 < 2)>` or
+  `template <auto V = 1 < 2>`, closes at its own `>`: a `<` inside
+  parentheses, or after a literal, `)` or `]`, compares. A header also ends at
+  `{`, `}` or `;`.
 - A function-try-block, `int f() try { } catch (...) { }`, is one function
   that ends after its last handler.
 
@@ -32,7 +36,7 @@ behavior they had.
  from .code_reader import CodeStateMachine, CodeReader
 -from .clike_states import CLikeStates
 +import os
-+from .clike_states import CLikeStates, CppStates
++from .clike_states import CLikeStates, CppStates, compares
  
 -# Tokenizer fragment for C++ empty-delimiter raw strings R"(...)" (optional u8/u/U/L
 -# prefix). Stops at the first ')"'. Custom delimiters use the normal string rule.
@@ -55,12 +59,15 @@ behavior they had.
  
  
  class CCppCommentsMixin(object):  # pylint: disable=R0903
-@@ -29,19 +40,46 @@
+@@ -29,22 +40,105 @@
      language_names = ['cpp', 'c']
      macro_pattern = re.compile(r"#\s*(\w+)\s*(.*)", re.M | re.S)
  
-+    # `and`/`or` are C++ alternative tokens; in C (and ObjC) they are plain
-+    # identifiers or macro names, so only C++ extensions count them as branches.
++    # `and`/`or` are C++ alternative tokens, and in C they are the macros of
++    # <iso646.h>, but C and ObjC may also use them as names. A C++ source
++    # counts each one as a branch. A header, C or ObjC source counts one
++    # only between two operands, as in `a and b`, not in `int and = p->and;`
++    # or the selector part `and:`.
 +    c_family = False  # a subclass that is C, C++ or ObjC sets this
 +    _CPP_EXTENSIONS = frozenset((
 +        '.cpp', '.cc', '.cxx', '.c++', '.hpp', '.hh', '.hxx', '.h++', '.ipp',
@@ -84,8 +91,9 @@ behavior they had.
 +        # brace depth outside that body.
 +        self._asm = None
 +        filename = getattr(getattr(context, 'fileinfo', None), 'filename', '')
-+        if self._c_family and os.path.splitext(
-+                str(filename))[1].lower() in self._CPP_EXTENSIONS:
++        self._cpp_source = os.path.splitext(
++            str(filename))[1].lower() in self._CPP_EXTENSIONS
++        if self._c_family and self._cpp_source:
 +            self.conditions |= {'and', 'or'}
 +            self.logical_operators |= {'and', 'or'}
  
@@ -108,7 +116,62 @@ behavior they had.
          return CodeReader.generate_tokens(source_code, addition, token_class)
  
      def preprocess(self, tokens):
-@@ -55,26 +93,102 @@
++        stream = self._preprocess(tokens)
++        if self._c_family and not self._cpp_source:
++            stream = self._alternative_operators(stream)
++        return stream
++
++    _ALTERNATIVES = {'and': '&&', 'or': '||'}
++    # A name before `and` or `or` is an operand unless it is one of these:
++    # `int and;`, `return and;`.
++    _NOT_OPERANDS = frozenset((
++        'return', 'case', 'goto', 'else', 'do', 'typedef', 'struct', 'union',
++        'enum', 'const', 'volatile', 'static', 'extern', 'register', 'auto',
++        'inline', 'unsigned', 'signed', 'long', 'short', 'int', 'char', 'void',
++        'float', 'double', 'bool', '_Bool', 'sizeof', 'restrict'))
++    _UNARY = frozenset(('(', '!', '~', '-', '+', '*', '&', '++', '--'))
++
++    def _ends_operand(self, token):
++        return token in (')', ']') or token[:1].isdigit() or \
++            token[:1] in ('"', "'") or \
++            (token[:1].isalpha() or token[:1] == '_') and \
++            token not in self._NOT_OPERANDS
++
++    def _starts_operand(self, token):
++        return token in self._UNARY or token[:1].isdigit() or \
++            token[:1] in ('"', "'", '_') or token[:1].isalpha()
++
++    def _alternative_operators(self, tokens):
++        '''Spells `and` and `or` as `&&` and `||` where they join two
++        operands; elsewhere they are names.'''
++        previous = ''
++        held = []  # `and` or `or`, and the newlines and comments after it
++        for token in tokens:
++            layout = token == '\n' or token.startswith(('/*', '//'))
++            if held and layout:
++                held.append(token)
++                continue
++            if held:
++                if self._starts_operand(token):
++                    held[0] = self._ALTERNATIVES[held[0]]
++                previous = held[0]
++                for waiting in held:
++                    yield waiting
++                held = []
++            if token in self._ALTERNATIVES and self._ends_operand(previous):
++                held = [token]
++                continue
++            yield token
++            if not layout:
++                previous = token
++        for waiting in held:
++            yield waiting
++
++    def _preprocess(self, tokens):
+         tilde = False
+         for token in tokens:
+             if token == '~':
+@@ -55,26 +149,102 @@
              elif not token.isspace() or token == '\n':
                  macro = self.macro_pattern.match(token)
                  if macro:
@@ -135,14 +198,14 @@ behavior they had.
 +                    yield self._asm_token(token)
                  else:
                      yield token
- 
++
 +    # A CodeWarrior or MSVC assembly body, `asm void f() { ... }` or
 +    # `asm { ... }`, holds mnemonics such as `and` and `or`, which are no
 +    # C++ operators there. GCC's `asm("...")` keeps its text in a string.
 +    _ASM_KEYWORDS = frozenset(('asm', '__asm', '__asm__'))
 +    _ASM_QUALIFIERS = frozenset((
 +        'volatile', '__volatile__', 'goto', 'inline', '('))
- 
++
 +    def _asm_token(self, token):
 +        if isinstance(self._asm, int):
 +            return '@' + token if token in self.conditions else token
@@ -153,7 +216,7 @@ behavior they had.
 +        elif token == ';' and self._asm == 'head':
 +            self._asm = None  # `asm void f();` declares, with no body
 +        return token
-+
+ 
 +    def _preprocessor_line(self, directive):
 +        if not self._c_family:
 +            # Kept for C# and the other readers: `#if`, `#ifdef` and `#elif`
@@ -177,7 +240,7 @@ behavior they had.
 +        elif directive == 'endif' and self._pp_stack:
 +            self._pp_stack.pop()
 +            self._pp_ignore = 0
-+
+ 
 +
  class CppRValueRefStates(CodeStateMachine):
      # pylint: disable=R0903
@@ -215,7 +278,7 @@ behavior they had.
      @CodeStateMachine.read_until_then('=;{})')
      def _r_value_ref(self, token, _):
          if token == "=":
-@@ -147,3 +261,95 @@
+@@ -147,3 +317,97 @@
      def _read_attribute(self, _):
          """Ignores C++11 attributes inside [[ ]]."""
          pass
@@ -226,13 +289,11 @@ behavior they had.
 +
 +    def __init__(self, context):
 +        super(CppNestingStackStates, self).__init__(context)
-+        self._template_angles = 0
-+        self._template_nested = 0
++        self._end_template_header()
 +
 +    def _state_global(self, token):
 +        if token == "template":
-+            self._template_angles = 0
-+            self._template_nested = 0
++            self._end_template_header()
 +            self._state = self._template_declaration
 +        elif token == '}' and self._closes_function_try_block():
 +            self._state = self._expect_catch
@@ -244,14 +305,17 @@ behavior they had.
 +
 +        A `<` or `>` counts only outside parentheses and brackets, so the
 +        comparison in `template <bool B = (1 < 2)>` does not leave the angle
-+        count open. An unparenthesised comparison (`<auto V = 1 < 2>`) cannot
-+        be told from a bracket, so the header ends at a `{`, `}` or `;` too,
++        count open, and a `<` after a literal, `)` or `]` compares, as in
++        `template <auto V = 1 < 2>`. A header ends at a `{`, `}` or `;` too,
 +        and that token is read as ordinary code.
 +        """
++        previous, self._template_previous = self._template_previous, token
 +        if self._template_angles == 0 and token != '<':
 +            # `template class Foo<int>;` has no parameter list.
 +            self._end_template_header()
 +            self._state(token)
++        elif token == '<' and compares(previous):
++            return
 +        elif token in ('(', '['):
 +            self._template_nested += 1
 +        elif token in (')', ']'):
@@ -271,6 +335,7 @@ behavior they had.
 +    def _end_template_header(self):
 +        self._template_angles = 0
 +        self._template_nested = 0
++        self._template_previous = ''
 +        self._state = self._state_global
 +
 +    # A function-try-block, `int f() try { ... } catch (...) { ... }`, is one
