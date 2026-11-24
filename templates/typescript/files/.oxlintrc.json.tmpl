@@ -68,6 +68,10 @@
 		// (10,000 elements, 30 samples of 2,000 runs after warm-up), and the types tell a length from
 		// an element.
 		"unicorn/no-new-array": "off",
+		// bun fmt prints every number literal in lowercase, hex digits included, and has no option to
+		// change that; this rule wants uppercase hex digits and takes no options in oxlint, so the two
+		// rewrite each other. The format check already holds the prefix and exponent in lowercase.
+		"unicorn/number-literal-case": "off",
 		"eslint/arrow-body-style": ["error", "as-needed"],
 		"eslint/grouped-accessor-pairs": "error",
 		"eslint/guard-for-in": "error",
@@ -189,7 +193,6 @@
 		"unicorn/no-unreadable-array-destructuring": "error",
 		"unicorn/no-useless-collection-argument": "error",
 		"unicorn/no-zero-fractions": "error",
-		"unicorn/number-literal-case": "error",
 		"unicorn/numeric-separators-style": "error",
 		"unicorn/prefer-array-index-of": "error",
 		"unicorn/prefer-bigint-literals": "error",
@@ -366,7 +369,9 @@
 			],
 			"rules": {
 				"eslint/max-lines-per-function": "off",
-				"eslint/max-nested-callbacks": "off"
+				"eslint/max-nested-callbacks": "off",
+				// Tests feed `javascript:` URLs to sanitizers as data; the rule targets code that runs them.
+				"eslint/no-script-url": "off"
 			}
 		},
 		{

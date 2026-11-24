@@ -52,6 +52,7 @@ The template turns on rules beyond the four categories. The full list is in `oxl
 | `typescript/strict-void-return` | A callback whose result the caller ignores, such as `items.forEach((item) => seen.add(item))`, is fine where a void function is expected. |
 | `eslint/no-throw-literal` | `typescript/only-throw-error` checks the thrown value's type, so it catches every literal this rule does, and a non-`Error` variable this rule cannot see. |
 | `unicorn/no-new-array` | `new Array(size)` is about 3x faster than `Array.from({ length: size })` in Bun 1.4 on arm64, for 10,000 elements, and the types tell a length from an element. |
+| `unicorn/number-literal-case` | `bun fmt` prints number literals in lowercase, hex digits included, with no option to change it, and this rule wants uppercase hex digits and takes no options in oxlint, so each would undo the other. The format check already keeps the `0x` prefix and the exponent in lowercase. |
 | `typescript/promise-function-async` | It conflicts with `eslint/require-await`, which is on. |
 | `eslint/no-undef` | It does not know `Bun`, `console`, or `process`, and `bun check` already reports undeclared names. |
 
@@ -59,7 +60,7 @@ The template turns on rules beyond the four categories. The full list is in `oxl
 
 | Files | Exception |
 | --- | --- |
-| `*.test.*`, `*_test.*`, `*.spec.*`, `*_spec.*`, the files `bun test` runs | `max-lines-per-function` and `max-nested-callbacks` are off. |
+| `*.test.*`, `*_test.*`, `*.spec.*`, `*_spec.*`, the files `bun test` runs | `max-lines-per-function`, `max-nested-callbacks`, and `no-script-url` are off. Tests pass `javascript:` URLs to sanitizers as data, which the rule cannot tell from code that runs them. |
 | `scripts/**` | `no-console` is off. |
 | `*.config.*` | Default exports are allowed. |
 | `src/theme/**` | Default exports are allowed. Docusaurus imports a swizzled theme component as its default export. |
