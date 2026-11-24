@@ -98,15 +98,30 @@ oxlint *args:
         dir="${manifest%.claude-plugin/plugin.json}"
         dir="${dir%/}"
         root="${dir:-.}"
-        [[ -f "$root/.claude-plugin/types/claude-code/index.d.ts" ]] && continue
+        types="$root/.claude-plugin/types/claude-code/index.d.ts"
+        [[ -f "$types" ]] && continue
         grep -qs '\.claude-plugin/types/' "$root/tsconfig.json" || continue
+        # Claude Code writes a plugin's types when a run loads it; a closed port and a dummy key keep
+        # that print run off the network, so it bills nothing and touches no login.
+        if command -v claude >/dev/null 2>&1; then
+            CLAUDE_CODE_PLUGIN_DIR_WATCH=1 ANTHROPIC_BASE_URL=http://127.0.0.1:9 ANTHROPIC_API_KEY=unused \
+                CLAUDE_CODE_MAX_RETRIES=0 claude -p types --plugin-dir "$root" --setting-sources project \
+                --strict-mcp-config --no-session-persistence </dev/null >/dev/null 2>&1 || true
+            [[ -f "$types" ]] && continue
+            why="the \`claude -p\` run wrote no $types"
+        else
+            why="\`claude\` is not on PATH"
+        fi
         targeted=
         for arg in "$@"; do
             arg="${arg#./}"
             if [[ "$arg" != -* && ( "$root" == . || "$arg" == "$root" || "$arg" == "$root"/* ) ]]; then targeted=1; fi
         done
-        if [[ -n "$targeted" ]]; then continue; fi
-        echo "Skipping lint of the Claude Code plugin in $root: Claude Code writes its types only when a session loads the plugin. Start one with \`claude --plugin-dir $root\` to lint it." >&2
+        if [[ -n "$targeted" ]]; then
+            echo "Claude Code's types for the plugin in $root are missing: $why." >&2
+            continue
+        fi
+        echo "Skipping lint of the Claude Code plugin in $root: $why." >&2
         skips+=("--ignore-pattern=${dir:+$dir/}**")
     done < <(git ls-files -z --cached --others --exclude-standard -- ':(glob)**/.claude-plugin/plugin.json')
     bun run oxlint --threads={{ lint_threads }} --disable-nested-config ${skips[@]+"${skips[@]}"} "$@"
