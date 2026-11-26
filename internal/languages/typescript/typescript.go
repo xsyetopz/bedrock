@@ -15,9 +15,9 @@ func New() Typescript { return Typescript{} }
 // Spec declares TypeScript's templates, markers, and tools.
 func (Typescript) Spec() language.Spec {
 	return language.Spec{
-		ID:      "typescript",
+		ID:      nameTypescript,
 		Block:   "typescript-bedrock",
-		Aliases: []string{"typescript", "ts", nameBun},
+		Aliases: []string{nameTypescript, "ts", nameBun},
 		Markers: []string{"bun.lock", nameBunLockb, nameBunfig, namePackageJSON, nameTsconfig},
 		Tools: []language.Tool{{
 			Name:    nameBun,

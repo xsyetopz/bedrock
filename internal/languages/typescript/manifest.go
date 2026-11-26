@@ -55,7 +55,8 @@ func migrateWorkspaces(current any, pnpm *object, templateCatalog *object) *obje
 	)
 
 	// `bun fmt` does not sort catalogs; the guard requires sorted keys.
-	merged := asObject(base.get("catalog")).overlay(asObject(pnpm.get("catalog"))).overlay(templateCatalog)
+	own := asObject(base.get("catalog")).overlay(asObject(pnpm.get("catalog")))
+	merged := own.overlay(withNewerPins(own, templateCatalog))
 	merged = merged.without(func(name string) bool { return name == legacyPackage })
 	workspaces.set("catalog", sortedByName(merged))
 
@@ -134,7 +135,8 @@ func migrateManifest(manifest, template, pnpm *object) (*object, []string) {
 	next.set("engines", migrateEngines(manifest, template))
 
 	if overrides := asObject(template.get("overrides")); overrides.len() > 0 {
-		next.set("overrides", asObject(manifest.get("overrides")).overlay(overrides))
+		own := asObject(manifest.get("overrides"))
+		next.set("overrides", own.overlay(withNewerPins(own, overrides)))
 	}
 
 	if len(trusted) > 0 {

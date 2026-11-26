@@ -21,6 +21,7 @@ const (
 	kindReact        = "react"
 	kindServer       = "server"
 	nameTsconfig     = "tsconfig.json"
+	nameTypescript   = "typescript"
 	nameDevDeps      = "devDependencies"
 	namePnpm         = "pnpm"
 )

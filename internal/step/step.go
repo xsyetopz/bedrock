@@ -133,7 +133,26 @@ func writeDone(path string, s Write) (bool, error) {
 		return false, fmt.Errorf("read `%s`: %w", s.Path, err)
 	}
 
-	return bytes.Equal(current, s.Content), nil
+	return sameText(current, s.Content), nil
+}
+
+// sameText reports whether current holds content, counting a CRLF in a text
+// file as the LF bedrock writes: git checks text out with CRLF where
+// `.gitattributes` says `eol=crlf`, as it does for `*.bat`, or where
+// `core.autocrlf` is on, and the file is still the one bedrock wrote. A binary
+// file, one with a NUL byte, must match byte for byte.
+func sameText(current, content []byte) bool {
+	if bytes.Equal(current, content) {
+		return true
+	}
+
+	if bytes.IndexByte(content, 0) >= 0 || bytes.IndexByte(current, 0) >= 0 {
+		return false
+	}
+
+	crlf, lf := []byte("\r\n"), []byte("\n")
+
+	return bytes.Equal(bytes.ReplaceAll(current, crlf, lf), bytes.ReplaceAll(content, crlf, lf))
 }
 
 // Pending returns the steps root does not match yet, in order.
