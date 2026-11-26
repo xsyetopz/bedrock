@@ -97,9 +97,11 @@ opt_in_rules:
   - test_case_accessibility
   - xct_specific_matcher
 
-# 2-space indentation, as swift-format.
+# 2-space indentation, as swift-format. A multiline string literal holds text, such as
+# generated C++ that clang-format indents, so its lines keep their own indentation.
 indentation_width:
   indentation_width: 2
+  include_multiline_strings: false
 
 file_length:
   warning: 500
