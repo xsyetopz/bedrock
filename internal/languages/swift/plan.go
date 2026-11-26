@@ -120,7 +120,12 @@ func (Swift) Plan(ctx context.Context, c *language.Context) (language.Contributi
 
 	switch {
 	case hasManifest:
-		managed, blockErr := manifestBlocks(c, c.Has("cpp"))
+		interop, targetErr := hasCFamilyTarget(ctx, c)
+		if targetErr != nil {
+			return language.Contribution{}, targetErr
+		}
+
+		managed, blockErr := manifestBlocks(c, c.Has("cpp") && interop)
 		if blockErr != nil {
 			return language.Contribution{}, blockErr
 		}
