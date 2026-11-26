@@ -89,6 +89,49 @@ func isCxxSource(file string) bool {
 	}
 }
 
+// hasCFamilyTarget reports whether a SwiftPM target folder, `Sources/<name>`
+// or `Tests/<name>`, holds C or C++ files and no Swift ones. SwiftPM builds no
+// mixed-language target, so C++ files beside Swift ones are resources, such as
+// a native project a library ships. Only a C-family target gives Swift a C++
+// module to import, and C++ interop in a library breaks each client that lacks
+// it.
+func hasCFamilyTarget(ctx context.Context, c *language.Context) (bool, error) {
+	files, err := fsutil.ListFiles(ctx, c.Runner, c.Root, func(file string) bool {
+		return strings.HasPrefix(file, "Sources/") || strings.HasPrefix(file, "Tests/")
+	})
+	if err != nil {
+		return false, err
+	}
+
+	cFamily := map[string]bool{}
+	swiftTargets := map[string]bool{}
+
+	for _, file := range files {
+		// A file directly in `Sources` or `Tests` belongs to no target.
+		folder, rest, _ := strings.Cut(file, "/")
+		name, _, nested := strings.Cut(rest, "/")
+		if !nested {
+			continue
+		}
+
+		target := folder + "/" + name
+		switch {
+		case path.Ext(file) == ".swift":
+			swiftTargets[target] = true
+		case isCxxSource(file):
+			cFamily[target] = true
+		}
+	}
+
+	for target := range cFamily {
+		if !swiftTargets[target] {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // cxxNote suggests adopting with `--cxx` when C or C++ files exist but cpp
 // is not adopted.
 func cxxNote(ctx context.Context, c *language.Context, cxx bool) ([]string, error) {

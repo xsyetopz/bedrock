@@ -132,7 +132,7 @@ To fix the errors, run `just lint-fix`, which moves each inline `#[cfg(test)] mo
 - runs `swift package migrate` for the upcoming features it can rewrite code for. InternalImportsByDefault and ImmutableWeakCaptures need a person;
 - sets `Config/Bedrock.xcconfig` as the base configuration of each Xcode project's build configurations;
 - removes the `BuildTools` package that swift-bedrock releases before 0.2 wrote, and notes each `project.just`, `.gitignore`, `.just/*.just`, or workflow file that still mentions it;
-- with C++, adds the `// >>> swift-bedrock-cxx` block to `Package.swift`, which sets C++20 and turns on C++ interop for each Swift target.
+- with C++ and a C-family target, a `Sources/<name>` or `Tests/<name>` folder with C or C++ files and no Swift ones, adds the `// >>> swift-bedrock-cxx` block to `Package.swift`, which sets C++20 and turns on C++ interop for each Swift target. A package whose C++ files are only resources of a Swift target, such as a native project a library ships, gets no block, and an earlier block is removed, since C++ interop in a library breaks each client that lacks it.
 
 The Swift recipes run SwiftPM with `--disable-sandbox`, so a build inside an outer sandbox, such as a coding agent's or a git hook's, does not fail on SwiftPM's nested one. On macOS, outside CI and without C++, they also cache compiler output across checkouts.
 

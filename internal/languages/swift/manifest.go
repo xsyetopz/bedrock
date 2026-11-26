@@ -2,6 +2,7 @@ package swift
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -40,9 +41,16 @@ func withMinimumMacOS(text string) string {
 func manifestOrder() []string { return []string{swiftBlock, cxxBlock} }
 
 // adoptedManifest returns the manifest with the tools version, the macOS
-// floor, and the strict blocks.
+// floor, and the strict blocks. A C++ interop block that managed omits is
+// removed, since a package that has lost its C-family targets, or never had
+// one, breaks each client that lacks the interop.
 func adoptedManifest(text string, managed []blocks.Block) string {
-	return blocks.Upsert(withMinimumMacOS(withToolsVersion(text)), blocks.Slash, manifestOrder(), managed...)
+	text = withMinimumMacOS(withToolsVersion(text))
+	if !slices.ContainsFunc(managed, func(b blocks.Block) bool { return b.Name == cxxBlock }) {
+		text = blocks.Remove(text, blocks.Slash, cxxBlock)
+	}
+
+	return blocks.Upsert(text, blocks.Slash, manifestOrder(), managed...)
 }
 
 // typeName turns raw, such as a directory name, into a Swift type name:
