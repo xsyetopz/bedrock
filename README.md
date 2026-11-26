@@ -141,7 +141,7 @@ A kind is cross-platform wherever its toolchain allows. A kind is Apple-only whe
 - XCTest outside UI tests, which `just lint-fix` converts to Swift Testing, and JUnit 4 outside Android tests;
 - ProGuard rules that turn shrinking off;
 - public API without docs;
-- managed files that drifted from what adopt writes;
+- managed files that drifted from what adopt writes, where a text file git checked out with CRLF, as `*.bat` is, still matches;
 - code size where a language's own linters set no bound.
 
 ### Size Bounds
