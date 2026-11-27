@@ -26,9 +26,11 @@ type alias struct {
 }
 
 // aliases are the catalog entries the migrated build refers to as `libs.…`,
-// in the order they were first needed.
+// in the order they were first needed. The first `existing` entries are the
+// project's own catalog libraries, which bedrock reuses and does not rewrite.
 type aliases struct {
-	entries []alias
+	entries  []alias
+	existing int
 }
 
 // of returns the alias for lib, reusing an entry with the same coordinates and
@@ -40,15 +42,18 @@ func (a *aliases) of(lib library) string {
 		}
 	}
 
-	name := aliasOf(lib.name)
-	if a.taken(name) {
-		groupParts := strings.Split(lib.group, ".")
-		name = aliasOf(groupParts[len(groupParts)-1] + "-" + lib.name)
+	base := aliasOf(lib.name)
+	groupParts := strings.Split(lib.group, ".")
+
+	unique := base
+	if a.taken(unique) {
+		unique = aliasOf(groupParts[len(groupParts)-1] + "-" + lib.name)
 	}
 
-	unique := name
+	// A numbered alias extends the base without a `-`, which taken would read
+	// as a clash with the base for every number.
 	for count := 2; a.taken(unique); count++ {
-		unique = name + strconv.Itoa(count)
+		unique = base + strconv.Itoa(count)
 	}
 
 	a.entries = append(a.entries, alias{name: unique, lib: lib})
@@ -154,19 +159,48 @@ func scriptOf(made *module, lines []string) string {
 	return head + application + dependencies
 }
 
-func (a *aliases) catalogStep(root string) ([]step.Step, error) {
-	if len(a.entries) == 0 {
-		return nil, nil
+// tableHeader matches a TOML table header line, such as `[libraries]`.
+func tableHeader() *regexp.Regexp {
+	return regexp.MustCompile(`^\s*\[[^\[\]]+\]\s*(#.*)?$`)
+}
+
+// withLibraries returns the catalog with lines at the end of its
+// `[libraries]` table, or in a new one when it has none.
+func withLibraries(catalog string, lines []string) string {
+	header := tableHeader()
+	text := strings.Split(strings.TrimRight(catalog, " \t\r\n"), "\n")
+
+	start := slices.IndexFunc(text, func(line string) bool {
+		return header.MatchString(line) &&
+			strings.HasPrefix(strings.ReplaceAll(strings.TrimSpace(line), " ", ""), "[libraries]")
+	})
+	if start < 0 {
+		return strings.Join(text, "\n") + "\n\n[libraries]\n" + strings.Join(lines, "\n") + "\n"
 	}
 
-	catalog, found, err := fsutil.ReadText(filepath.Join(root, filepath.FromSlash(catalogPath)))
-	if err != nil {
-		return nil, err
+	end := len(text)
+	if next := slices.IndexFunc(text[start+1:], header.MatchString); next >= 0 {
+		end = start + 1 + next
 	}
 
-	lines := make([]string, len(a.entries))
+	for end > start+1 && strings.TrimSpace(text[end-1]) == "" {
+		end--
+	}
 
-	for index, entry := range a.entries {
+	added := append([]string{"# Added by bedrock adopt."}, lines...)
+
+	return strings.Join(slices.Insert(text, end, added...), "\n") + "\n"
+}
+
+func (a *aliases) catalogStep(catalog string, found bool) []step.Step {
+	added := a.entries[a.existing:]
+	if len(added) == 0 {
+		return nil
+	}
+
+	lines := make([]string, len(added))
+
+	for index, entry := range added {
 		version := ""
 		if entry.lib.version != "" {
 			version = `, version = "` + entry.lib.version + `"`
@@ -175,20 +209,23 @@ func (a *aliases) catalogStep(root string) ([]step.Step, error) {
 		lines[index] = entry.name + ` = { module = "` + entry.lib.coordinates() + `"` + version + " }"
 	}
 
-	entries := strings.Join(lines, "\n")
-	content := "[libraries]\n" + entries + "\n"
-
+	content := "[libraries]\n" + strings.Join(lines, "\n") + "\n"
 	if found {
-		content = strings.TrimRight(catalog, " \t\r\n") + "\n\n# Added by bedrock adopt.\n" + entries + "\n"
+		content = withLibraries(catalog, lines)
 	}
 
-	return []step.Step{step.Write{Path: catalogPath, Content: []byte(content), Executable: false}}, nil
+	return []step.Step{step.Write{Path: catalogPath, Content: []byte(content), Executable: false}}
 }
 
 // render returns the steps that write a migration's build files, with each
 // library in `gradle/libs.versions.toml`.
 func render(root string, m *migration) ([]step.Step, error) {
-	known := &aliases{entries: nil}
+	catalog, found, err := fsutil.ReadText(filepath.Join(root, filepath.FromSlash(catalogPath)))
+	if err != nil {
+		return nil, err
+	}
+
+	known := projectAliases(catalog)
 	steps := slices.Clone(m.steps)
 
 	for _, made := range m.modules {
@@ -206,12 +243,7 @@ func render(root string, m *migration) ([]step.Step, error) {
 		steps = append(steps, step.Write{Path: file, Content: []byte(scriptOf(made, lines)), Executable: false})
 	}
 
-	catalog, err := known.catalogStep(root)
-	if err != nil {
-		return nil, err
-	}
-
-	return append(steps, catalog...), nil
+	return append(steps, known.catalogStep(catalog, found)...), nil
 }
 
 // includes returns the settings line that includes each module below the
